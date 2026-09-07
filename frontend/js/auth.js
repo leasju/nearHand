@@ -7,24 +7,121 @@ const documentGroup = document.getElementById("documentGroup");
 const servicePreferenceGroup = document.getElementById("servicePreferenceGroup");
 const registerNameLabel = document.querySelector('label[for="registerName"]');
 const registerNameInput = document.getElementById("registerName");
-const preferenceChips = document.querySelectorAll(".preference-chip");
+const registerPreferences = document.getElementById("registerPreferences");
 const toast = document.getElementById("toast");
 
 let currentRole = "cliente";
 let currentMode = "login";
 const selectedPreferences = new Set();
 
-preferenceChips.forEach((chip) => {
-  chip.addEventListener("click", () => {
-    const value = chip.dataset.value;
-    if (selectedPreferences.has(value)) {
-      selectedPreferences.delete(value);
-      chip.classList.remove("active");
-    } else {
-      selectedPreferences.add(value);
-      chip.classList.add("active");
-    }
+// ============================================
+// Categorias (preferências de serviço) — vindas do backend, ordenadas por popularidade
+// ============================================
+function renderPreferenceChips(container, categories, selected) {
+  container.replaceChildren();
+  categories.forEach((category) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "preference-chip";
+    chip.dataset.value = category.nome;
+    chip.classList.toggle("active", selected.has(category.nome));
+    chip.innerHTML = category.servico_count > 0
+      ? `${category.nome} <span class="trending-badge">🔥</span>`
+      : category.nome;
+    chip.addEventListener("click", () => {
+      if (selectedPreferences.has(category.nome)) {
+        selectedPreferences.delete(category.nome);
+        chip.classList.remove("active");
+      } else {
+        selectedPreferences.add(category.nome);
+        chip.classList.add("active");
+      }
+    });
+    container.appendChild(chip);
   });
+}
+
+fetch("/categories/public")
+  .then((response) => response.json())
+  .then((categories) => {
+    renderPreferenceChips(registerPreferences, categories, selectedPreferences);
+    const trendingCount = categories.filter((c) => c.servico_count > 0).length;
+    document.getElementById("preferencesHint").textContent =
+      trendingCount > 0 ? "🔥 = categoria em alta agora." : "";
+  })
+  .catch(() => showToast("Não foi possível carregar as categorias."));
+
+// ============================================
+// Foto de perfil: colar link ou enviar arquivo
+// ============================================
+function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, emptyId }) {
+  const modeSelect = document.getElementById(modeId);
+  const urlInput = document.getElementById(urlId);
+  const fileInput = document.getElementById(fileId);
+  const fileLabel = document.getElementById(fileLabelId);
+  const preview = document.getElementById(previewId);
+  const empty = document.getElementById(emptyId);
+  let value = "";
+
+  function updatePreview() {
+    if (value) {
+      preview.src = value;
+      preview.hidden = false;
+      empty.hidden = true;
+    } else {
+      preview.hidden = true;
+      empty.hidden = false;
+    }
+  }
+
+  function applyMode() {
+    const isFile = modeSelect.value === "file";
+    urlInput.hidden = isFile;
+    fileLabel.hidden = !isFile;
+  }
+
+  modeSelect.addEventListener("change", applyMode);
+  urlInput.addEventListener("input", () => {
+    value = urlInput.value.trim();
+    updatePreview();
+  });
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 240;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        value = canvas.toDataURL("image/jpeg", 0.82);
+        updatePreview();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  applyMode();
+  updatePreview();
+
+  return { getValue: () => value };
+}
+
+const registerPhotoPicker = setupPhotoPicker({
+  modeId: "registerPhotoMode",
+  urlId: "registerPhotoUrl",
+  fileId: "registerPhotoFile",
+  fileLabelId: "registerPhotoFileLabel",
+  previewId: "registerPhotoPreview",
+  emptyId: "registerPhotoEmpty",
 });
 
 const roleCopy = {
@@ -73,7 +170,6 @@ function setRole(role) {
   registerNameInput.placeholder = copy.placeholder;
   documentGroup.hidden = role !== "prestador";
   servicePreferenceGroup.hidden = role !== "cliente";
-  document.getElementById("registerPhoto").required = role === "cliente";
   registerNameInput.name = role === "cliente" ? "nome_completo" : "nome_empresa";
 }
 
@@ -170,14 +266,24 @@ registerForm.addEventListener("submit", (event) => {
     showToast("As senhas precisam ser iguais.");
     return;
   }
+  if (currentRole === "cliente" && !registerPhotoPicker.getValue()) {
+    showToast("Adicione uma foto de perfil (link ou arquivo).");
+    return;
+  }
   const payload = {
     tipo: currentRole,
     nome: document.getElementById("registerName").value,
     email: document.getElementById("registerEmail").value,
     telefone: document.getElementById("registerPhone").value,
     cpf_cnpj: document.getElementById("registerDocument").value,
-    endereco: document.getElementById("registerAddress").value,
-    foto: document.getElementById("registerPhoto").value,
+    cep: document.getElementById("registerCep").value,
+    rua: document.getElementById("registerRua").value,
+    numero: document.getElementById("registerNumero").value,
+    complemento: document.getElementById("registerComplemento").value,
+    bairro: document.getElementById("registerBairro").value,
+    cidade: document.getElementById("registerCidade").value,
+    estado: document.getElementById("registerEstado").value,
+    foto: registerPhotoPicker.getValue(),
     preferencias: currentRole === "cliente" ? Array.from(selectedPreferences) : [],
     senha: password,
   };

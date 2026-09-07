@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Login administrativo da plataforma NearHand." />
+  <title>NearHand — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/auth.css" />
+  <style>
+    .admin-shell{min-height:100vh;display:grid;place-items:center;padding:24px}
+    .admin-wrap{width:min(420px,92vw)}
+    .admin-top-row{display:flex;justify-content:flex-end;margin-bottom:14px}
+    .admin-card{text-align:center}
+    .admin-card .brand-logo{margin:0 auto 18px}
+    .admin-card h2{margin:0 0 22px}
+    .admin-card .auth-form{text-align:left}
+    #message{color:var(--violet);min-height:20px;font-weight:600}
+  </style>
+  <script>
+    (function () {
+      var saved = localStorage.getItem("nearhand_theme");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="admin-shell">
+    <div class="admin-wrap">
+      <div class="admin-top-row">
+        <button class="ghost-btn" id="themeToggleBtn" type="button"><span id="themeToggleIcon">🌙</span></button>
+      </div>
+      <div class="auth-card admin-card">
+        <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
+        <h2>Painel administrativo</h2>
+        <form id="adminLoginForm" class="auth-form" novalidate>
+          <div class="field-group">
+            <label class="field-label" for="adminEmail">Email</label>
+            <input id="adminEmail" class="field-input" type="email" required />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="adminPassword">Senha</label>
+            <input id="adminPassword" class="field-input" type="password" required />
+          </div>
+          <button type="submit" class="primary-btn full">Entrar</button>
+        </form>
+        <p id="message"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

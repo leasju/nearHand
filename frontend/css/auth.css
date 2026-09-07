@@ -156,8 +156,16 @@ button{cursor:pointer;border:none;background:none}
 .field-input:focus{border-color:var(--lavender);box-shadow:0 0 0 4px rgba(129,116,156,.12)}
 .select-input{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--violet) 50%),linear-gradient(135deg,var(--violet) 50%,transparent 50%);background-position:calc(100% - 18px) calc(50% - 3px),calc(100% - 12px) calc(50% - 3px);background-size:6px 6px,6px 6px;background-repeat:no-repeat}
 .preference-chips{display:flex;flex-wrap:wrap;gap:8px}
-.preference-chip{padding:9px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.9rem;font-weight:600;transition:.18s ease}
+.preference-chip{padding:9px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.9rem;font-weight:600;transition:.18s ease;display:inline-flex;align-items:center;gap:6px}
 .preference-chip.active{background:var(--violet);border-color:var(--violet);color:#fff}
+.trending-badge{font-size:.7rem}
+.address-grid{grid-template-columns:repeat(3,1fr)}
+.address-full{grid-column:1/-1}
+.photo-field{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.photo-thumb,.photo-thumb-empty{width:64px;height:64px;border-radius:16px;object-fit:cover;background:var(--tint);border:1px solid var(--border)}
+.photo-thumb-empty{display:grid;place-items:center;color:var(--muted);font-size:.68rem;text-align:center;padding:4px}
+.photo-field-controls{display:grid;gap:8px}
+.file-btn{display:inline-flex;align-items:center;justify-content:center;padding:15px 16px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;cursor:pointer;text-align:center}
 .field-between{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .text-link{color:var(--violet);font-size:.95rem;text-decoration:none}
 .password-wrap{position:relative}
@@ -191,7 +199,8 @@ button{cursor:pointer;border:none;background:none}
 @media (max-width: 720px){
   .auth-card{padding:20px}
   .auth-top{flex-direction:column;align-items:stretch}
-  .oauth-row,.grid.two{grid-template-columns:1fr}
+  .oauth-row,.grid.two,.address-grid{grid-template-columns:1fr}
+  .photo-field{grid-template-columns:1fr}
   .field-between{align-items:flex-start;flex-direction:column}
   .role-switch,.mode-switch{gap:8px}
 }

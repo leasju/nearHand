@@ -48,7 +48,7 @@ CREATE TABLE admin (
 CREATE TABLE cliente (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome_completo VARCHAR(150) NOT NULL,
-    foto VARCHAR(255),
+    foto TEXT, -- URL ou imagem em base64 (upload local, redimensionada no navegador)
     endereco_id INT NOT NULL,
     telefone VARCHAR(11),
     email VARCHAR(200) NOT NULL UNIQUE,
@@ -97,7 +97,7 @@ CREATE TABLE servico (
 CREATE TABLE foto_servico (
     id INT AUTO_INCREMENT PRIMARY KEY,
     servico_id INT NOT NULL,
-    url VARCHAR(255) NOT NULL,
+    url TEXT NOT NULL, -- URL ou imagem em base64 (upload local, redimensionada no navegador)
     tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('carrossel', 'galeria')),
     ordem INT NOT NULL DEFAULT 0,
     FOREIGN KEY (servico_id) REFERENCES servico(id) ON DELETE CASCADE

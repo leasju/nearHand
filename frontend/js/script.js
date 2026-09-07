@@ -18,30 +18,30 @@ const services = [
   },
   {
     id: 2,
-    title: "Limpeza completa",
-    category: "Limpeza",
-    provider: "Brilho Certo",
+    title: "Corte e escova",
+    category: "Cabeleireiro",
+    provider: "Studio Bela Vista",
     rating: 4.8,
     reviews: 89,
     distance: 3.1,
     price: 160,
     unit: "",
-    icon: "🧼",
+    icon: "💇",
     style: "clean",
     lat: -22.9260,
     lng: -47.0810,
   },
   {
     id: 3,
-    title: "Manicure e pedicure",
-    category: "Beleza",
+    title: "Manicure completa",
+    category: "Manicure",
     provider: "Studio Ana",
     rating: 4.7,
     reviews: 74,
     distance: 4.6,
     price: 75,
     unit: "",
-    icon: "✂️",
+    icon: "💅",
     style: "beauty",
     lat: -22.8790,
     lng: -47.0310,
@@ -49,7 +49,7 @@ const services = [
   {
     id: 4,
     title: "Reparo hidráulico",
-    category: "Encanador",
+    category: "Marido de Aluguel",
     provider: "Água Certa",
     rating: 4.9,
     reviews: 61,
@@ -64,7 +64,7 @@ const services = [
   {
     id: 5,
     title: "Montagem de móveis",
-    category: "Montagem",
+    category: "Marido de Aluguel",
     provider: "Resolve Móveis",
     rating: 4.6,
     reviews: 52,
@@ -75,6 +75,21 @@ const services = [
     style: "assembly",
     lat: -22.9420,
     lng: -47.1010,
+  },
+  {
+    id: 9,
+    title: "Pedicure spa",
+    category: "Pedicure",
+    provider: "Studio Ana",
+    rating: 4.7,
+    reviews: 40,
+    distance: 3.8,
+    price: 60,
+    unit: "",
+    icon: "🦶",
+    style: "beauty",
+    lat: -22.9140,
+    lng: -47.0700,
   },
   {
     id: 6,
@@ -94,7 +109,7 @@ const services = [
   {
     id: 7,
     title: "Limpeza pós-obra",
-    category: "Limpeza",
+    category: "Marido de Aluguel",
     provider: "Jaguar Limpeza",
     rating: 4.6,
     reviews: 22,
@@ -145,6 +160,71 @@ function showToast(message) {
 
 function formatPrice(value) {
   return value.toLocaleString("pt-BR", { minimumFractionDigits: 0 });
+}
+
+// ============================================
+// Categorias reais (vindas do backend, com contagem de serviços)
+// ============================================
+const CATEGORY_ICONS = {
+  "Eletricista": "⚡",
+  "Cabeleireiro": "💇",
+  "Manicure": "💅",
+  "Pedicure": "🦶",
+  "Marido de Aluguel": "🛠️",
+};
+function categoryIcon(name) {
+  return CATEGORY_ICONS[name] || "🔧";
+}
+
+let categoriesData = [];
+
+function renderCategorySidebar() {
+  const container = document.getElementById("categoryItemsList");
+  container.replaceChildren();
+  categoriesData.forEach((category) => {
+    const button = document.createElement("button");
+    button.className = "category-item";
+    button.dataset.category = category.nome;
+    const count = category.servico_count;
+    button.innerHTML = `
+      <span>${categoryIcon(category.nome)}</span>
+      <div><strong>${category.nome}</strong><small>${count} serviço${count === 1 ? "" : "s"}</small></div>
+    `;
+    container.appendChild(button);
+  });
+}
+
+function renderCategoryFilterOptions() {
+  categoryFilter.querySelectorAll("option:not([value='all'])").forEach((option) => option.remove());
+  categoriesData.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.nome;
+    option.textContent = category.nome;
+    categoryFilter.appendChild(option);
+  });
+}
+
+function renderAdCategoryOptions() {
+  const adCategory = document.getElementById("adCategory");
+  adCategory.replaceChildren();
+  categoriesData.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.nome;
+    option.textContent = category.nome;
+    adCategory.appendChild(option);
+  });
+}
+
+async function loadCategories() {
+  try {
+    const response = await fetch("/categories/public");
+    categoriesData = await response.json();
+  } catch {
+    categoriesData = [];
+  }
+  renderCategorySidebar();
+  renderCategoryFilterOptions();
+  renderAdCategoryOptions();
 }
 
 function serviceCard(service) {
@@ -272,13 +352,13 @@ document.getElementById("clearFilters").addEventListener("click", () => {
   radiusLabel.textContent = "10 km";
   applyFilters();
 });
-document.querySelectorAll(".category-item").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".category-item").forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-    categoryFilter.value = button.dataset.category;
-    applyFilters();
-  });
+document.querySelector(".categories-card").addEventListener("click", (event) => {
+  const button = event.target.closest(".category-item");
+  if (!button) return;
+  document.querySelectorAll(".category-item").forEach((item) => item.classList.remove("active"));
+  button.classList.add("active");
+  categoryFilter.value = button.dataset.category;
+  applyFilters();
 });
 
 const categorySearchInput = document.getElementById("categorySearchInput");
@@ -556,10 +636,13 @@ const providerView = document.getElementById("providerView");
 const settingsView = document.getElementById("settingsView");
 const topRoleButtons = document.querySelectorAll(".top-actions .role-switch .role-btn");
 
+const mainNav = document.querySelector(".main-nav");
+
 function showAppView(view) {
   clienteView.hidden = view !== "cliente";
   providerView.hidden = view !== "prestador";
   settingsView.hidden = view !== "settings";
+  mainNav.hidden = view !== "cliente";
 }
 
 function setActiveRole(role) {
@@ -695,9 +778,75 @@ const newAdForm = document.getElementById("newAdForm");
 const adRadius = document.getElementById("adRadius");
 const adRadiusLabel = document.getElementById("adRadiusLabel");
 
-document.getElementById("newAdBtn").addEventListener("click", () => { newAdModal.hidden = false; });
+document.getElementById("newAdBtn").addEventListener("click", () => {
+  adPhotos = [];
+  renderAdPhotosGrid();
+  newAdModal.hidden = false;
+});
 document.getElementById("manageAdsBtn").addEventListener("click", () => {
   adList.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+// ============================================
+// Fotos do anúncio: enviar arquivo(s) ou adicionar por link
+// ============================================
+const adPhotosGrid = document.getElementById("adPhotosGrid");
+let adPhotos = [];
+
+function renderAdPhotosGrid() {
+  adPhotosGrid.replaceChildren();
+  adPhotos.forEach((url, index) => {
+    const thumb = document.createElement("div");
+    thumb.className = "ad-photo-thumb";
+    thumb.innerHTML = `<img src="${url}" alt="Foto ${index + 1}" /><button type="button" class="ad-photo-remove" data-index="${index}" aria-label="Remover foto">×</button>`;
+    adPhotosGrid.appendChild(thumb);
+  });
+}
+
+adPhotosGrid.addEventListener("click", (event) => {
+  const button = event.target.closest(".ad-photo-remove");
+  if (!button) return;
+  adPhotos.splice(Number(button.dataset.index), 1);
+  renderAdPhotosGrid();
+});
+
+function resizeImageFile(file, size = 480) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById("adPhotoFile").addEventListener("change", async (event) => {
+  const files = Array.from(event.target.files || []);
+  for (const file of files) {
+    adPhotos.push(await resizeImageFile(file));
+  }
+  renderAdPhotosGrid();
+  event.target.value = "";
+});
+
+document.getElementById("adPhotoLinkBtn").addEventListener("click", () => {
+  const url = prompt("Cole o link da foto:");
+  if (url && url.trim()) {
+    adPhotos.push(url.trim());
+    renderAdPhotosGrid();
+  }
 });
 
 adRadius?.addEventListener("input", () => {
@@ -732,11 +881,15 @@ newAdForm.addEventListener("submit", (event) => {
   const priceType = document.getElementById("adPriceType").value;
   const radius = document.getElementById("adRadius").value;
   if (!title || !price) return;
+  if (adPhotos.length < 2) {
+    showToast("Adicione pelo menos 2 fotos para publicar o anúncio.");
+    return;
+  }
 
   const item = document.createElement("article");
   item.className = "ad-item";
   item.innerHTML = `
-    <div class="ad-thumb electric">🛠️</div>
+    <div class="ad-thumb electric" style="background-image:url('${adPhotos[0]}');background-size:cover;background-position:center"></div>
     <div><strong>${title}</strong><small>R$ ${price} ${priceType} • Raio de ${radius} km</small></div>
     <span class="status done">Ativo</span>
     <button class="icon-btn ad-pause" title="Pausar">⏸</button>
@@ -745,6 +898,8 @@ newAdForm.addEventListener("submit", (event) => {
   adList.prepend(item);
   newAdModal.hidden = true;
   newAdForm.reset();
+  adPhotos = [];
+  renderAdPhotosGrid();
   showToast("Anúncio publicado. Em breve isso fica salvo no banco de dados.");
 });
 
@@ -787,6 +942,129 @@ function setSettingsRoleVisibility(role) {
     `Entrar como ${isProvider ? "Cliente" : "Prestador"}`;
 }
 
+function fillAddressFields(prefix, address) {
+  document.getElementById(`${prefix}Rua`).value = address.rua || "";
+  document.getElementById(`${prefix}Cep`).value = address.cep || "";
+  document.getElementById(`${prefix}Numero`).value = address.numero || "";
+  document.getElementById(`${prefix}Complemento`).value = address.complemento || "";
+  document.getElementById(`${prefix}Bairro`).value = address.bairro || "";
+  document.getElementById(`${prefix}Cidade`).value = address.cidade || "";
+  document.getElementById(`${prefix}Estado`).value = address.estado || "";
+}
+
+function readAddressFields(prefix) {
+  return {
+    rua: document.getElementById(`${prefix}Rua`).value,
+    cep: document.getElementById(`${prefix}Cep`).value,
+    numero: document.getElementById(`${prefix}Numero`).value,
+    complemento: document.getElementById(`${prefix}Complemento`).value,
+    bairro: document.getElementById(`${prefix}Bairro`).value,
+    cidade: document.getElementById(`${prefix}Cidade`).value,
+    estado: document.getElementById(`${prefix}Estado`).value,
+  };
+}
+
+function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, emptyId }) {
+  const modeSelect = document.getElementById(modeId);
+  const urlInput = document.getElementById(urlId);
+  const fileInput = document.getElementById(fileId);
+  const fileLabel = document.getElementById(fileLabelId);
+  const preview = document.getElementById(previewId);
+  const empty = document.getElementById(emptyId);
+  let value = "";
+
+  function updatePreview() {
+    if (value) {
+      preview.src = value;
+      preview.hidden = false;
+      empty.hidden = true;
+    } else {
+      preview.hidden = true;
+      empty.hidden = false;
+    }
+  }
+
+  function applyMode() {
+    const isFile = modeSelect.value === "file";
+    urlInput.hidden = isFile;
+    fileLabel.hidden = !isFile;
+  }
+
+  modeSelect.addEventListener("change", applyMode);
+  urlInput.addEventListener("input", () => {
+    value = urlInput.value.trim();
+    updatePreview();
+  });
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 240;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        value = canvas.toDataURL("image/jpeg", 0.82);
+        updatePreview();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  applyMode();
+  updatePreview();
+
+  return {
+    getValue: () => value,
+    setValue: (newValue) => { value = newValue || ""; urlInput.value = value; updatePreview(); },
+  };
+}
+
+const cpPhotoPicker = setupPhotoPicker({
+  modeId: "cpPhotoMode",
+  urlId: "cpPhotoUrl",
+  fileId: "cpPhotoFile",
+  fileLabelId: "cpPhotoFileLabel",
+  previewId: "cpPhotoPreview",
+  emptyId: "cpPhotoEmpty",
+});
+
+let settingsCategories = [];
+
+async function loadSettingsCategories() {
+  if (settingsCategories.length) return settingsCategories;
+  try {
+    const response = await fetch("/categories/public");
+    settingsCategories = await response.json();
+  } catch {
+    settingsCategories = [];
+  }
+  return settingsCategories;
+}
+
+function renderSettingsPreferenceChips(selected) {
+  settingsPreferences.replaceChildren();
+  settingsCategories.forEach((category) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "preference-chip";
+    chip.dataset.value = category.nome;
+    chip.classList.toggle("active", selected.includes(category.nome));
+    chip.innerHTML = category.servico_count > 0
+      ? `${category.nome} <span class="trending-badge">🔥</span>`
+      : category.nome;
+    settingsPreferences.appendChild(chip);
+  });
+}
+
 async function loadSettingsProfile() {
   setSettingsRoleVisibility(currentSessionRole);
   try {
@@ -796,20 +1074,18 @@ async function loadSettingsProfile() {
 
     if (currentSessionRole === "prestador") {
       document.getElementById("ppName").value = settingsProfile.nome || "";
-      document.getElementById("ppAddress").value = settingsProfile.endereco || "";
+      fillAddressFields("pp", settingsProfile);
       document.getElementById("ppPhone").value = settingsProfile.telefone || "";
       document.getElementById("ppEmail").value = settingsProfile.email || "";
       document.getElementById("ppDocument").value = settingsProfile.cpf_cnpj || "";
     } else {
       document.getElementById("cpName").value = settingsProfile.nome || "";
-      document.getElementById("cpPhoto").value = settingsProfile.foto || "";
-      document.getElementById("cpAddress").value = settingsProfile.endereco || "";
+      cpPhotoPicker.setValue(settingsProfile.foto || "");
+      fillAddressFields("cp", settingsProfile);
       document.getElementById("cpPhone").value = settingsProfile.telefone || "";
       document.getElementById("cpEmail").value = settingsProfile.email || "";
-      const selected = settingsProfile.preferencias || [];
-      settingsPreferences.querySelectorAll(".preference-chip").forEach((chip) => {
-        chip.classList.toggle("active", selected.includes(chip.dataset.value));
-      });
+      await loadSettingsCategories();
+      renderSettingsPreferenceChips(settingsProfile.preferencias || []);
     }
   } catch (error) {
     showToast(error.message || "Não foi possível carregar seu perfil.");
@@ -829,8 +1105,8 @@ clientProfileForm.addEventListener("submit", async (event) => {
     nome: document.getElementById("cpName").value,
     email: document.getElementById("cpEmail").value,
     telefone: document.getElementById("cpPhone").value,
-    foto: document.getElementById("cpPhoto").value,
-    endereco: document.getElementById("cpAddress").value,
+    foto: cpPhotoPicker.getValue(),
+    ...readAddressFields("cp"),
     preferencias,
   };
   try {
@@ -856,7 +1132,7 @@ providerProfileForm.addEventListener("submit", async (event) => {
     email: document.getElementById("ppEmail").value,
     telefone: document.getElementById("ppPhone").value,
     cpf_cnpj: document.getElementById("ppDocument").value,
-    endereco: document.getElementById("ppAddress").value,
+    ...readAddressFields("pp"),
   };
   try {
     const response = await authFetch("/prestadores/me", { method: "PUT", body: JSON.stringify(payload) });
@@ -1010,7 +1286,7 @@ const initialRole = initSession();
 if (initialRole) {
   setActiveRole(initialRole);
   setActiveSection("explorar");
-  applyFilters();
+  loadCategories().then(applyFilters);
   renderFavorites();
   renderClientCalendar();
   renderProviderCalendar();

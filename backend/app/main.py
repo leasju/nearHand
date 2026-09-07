@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -60,13 +60,34 @@ class AccountLogin(BaseModel):
     senha: str
 
 
-class AccountRegister(BaseModel):
+class AddressFields(BaseModel):
+    cep: str = ""
+    rua: str
+    numero: str = ""
+    complemento: str = ""
+    bairro: str = ""
+    cidade: str = ""
+    estado: str = ""
+
+
+def _address_params(payload: AddressFields) -> dict:
+    return {
+        "cep": payload.cep.strip()[:9] or "00000-000",
+        "rua": payload.rua.strip()[:200],
+        "numero": payload.numero.strip()[:10] or "S/N",
+        "complemento": payload.complemento.strip()[:100] or None,
+        "bairro": payload.bairro.strip()[:100] or "Nao informado",
+        "cidade": payload.cidade.strip()[:100] or "Nao informada",
+        "estado": (payload.estado.strip()[:2] or "NA").upper(),
+    }
+
+
+class AccountRegister(AddressFields):
     tipo: str
     nome: str
     email: str
     telefone: str = ""
     cpf_cnpj: str = ""
-    endereco: str
     foto: str = ""
     preferencias: list[str] = []
     senha: str
@@ -77,7 +98,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
     account_type = account.tipo.strip().lower()
     name = account.nome.strip()
     email = account.email.strip().lower()
-    address = account.endereco.strip()
+    address = account.rua.strip()
 
     if account_type not in {"cliente", "prestador"}:
         raise HTTPException(status_code=400, detail="Invalid account type")
@@ -97,16 +118,9 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
                 INSERT INTO endereco
                     (cep, rua, numero, complemento, bairro, cidade, estado, latitude, longitude)
                 VALUES
-                    (:cep, :rua, :numero, NULL, :bairro, :cidade, :estado, 0, 0)
+                    (:cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, 0, 0)
             """),
-            {
-                "cep": "00000-000",
-                "rua": address[:200],
-                "numero": "S/N",
-                "bairro": "Nao informado",
-                "cidade": "Nao informada",
-                "estado": "NA",
-            },
+            _address_params(account),
         )
         address_id = address_result.lastrowid
         password_hash = hash_password(account.senha)
@@ -195,6 +209,20 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
     }
 
 
+@app.get("/categories/public")
+def list_public_categories(db: Session = Depends(get_db)):
+    rows = db.execute(
+        text("""
+            SELECT c.id, c.nome, COUNT(s.id) AS servico_count
+            FROM categoria c
+            LEFT JOIN servico s ON s.categoria_id = c.id
+            GROUP BY c.id, c.nome
+            ORDER BY servico_count DESC, c.nome ASC
+        """)
+    ).mappings().all()
+    return rows
+
+
 @app.get("/auth/account-exists")
 def account_exists(tipo: str, email: str, db: Session = Depends(get_db)):
     account_type = tipo.strip().lower()
@@ -216,21 +244,25 @@ def account_exists(tipo: str, email: str, db: Session = Depends(get_db)):
     return {"exists": row is not None}
 
 
-class ClientProfileUpdate(BaseModel):
+class ClientProfileUpdate(AddressFields):
     nome: str
     email: str
     telefone: str = ""
     foto: str = ""
-    endereco: str
     preferencias: list[str] = []
+
+
+ADDRESS_COLUMNS_SQL = """
+    e.cep, e.rua, e.numero, e.complemento, e.bairro, e.cidade, e.estado
+"""
 
 
 @app.get("/clientes/me")
 def get_client_profile(db: Session = Depends(get_db), client_id: int = Depends(get_current_client_id)):
     row = db.execute(
-        text("""
+        text(f"""
             SELECT c.id, c.nome_completo AS nome, c.email, c.telefone, c.foto, c.preferencias,
-                   e.rua AS endereco
+                   {ADDRESS_COLUMNS_SQL}
             FROM cliente c
             JOIN endereco e ON e.id = c.endereco_id
             WHERE c.id = :id
@@ -251,7 +283,7 @@ def update_client_profile(
 ):
     name = payload.nome.strip()
     email = payload.email.strip().lower()
-    address = payload.endereco.strip()
+    address = payload.rua.strip()
 
     if not name or not email or not address:
         raise HTTPException(status_code=400, detail="Name, email, and address are required")
@@ -279,10 +311,12 @@ def update_client_profile(
             text("""
                 UPDATE endereco
                 JOIN cliente ON cliente.endereco_id = endereco.id
-                SET endereco.rua = :rua
+                SET endereco.cep = :cep, endereco.rua = :rua, endereco.numero = :numero,
+                    endereco.complemento = :complemento, endereco.bairro = :bairro,
+                    endereco.cidade = :cidade, endereco.estado = :estado
                 WHERE cliente.id = :id
             """),
-            {"rua": address[:200], "id": client_id},
+            {**_address_params(payload), "id": client_id},
         )
         db.commit()
     except IntegrityError:
@@ -292,20 +326,19 @@ def update_client_profile(
     return get_client_profile(db=db, client_id=client_id)
 
 
-class ProviderProfileUpdate(BaseModel):
+class ProviderProfileUpdate(AddressFields):
     nome: str
     email: str
     telefone: str = ""
     cpf_cnpj: str
-    endereco: str
 
 
 @app.get("/prestadores/me")
 def get_provider_profile(db: Session = Depends(get_db), provider_id: int = Depends(get_current_provider_id)):
     row = db.execute(
-        text("""
+        text(f"""
             SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj,
-                   e.rua AS endereco
+                   {ADDRESS_COLUMNS_SQL}
             FROM prestador p
             JOIN endereco e ON e.id = p.endereco_id
             WHERE p.id = :id
@@ -323,7 +356,7 @@ def update_provider_profile(
 ):
     name = payload.nome.strip()
     email = payload.email.strip().lower()
-    address = payload.endereco.strip()
+    address = payload.rua.strip()
     cpf_cnpj = payload.cpf_cnpj.strip()
 
     if not name or not email or not address or not cpf_cnpj:
@@ -348,10 +381,12 @@ def update_provider_profile(
             text("""
                 UPDATE endereco
                 JOIN prestador ON prestador.endereco_id = endereco.id
-                SET endereco.rua = :rua
+                SET endereco.cep = :cep, endereco.rua = :rua, endereco.numero = :numero,
+                    endereco.complemento = :complemento, endereco.bairro = :bairro,
+                    endereco.cidade = :cidade, endereco.estado = :estado
                 WHERE prestador.id = :id
             """),
-            {"rua": address[:200], "id": provider_id},
+            {**_address_params(payload), "id": provider_id},
         )
         db.commit()
     except IntegrityError:
@@ -527,181 +562,12 @@ def delete_category(
     return {"status": "deleted"}
 
 
-@app.get("/admin/categories", response_class=HTMLResponse)
+@app.get("/admin/categories", include_in_schema=False)
 def admin_categories_page():
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>NearHand Admin - Categories</title>
-        <style>
-            body { font-family: sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #252525; }
-            h1 { margin-bottom: 8px; }
-            .notice { color: #735c00; background: #fff5c2; padding: 12px; border-radius: 6px; }
-            form, li { display: flex; gap: 8px; align-items: center; }
-            form { margin: 24px 0; }
-            input, button { font-size: 16px; padding: 9px 12px; }
-            input { flex: 1; min-width: 0; }
-            button { cursor: pointer; }
-            ul { list-style: none; padding: 0; }
-            li { margin: 10px 0; }
-            li input { border: 1px solid #bbb; border-radius: 4px; }
-            .delete { color: #9b1c1c; }
-            #message { min-height: 24px; }
-        </style>
-    </head>
-    <body>
-        <h1>Admin: categories</h1>
-        <p>Manage the categories available for services.</p>
-        <p class="notice">Sign in with an admin account to manage categories.</p>
-        <form id="category-form">
-            <input id="category-name" placeholder="New category name" required>
-            <button type="submit">Create</button>
-        </form>
-        <p id="message"></p>
-        <ul id="category-list"></ul>
-
-        <script>
-            const form = document.getElementById('category-form');
-            const nameInput = document.getElementById('category-name');
-            const message = document.getElementById('message');
-            const list = document.getElementById('category-list');
-
-            const token = localStorage.getItem('nearhand_admin_token');
-            const headers = () => ({
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            });
-
-            function handleUnauthorized(response) {
-                if (response.status === 401) {
-                    localStorage.removeItem('nearhand_admin_token');
-                    window.location.href = '/admin/login';
-                    return true;
-                }
-                return false;
-            }
-
-            async function loadCategories() {
-                const response = await fetch('/categories', { headers: headers() });
-                if (handleUnauthorized(response)) return;
-                const categories = await response.json();
-                list.replaceChildren();
-                categories.forEach(category => {
-                    const item = document.createElement('li');
-                    const input = document.createElement('input');
-                    input.value = category.nome;
-                    input.setAttribute('aria-label', `Category ${category.id}`);
-
-                    const saveButton = document.createElement('button');
-                    saveButton.textContent = 'Save';
-                    saveButton.addEventListener('click', () => updateCategory(category.id, input.value));
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.textContent = 'Delete';
-                    deleteButton.className = 'delete';
-                    deleteButton.addEventListener('click', () => deleteCategory(category.id));
-
-                    item.append(input, saveButton, deleteButton);
-                    list.appendChild(item);
-                });
-            }
-
-            async function updateCategory(id, nome) {
-                const response = await fetch(`/categories/${id}`, {
-                    method: 'PUT',
-                    headers: headers(),
-                    body: JSON.stringify({ nome })
-                });
-                if (handleUnauthorized(response)) return;
-                const result = await response.json();
-                message.textContent = response.ok ? `Saved: ${result.nome}` : result.detail;
-                if (response.ok) await loadCategories();
-            }
-
-            async function deleteCategory(id) {
-                if (!confirm('Delete this category?')) return;
-                const response = await fetch(`/categories/${id}`, { method: 'DELETE', headers: headers() });
-                if (handleUnauthorized(response)) return;
-                const result = await response.json();
-                message.textContent = response.ok ? 'Category deleted.' : result.detail;
-                if (response.ok) await loadCategories();
-            }
-
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const response = await fetch('/categories', {
-                    method: 'POST',
-                    headers: headers(),
-                    body: JSON.stringify({ nome: nameInput.value })
-                });
-                if (handleUnauthorized(response)) return;
-                const category = await response.json();
-                message.textContent = response.ok
-                    ? `Category ready: ${category.nome}`
-                    : category.detail;
-                if (response.ok) {
-                    nameInput.value = '';
-                    await loadCategories();
-                }
-            });
-
-            if (!token) window.location.href = '/admin/login';
-            else loadCategories();
-        </script>
-    </body>
-    </html>
-    """
+    return RedirectResponse(url="/frontend/admin-categories.html")
 
 
-@app.get("/admin/login", response_class=HTMLResponse)
+@app.get("/admin/login", include_in_schema=False)
 def admin_login_page():
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>NearHand Admin Login</title>
-        <style>
-            body { font-family: sans-serif; max-width: 420px; margin: 80px auto; padding: 0 20px; }
-            form { display: grid; gap: 12px; }
-            input, button { font-size: 16px; padding: 10px; }
-            button { cursor: pointer; }
-            #message { color: #9b1c1c; min-height: 24px; }
-        </style>
-    </head>
-    <body>
-        <h1>NearHand Admin</h1>
-        <form id="login-form">
-            <input id="email" type="email" placeholder="Email" required>
-            <input id="password" type="password" placeholder="Password" required>
-            <button type="submit">Sign in</button>
-        </form>
-        <p id="message"></p>
-        <script>
-            document.getElementById('login-form').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const response = await fetch('/admin/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: document.getElementById('email').value,
-                        senha: document.getElementById('password').value
-                    })
-                });
-                const result = await response.json();
-                if (!response.ok) {
-                    document.getElementById('message').textContent = result.detail;
-                    return;
-                }
-                localStorage.setItem('nearhand_admin_token', result.access_token);
-                window.location.href = '/admin/categories';
-            });
-        </script>
-    </body>
-    </html>
-    """
+    return RedirectResponse(url="/frontend/admin-login.html")
 

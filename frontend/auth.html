@@ -9,15 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/auth.css" />
-  <script>
-    (function () {
-      var saved = localStorage.getItem("nearhand_theme");
-      if (saved === "dark" || saved === "light") {
-        document.documentElement.setAttribute("data-theme", saved);
-      }
-    })();
-  </script>
-</head>
 <body>
   <div class="auth-shell">
     <aside class="auth-aside">
@@ -57,14 +48,6 @@
           </div>
         </article>
       </div>
-
-      <div class="palette-preview" aria-label="Paleta de cores">
-        <span style="background:#81749C"></span>
-        <span style="background:#4D3E6B"></span>
-        <span style="background:#8DAEC3"></span>
-        <span style="background:#C5DFE0"></span>
-        <span style="background:#FCFCE2"></span>
-      </div>
     </aside>
 
     <main class="auth-main">
@@ -75,7 +58,6 @@
             <h2>Bem-vinda(o) à NearHand</h2>
           </div>
           <div class="top-btn-row">
-            <button class="ghost-btn" id="themeToggleBtn" type="button"><span id="themeToggleIcon">🌙</span></button>
             <a class="ghost-btn" href="/admin/login">🛠 Entrar como admin</a>
           </div>
         </div>
@@ -138,8 +120,22 @@
               <input id="registerName" class="field-input" type="text" placeholder="Seu nome completo" />
             </div>
             <div class="field-group">
-              <label class="field-label" for="registerPhoto">Foto de perfil *</label>
-              <input id="registerPhoto" class="field-input" type="text" placeholder="URL da foto ou nome do arquivo" />
+              <label class="field-label">Foto de perfil *</label>
+              <div class="photo-field">
+                <img class="photo-thumb" id="registerPhotoPreview" alt="Pré-visualização da foto" hidden />
+                <div class="photo-thumb-empty" id="registerPhotoEmpty">Sem foto</div>
+                <div class="photo-field-controls">
+                  <select id="registerPhotoMode" class="field-input select-input">
+                    <option value="url">Colar link</option>
+                    <option value="file">Enviar arquivo</option>
+                  </select>
+                  <input id="registerPhotoUrl" class="field-input" type="text" placeholder="https://..." />
+                  <label class="file-btn" id="registerPhotoFileLabel" hidden>
+                    Escolher arquivo
+                    <input id="registerPhotoFile" type="file" accept="image/*" hidden />
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -155,8 +151,16 @@
           </div>
 
           <div class="field-group">
-            <label class="field-label" for="registerAddress">Endereço padrão</label>
-            <input id="registerAddress" class="field-input" type="text" placeholder="Rua, número, bairro, cidade" />
+            <label class="field-label">Endereço padrão</label>
+            <div class="grid address-grid">
+              <input id="registerRua" class="field-input address-full" type="text" placeholder="Rua / Avenida" aria-label="Rua" />
+              <input id="registerCep" class="field-input" type="text" placeholder="CEP" aria-label="CEP" />
+              <input id="registerNumero" class="field-input" type="text" placeholder="Número" aria-label="Número" />
+              <input id="registerComplemento" class="field-input" type="text" placeholder="Complemento" aria-label="Complemento" />
+              <input id="registerBairro" class="field-input" type="text" placeholder="Bairro" aria-label="Bairro" />
+              <input id="registerCidade" class="field-input" type="text" placeholder="Cidade" aria-label="Cidade" />
+              <input id="registerEstado" class="field-input" type="text" placeholder="UF" aria-label="Estado" maxlength="2" />
+            </div>
             <small class="field-help">Esse endereço será salvo como sua localização padrão para facilitar buscas e atendimento por proximidade.</small>
           </div>
 
@@ -167,14 +171,8 @@
             </div>
             <div class="field-group" id="servicePreferenceGroup">
               <label class="field-label">Preferências de serviços</label>
-              <small class="field-help">Selecione uma ou mais.</small>
-              <div class="preference-chips" id="registerPreferences" role="group" aria-label="Preferências de serviços">
-                <button type="button" class="preference-chip" data-value="Beleza">Beleza</button>
-                <button type="button" class="preference-chip" data-value="Eletricista">Eletricista</button>
-                <button type="button" class="preference-chip" data-value="Encanador">Encanador</button>
-                <button type="button" class="preference-chip" data-value="Limpeza">Limpeza</button>
-                <button type="button" class="preference-chip" data-value="Montagem">Montagem</button>
-              </div>
+              <small class="field-help">Selecione uma ou mais. <span id="preferencesHint"></span></small>
+              <div class="preference-chips" id="registerPreferences" role="group" aria-label="Preferências de serviços"></div>
             </div>
           </div>
 
