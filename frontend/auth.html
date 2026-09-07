@@ -16,11 +16,8 @@
       <a class="back-link" href="index.html">← Voltar</a>
 
       <div class="brand-lockup">
-        <div class="brand-mark">P</div>
-        <div>
-          <strong>NearHand</strong>
-          <p>Serviços por proximidade, com uma experiência simples e acolhedora.</p>
-        </div>
+        <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
+        <p>Serviços por proximidade, com uma experiência simples e acolhedora.</p>
       </div>
 
       <div class="hero-copy">
@@ -69,7 +66,7 @@
             <span class="eyebrow">ACESSO</span>
             <h2>Bem-vinda(o) à NearHand</h2>
           </div>
-          <button class="ghost-btn" id="themeHintBtn">Mesma paleta ✓</button>
+          <a class="ghost-btn" href="/admin/login">🛠 Entrar como admin</a>
         </div>
 
         <div class="switches">
@@ -158,15 +155,15 @@
               <input id="registerEmail" class="field-input" type="email" placeholder="voce@email.com" />
             </div>
             <div class="field-group" id="servicePreferenceGroup">
-              <label class="field-label" for="registerPreference">Preferências de serviços</label>
-              <select id="registerPreference" class="field-input select-input">
-                <option>Selecione uma preferência</option>
-                <option>Eletricista</option>
-                <option>Limpeza</option>
-                <option>Beleza</option>
-                <option>Montagem</option>
-                <option>Encanador</option>
-              </select>
+              <label class="field-label">Preferências de serviços</label>
+              <small class="field-help">Selecione uma ou mais.</small>
+              <div class="preference-chips" id="registerPreferences" role="group" aria-label="Preferências de serviços">
+                <button type="button" class="preference-chip" data-value="Eletricista">Eletricista</button>
+                <button type="button" class="preference-chip" data-value="Limpeza">Limpeza</button>
+                <button type="button" class="preference-chip" data-value="Beleza">Beleza</button>
+                <button type="button" class="preference-chip" data-value="Montagem">Montagem</button>
+                <button type="button" class="preference-chip" data-value="Encanador">Encanador</button>
+              </div>
             </div>
           </div>
 

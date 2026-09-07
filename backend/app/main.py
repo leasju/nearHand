@@ -65,7 +65,7 @@ class AccountRegister(BaseModel):
     cpf_cnpj: str = ""
     endereco: str
     foto: str = ""
-    preferencia_servico: str = ""
+    preferencias: list[str] = []
     senha: str
 
 
@@ -109,11 +109,12 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
         password_hash = hash_password(account.senha)
 
         if account_type == "cliente":
+            preferencias = ",".join(p.strip() for p in account.preferencias if p.strip()) or None
             user_result = db.execute(
                 text("""
                     INSERT INTO cliente
-                        (nome_completo, foto, endereco_id, telefone, email, senha_hash)
-                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :senha_hash)
+                        (nome_completo, foto, endereco_id, telefone, email, senha_hash, preferencias)
+                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :senha_hash, :preferencias)
                 """),
                 {
                     "nome": name,
@@ -122,6 +123,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
                     "telefone": account.telefone.strip() or None,
                     "email": email,
                     "senha_hash": password_hash,
+                    "preferencias": preferencias,
                 },
             )
         else:

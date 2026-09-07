@@ -7,10 +7,25 @@ const documentGroup = document.getElementById("documentGroup");
 const servicePreferenceGroup = document.getElementById("servicePreferenceGroup");
 const registerNameLabel = document.querySelector('label[for="registerName"]');
 const registerNameInput = document.getElementById("registerName");
+const preferenceChips = document.querySelectorAll(".preference-chip");
 const toast = document.getElementById("toast");
 
 let currentRole = "cliente";
 let currentMode = "login";
+const selectedPreferences = new Set();
+
+preferenceChips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    const value = chip.dataset.value;
+    if (selectedPreferences.has(value)) {
+      selectedPreferences.delete(value);
+      chip.classList.remove("active");
+    } else {
+      selectedPreferences.add(value);
+      chip.classList.add("active");
+    }
+  });
+});
 
 const roleCopy = {
   cliente: {
@@ -85,7 +100,6 @@ document.querySelector(".text-link").addEventListener("click", (event) => {
   event.preventDefault();
   showToast("Enviaremos um link de recuperação quando o serviço de e-mail estiver conectado.");
 });
-document.getElementById("themeHintBtn").addEventListener("click", () => showToast("A identidade visual do NearHand está aplicada."));
 
 loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -93,6 +107,8 @@ loginForm.addEventListener("submit", (event) => {
     loginForm.reportValidity();
     return;
   }
+  const submitButton = loginForm.querySelector("button[type=submit]");
+  submitButton.disabled = true;
   fetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -107,10 +123,14 @@ loginForm.addEventListener("submit", (event) => {
       if (!response.ok) throw new Error(data.detail || "Não foi possível entrar.");
       localStorage.setItem("nearhand_access_token", data.access_token);
       localStorage.setItem("nearhand_user", JSON.stringify(data.user));
+      localStorage.setItem("nearhand_user_type", data.tipo);
       showToast("Login realizado. Abrindo sua área...");
       window.setTimeout(() => { window.location.href = "/app"; }, 500);
     })
-    .catch((error) => showToast(error.message));
+    .catch((error) => {
+      showToast(error.message);
+      submitButton.disabled = false;
+    });
 });
 
 registerForm.addEventListener("submit", (event) => {
@@ -133,10 +153,12 @@ registerForm.addEventListener("submit", (event) => {
     cpf_cnpj: document.getElementById("registerDocument").value,
     endereco: document.getElementById("registerAddress").value,
     foto: document.getElementById("registerPhoto").value,
-    preferencia_servico: document.getElementById("registerPreference").value,
+    preferencias: currentRole === "cliente" ? Array.from(selectedPreferences) : [],
     senha: password,
   };
 
+  const submitButton = registerForm.querySelector("button[type=submit]");
+  submitButton.disabled = true;
   fetch("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -149,7 +171,8 @@ registerForm.addEventListener("submit", (event) => {
       document.getElementById("loginIdentity").value = payload.email;
       setMode("login");
     })
-    .catch((error) => showToast(error.message));
+    .catch((error) => showToast(error.message))
+    .finally(() => { submitButton.disabled = false; });
 });
 
 setRole(currentRole);

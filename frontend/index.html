@@ -8,13 +8,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="#" aria-label="NearHand - início">
-      <span class="brand-mark">P</span>
-      <span>NearHand</span>
+      <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
     </a>
 
     <nav class="main-nav" aria-label="Navegação principal">
@@ -98,6 +98,7 @@
       <section class="content-grid section-view" data-view="explorar">
         <aside class="categories-card">
           <div class="side-head"><span class="eyebrow">CATEGORIAS</span><button class="text-btn" id="clearFilters">Limpar</button></div>
+          <div class="category-search"><span>🔎</span><input id="categorySearchInput" type="search" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></div>
           <button class="category-item active" data-category="all"><span>✨</span><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
           <button class="category-item" data-category="Eletricista"><span>⚡</span><div><strong>Eletricistas</strong><small>Instalações e reparos</small></div></button>
           <button class="category-item" data-category="Limpeza"><span>🧼</span><div><strong>Limpeza</strong><small>Residencial e comercial</small></div></button>
@@ -115,17 +116,7 @@
           <div id="cardsView" class="service-grid"></div>
 
           <div id="mapView" class="map-view" hidden>
-            <div class="fake-map">
-              <div class="road road-a"></div><div class="road road-b"></div><div class="road road-c"></div>
-              <div class="park"></div>
-              <button class="map-pin pin-1" data-id="1">⚡</button>
-              <button class="map-pin pin-2" data-id="2">🧼</button>
-              <button class="map-pin pin-3" data-id="3">✂️</button>
-              <button class="map-pin pin-4" data-id="4">🔧</button>
-              <button class="map-pin pin-5" data-id="5">🪛</button>
-              <div class="you-pin">Você</div>
-              <div class="map-caption">Mapa demonstrativo • integração real pode usar Google Maps, Mapbox ou Leaflet</div>
-            </div>
+            <div id="proximityMap" class="map-canvas"></div>
             <div id="mapSidebar" class="map-sidebar"></div>
           </div>
         </div>
@@ -254,6 +245,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/script.js"></script>
 </body>
 </html>

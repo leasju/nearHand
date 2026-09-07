@@ -53,6 +53,7 @@ CREATE TABLE cliente (
     telefone VARCHAR(11),
     email VARCHAR(200) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
+    preferencias VARCHAR(255), -- nomes de categoria separados por vírgula, ex: "Eletricista,Limpeza"
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (endereco_id) REFERENCES endereco(id)
 );
