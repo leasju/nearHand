@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Mockup de uma plataforma de contratação de prestadores por proximidade." />
+  <title>NearHand — serviços perto de você</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="NearHand - início">
+      <span class="brand-mark">P</span>
+      <span>NearHand</span>
+    </a>
+
+    <nav class="main-nav" aria-label="Navegação principal">
+      <button class="nav-link active" data-section="explorar">Explorar</button>
+      <button class="nav-link" data-section="agenda">Agenda</button>
+      <button class="nav-link" data-section="pedidos">Pedidos</button>
+      <button class="nav-link" data-section="favoritos">Favoritos</button>
+    </nav>
+
+    <div class="top-actions">
+      <button class="icon-btn" id="notificationBtn" aria-label="Notificações">
+        <span>🔔</span><span class="badge">3</span>
+      </button>
+      <div class="role-switch" aria-label="Alternar perfil de demonstração">
+        <button class="role-btn active" data-role="cliente">Cliente</button>
+        <button class="role-btn" data-role="prestador">Prestador</button>
+      </div>
+      <button class="profile-chip" id="profileBtn">
+        <span class="avatar">JL</span>
+        <span class="profile-copy"><strong>Julia</strong><small>Campinas, SP</small></span>
+      </button>
+    </div>
+
+    <div class="popover notifications" id="notificationsPopover" hidden>
+      <div class="popover-head"><strong>Notificações</strong><button class="text-btn">Marcar como lidas</button></div>
+      <div class="notification-item"><span>💬</span><div><strong>Marcos respondeu no chat</strong><small>“Consigo chegar às 14h.”</small></div></div>
+      <div class="notification-item"><span>✅</span><div><strong>Serviço confirmado</strong><small>Eletricista • amanhã às 09h</small></div></div>
+      <div class="notification-item"><span>⭐</span><div><strong>Avaliação disponível</strong><small>Avalie o serviço concluído ontem.</small></div></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="clienteView" class="app-view">
+      <section class="hero section-view" data-view="explorar">
+        <div class="hero-copy">
+          <span class="eyebrow">SERVIÇOS LOCAIS, SEM COMPLICAÇÃO</span>
+          <h1>Encontre quem resolve<br><span>perto de você.</span></h1>
+          <p>Compare prestadores, veja disponibilidade, converse pelo chat e solicite o serviço em poucos passos.</p>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orb orb-a"></div><div class="orb orb-b"></div>
+          <div class="mini-card"><span class="mini-icon">📍</span><div><strong>2,3 km</strong><small>Eletricista disponível</small></div></div>
+          <div class="mini-card second"><span class="mini-icon">⭐</span><div><strong>4,9</strong><small>Mais bem avaliados</small></div></div>
+        </div>
+      </section>
+
+      <section class="search-panel section-view" data-view="explorar">
+        <div class="search-row">
+          <label class="field search-field"><span>🔎</span><input id="searchInput" type="search" placeholder="O que você precisa? Ex.: eletricista, manicure..." /></label>
+          <label class="field"><span>📍</span><input id="locationInput" value="Campinas, SP" /></label>
+          <button class="primary-btn" id="searchBtn">Buscar</button>
+        </div>
+
+        <div class="filters-row">
+          <select id="categoryFilter" class="filter-control" aria-label="Categoria">
+            <option value="all">Todos os serviços</option>
+            <option value="Eletricista">Eletricista</option>
+            <option value="Limpeza">Limpeza</option>
+            <option value="Beleza">Beleza</option>
+            <option value="Montagem">Montagem</option>
+            <option value="Encanador">Encanador</option>
+          </select>
+          <select id="ratingFilter" class="filter-control" aria-label="Avaliação mínima">
+            <option value="0">Qualquer avaliação</option>
+            <option value="4">4+ estrelas</option>
+            <option value="4.5">4,5+ estrelas</option>
+          </select>
+          <select id="sortFilter" class="filter-control" aria-label="Ordenação">
+            <option value="distance">Mais próximo</option>
+            <option value="rating">Melhor avaliado</option>
+            <option value="price">Menor preço</option>
+          </select>
+          <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="20" value="10" /></div>
+          <div class="view-toggle" role="group" aria-label="Modo de visualização">
+            <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
+            <button class="toggle-btn" data-mode="map">⌖ Mapa</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-grid section-view" data-view="explorar">
+        <aside class="categories-card">
+          <div class="side-head"><span class="eyebrow">CATEGORIAS</span><button class="text-btn" id="clearFilters">Limpar</button></div>
+          <button class="category-item active" data-category="all"><span>✨</span><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
+          <button class="category-item" data-category="Eletricista"><span>⚡</span><div><strong>Eletricistas</strong><small>Instalações e reparos</small></div></button>
+          <button class="category-item" data-category="Limpeza"><span>🧼</span><div><strong>Limpeza</strong><small>Residencial e comercial</small></div></button>
+          <button class="category-item" data-category="Beleza"><span>✂️</span><div><strong>Beleza</strong><small>Em casa ou no salão</small></div></button>
+          <button class="category-item" data-category="Montagem"><span>🪛</span><div><strong>Montagem</strong><small>Móveis e instalações</small></div></button>
+          <button class="category-item" data-category="Encanador"><span>🔧</span><div><strong>Encanadores</strong><small>Vazamentos e reparos</small></div></button>
+        </aside>
+
+        <div class="results-area">
+          <div class="results-head">
+            <div><span class="eyebrow">PERTO DE VOCÊ</span><h2>Prestadores disponíveis</h2><p id="resultCount">6 serviços encontrados</p></div>
+            <button class="ghost-btn">⚙ Preferências</button>
+          </div>
+
+          <div id="cardsView" class="service-grid"></div>
+
+          <div id="mapView" class="map-view" hidden>
+            <div class="fake-map">
+              <div class="road road-a"></div><div class="road road-b"></div><div class="road road-c"></div>
+              <div class="park"></div>
+              <button class="map-pin pin-1" data-id="1">⚡</button>
+              <button class="map-pin pin-2" data-id="2">🧼</button>
+              <button class="map-pin pin-3" data-id="3">✂️</button>
+              <button class="map-pin pin-4" data-id="4">🔧</button>
+              <button class="map-pin pin-5" data-id="5">🪛</button>
+              <div class="you-pin">Você</div>
+              <div class="map-caption">Mapa demonstrativo • integração real pode usar Google Maps, Mapbox ou Leaflet</div>
+            </div>
+            <div id="mapSidebar" class="map-sidebar"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="generic-view section-view" data-view="agenda" hidden>
+        <div class="page-title"><div><span class="eyebrow">AGENDA</span><h1>Seus próximos serviços</h1></div><button class="primary-btn">+ Novo agendamento</button></div>
+        <div class="calendar-layout">
+          <div class="calendar-card">
+            <div class="calendar-head"><button>‹</button><strong>Setembro 2026</strong><button>›</button></div>
+            <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+            <div class="calendar-grid" id="clientCalendar"></div>
+          </div>
+          <div class="agenda-list">
+            <div class="agenda-item"><div class="date-tile"><strong>08</strong><small>SET</small></div><div><strong>Eletricista residencial</strong><small>09:00 • Marcos Elétrica • Confirmado</small></div><span class="status confirmed">Confirmado</span></div>
+            <div class="agenda-item"><div class="date-tile"><strong>11</strong><small>SET</small></div><div><strong>Limpeza completa</strong><small>14:30 • Brilho Certo • Solicitado</small></div><span class="status pending">Solicitado</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="generic-view section-view" data-view="pedidos" hidden>
+        <div class="page-title"><div><span class="eyebrow">PEDIDOS</span><h1>Histórico de contratações</h1></div></div>
+        <div class="table-card">
+          <table><thead><tr><th>Serviço</th><th>Prestador</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Eletricista residencial</td><td>Marcos Elétrica</td><td>08/09/2026</td><td>R$ 120</td><td><span class="status confirmed">Confirmado</span></td><td><button class="text-btn">Ver detalhes</button></td></tr>
+            <tr><td>Limpeza completa</td><td>Brilho Certo</td><td>11/09/2026</td><td>R$ 160</td><td><span class="status pending">Solicitado</span></td><td><button class="text-btn">Abrir chat</button></td></tr>
+            <tr><td>Montagem de estante</td><td>Resolve Móveis</td><td>28/08/2026</td><td>R$ 90</td><td><span class="status done">Concluído</span></td><td><button class="text-btn">Avaliar</button></td></tr>
+          </tbody></table>
+        </div>
+      </section>
+
+      <section class="generic-view section-view" data-view="favoritos" hidden>
+        <div class="page-title"><div><span class="eyebrow">FAVORITOS</span><h1>Seus prestadores preferidos</h1></div></div>
+        <div id="favoritesGrid" class="service-grid"></div>
+      </section>
+    </section>
+
+    <section id="providerView" class="app-view" hidden>
+      <section class="provider-hero">
+        <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, Marcos 👋</h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
+        <button class="primary-btn" id="newAdBtn">+ Criar anúncio</button>
+      </section>
+
+      <section class="metric-grid">
+        <article class="metric-card"><span>📥</span><div><small>Solicitações no mês</small><strong>24</strong><em>+12% vs. agosto</em></div></article>
+        <article class="metric-card"><span>✅</span><div><small>Taxa de aceitação</small><strong>87%</strong><em>21 aceitas</em></div></article>
+        <article class="metric-card"><span>⭐</span><div><small>Nota média</small><strong>4,9</strong><em>126 avaliações</em></div></article>
+        <article class="metric-card"><span>💳</span><div><small>Faturamento</small><strong>R$ 4.820</strong><em>Setembro/2026</em></div></article>
+      </section>
+
+      <section class="provider-grid">
+        <div class="panel-card span-2">
+          <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn">Ver todos</button></div>
+          <div class="request-list" id="requestList">
+            <article class="request-item"><div class="request-avatar">AC</div><div><strong>Ana Costa</strong><small>Troca de tomadas • 1,8 km • Hoje, 14:00</small></div><strong>R$ 140</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
+            <article class="request-item"><div class="request-avatar">RB</div><div><strong>Rafael Braga</strong><small>Instalação de luminária • 3,2 km • Amanhã, 09:00</small></div><strong>R$ 110</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head"><div><span class="eyebrow">AGENDA</span><h2>Hoje</h2></div><button class="text-btn">Abrir calendário</button></div>
+          <div class="timeline"><div class="timeline-item"><time>09:00</time><span></span><div><strong>Troca de disjuntor</strong><small>Daniela • Taquaral</small></div></div><div class="timeline-item"><time>14:00</time><span></span><div><strong>Visita técnica</strong><small>Ana • Cambuí</small></div></div><div class="timeline-item"><time>17:30</time><span></span><div><strong>Instalação de luminária</strong><small>Pedro • Guanabara</small></div></div></div>
+        </div>
+
+        <div class="panel-card span-2">
+          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><button class="text-btn" id="manageAdsBtn">Gerenciar anúncios</button></div>
+          <div class="ad-list" id="adList">
+            <article class="ad-item"><div class="ad-thumb electric">⚡</div><div><strong>Eletricista residencial</strong><small>R$ 120/h • Raio de 10 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
+            <article class="ad-item"><div class="ad-thumb electric">💡</div><div><strong>Instalação de luminárias</strong><small>A partir de R$ 90 • Raio de 8 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head"><div><span class="eyebrow">REPUTAÇÃO</span><h2>Avaliações recentes</h2></div></div>
+          <div class="review"><div class="review-stars">★★★★★</div><p>“Pontual, explicou tudo e resolveu rápido.”</p><small>— Carla M.</small><button class="text-btn">Responder</button></div>
+          <div class="review"><div class="review-stars">★★★★★</div><p>“Serviço excelente e preço justo.”</p><small>— Bruno T.</small><button class="text-btn">Responder</button></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="serviceModal" hidden>
+    <div class="modal service-modal" role="dialog" aria-modal="true" aria-labelledby="serviceTitle">
+      <button class="modal-close" data-close="serviceModal" aria-label="Fechar">×</button>
+      <div class="gallery" id="modalGallery">
+        <div class="gallery-main" id="galleryMain"></div>
+        <div class="gallery-strip"><button class="gallery-thumb">Foto 1</button><button class="gallery-thumb">Foto 2</button><button class="gallery-thumb">+ galeria</button></div>
+      </div>
+      <div class="service-detail">
+        <div class="detail-head"><div><span class="service-pill" id="modalCategory"></span><h2 id="serviceTitle">Serviço</h2><p id="modalProvider"></p></div><button class="favorite-btn large" id="modalFavorite">♡</button></div>
+        <div class="detail-metrics"><span id="modalRating">⭐ 4,9</span><span id="modalDistance">📍 2,3 km</span><span id="modalPrice">💳 R$ 120/h</span></div>
+        <p class="detail-description">Atendimento residencial com orçamento transparente, agenda organizada e confirmação pelo chat.</p>
+        <div class="availability-box"><div><strong>Disponibilidade</strong><small>Selecione uma data</small></div><div class="date-options"><button class="date-option active"><small>SEG</small><strong>08</strong></button><button class="date-option"><small>TER</small><strong>09</strong></button><button class="date-option"><small>QUA</small><strong>10</strong></button><button class="date-option"><small>QUI</small><strong>11</strong></button></div><div class="time-options"><button>09:00</button><button>11:30</button><button>14:00</button><button>17:30</button></div></div>
+        <div class="detail-actions"><button class="secondary-btn" id="openChatBtn">💬 Conversar</button><button class="primary-btn" id="hireBtn">Solicitar serviço</button></div>
+        <div class="reviews-block"><div class="panel-head"><h3>Avaliações</h3><button class="text-btn">Ver todas</button></div><div class="review-inline"><strong>★★★★★</strong><p>“Atendimento impecável, muito profissional.”</p><small>Mariana • há 3 dias</small></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="chatModal" hidden>
+    <div class="modal chat-modal" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close="chatModal">×</button>
+      <div class="chat-head"><span class="avatar">ME</span><div><strong>Marcos Elétrica</strong><small><i class="online-dot"></i> online agora</small></div></div>
+      <div class="chat-messages" id="chatMessages"><div class="message them">Olá! Posso te ajudar com o serviço?</div><div class="message me">Oi! Preciso trocar duas tomadas e revisar o disjuntor.</div><div class="message them">Perfeito. Posso te enviar um orçamento pelo chat.</div></div>
+      <div class="chat-proposal"><span>💳</span><div><strong>Proposta: R$ 140</strong><small>Visita + materiais básicos inclusos</small></div><button class="small-btn accept">Aceitar</button></div>
+      <form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Digite uma mensagem..." autocomplete="off" /><button class="primary-btn">Enviar</button></form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="newAdModal" hidden>
+    <div class="modal form-modal" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close="newAdModal">×</button>
+      <span class="eyebrow">NOVO ANÚNCIO</span><h2>Publicar serviço</h2>
+      <form id="newAdForm" class="ad-form">
+        <label>Título<input required id="adTitle" placeholder="Ex.: Instalação elétrica residencial" /></label>
+        <label>Categoria<select id="adCategory"><option>Eletricista</option><option>Encanador</option><option>Montagem</option><option>Limpeza</option></select></label>
+        <label>Descrição<textarea id="adDescription" rows="4" placeholder="Descreva o serviço e diferenciais..."></textarea></label>
+        <div class="form-row"><label>Valor<input required id="adPrice" type="number" min="0" placeholder="120" /></label><label>Tipo<select id="adPriceType"><option>por hora</option><option>por serviço</option></select></label></div>
+        <label>Raio de atendimento <strong id="adRadiusLabel">10 km</strong><input id="adRadius" type="range" min="1" max="30" value="10" /></label>
+        <label>Fotos do carrossel <span class="hint">mín. 2 para publicar</span><div class="upload-box">＋ Adicionar fotos (mockup)</div></label>
+        <button class="primary-btn full">Publicar anúncio</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

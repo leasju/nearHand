@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Tela de login e cadastro da plataforma NearHand." />
+  <title>NearHand — Login e Cadastro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <a class="back-link" href="index.html">← Voltar</a>
+
+      <div class="brand-lockup">
+        <div class="brand-mark">P</div>
+        <div>
+          <strong>NearHand</strong>
+          <p>Serviços por proximidade, com uma experiência simples e acolhedora.</p>
+        </div>
+      </div>
+
+      <div class="hero-copy">
+        <span class="eyebrow">PLATAFORMA DE SERVIÇOS LOCAIS</span>
+        <h1>Entre na sua conta ou crie um perfil em poucos passos.</h1>
+        <p>Clientes encontram prestadores próximos. Prestadores anunciam serviços, organizam agenda e recebem solicitações.</p>
+      </div>
+
+      <div class="benefit-grid">
+        <article class="benefit-card">
+          <span>📍</span>
+          <div>
+            <strong>Localização salva</strong>
+            <p>O endereço padrão fica registrado para facilitar a busca por proximidade.</p>
+          </div>
+        </article>
+        <article class="benefit-card">
+          <span>💬</span>
+          <div>
+            <strong>Chat e contratação</strong>
+            <p>Converse, agende e acompanhe os pedidos sem sair da plataforma.</p>
+          </div>
+        </article>
+        <article class="benefit-card">
+          <span>⭐</span>
+          <div>
+            <strong>Perfis confiáveis</strong>
+            <p>Avaliações, histórico e reputação em destaque para ajudar na escolha.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="palette-preview" aria-label="Paleta de cores">
+        <span style="background:#81749C"></span>
+        <span style="background:#4D3E6B"></span>
+        <span style="background:#8DAEC3"></span>
+        <span style="background:#C5DFE0"></span>
+        <span style="background:#FCFCE2"></span>
+      </div>
+    </aside>
+
+    <main class="auth-main">
+      <div class="auth-card">
+        <div class="auth-top">
+          <div>
+            <span class="eyebrow">ACESSO</span>
+            <h2>Bem-vinda(o) à NearHand</h2>
+          </div>
+          <button class="ghost-btn" id="themeHintBtn">Mesma paleta ✓</button>
+        </div>
+
+        <div class="switches">
+          <div class="role-switch" role="tablist" aria-label="Tipo de perfil">
+            <button class="role-btn active" data-role="cliente">Cliente</button>
+            <button class="role-btn" data-role="prestador">Prestador</button>
+          </div>
+
+          <div class="mode-switch" role="tablist" aria-label="Modo de acesso">
+            <button class="mode-btn active" data-mode="login">Login</button>
+            <button class="mode-btn" data-mode="cadastro">Cadastro</button>
+          </div>
+        </div>
+
+        <section class="context-banner" id="contextBanner">
+          <strong>Conta de cliente</strong>
+          <p>Entre para buscar serviços próximos, favoritar prestadores e acompanhar seus agendamentos.</p>
+        </section>
+
+        <form id="loginForm" class="auth-form" novalidate>
+          <div class="oauth-row">
+            <button type="button" class="oauth-btn">G Continuar com Google</button>
+            <button type="button" class="oauth-btn"> Continuar com Apple</button>
+          </div>
+
+          <div class="separator"><span>ou entre com seus dados</span></div>
+
+          <div class="field-group">
+            <label class="field-label" for="loginIdentity">Email ou telefone</label>
+            <input id="loginIdentity" class="field-input" type="text" placeholder="Digite seu email ou telefone" />
+          </div>
+
+          <div class="field-group">
+            <div class="field-between">
+              <label class="field-label" for="loginPassword">Senha</label>
+              <a href="#" class="text-link">Esqueci minha senha</a>
+            </div>
+            <div class="password-wrap">
+              <input id="loginPassword" class="field-input" type="password" placeholder="Digite sua senha" />
+              <button type="button" class="password-toggle" data-target="loginPassword">Mostrar</button>
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" checked />
+            <span>Lembrar meu acesso neste dispositivo</span>
+          </label>
+
+          <button type="submit" class="primary-btn full">Entrar</button>
+
+          <p class="bottom-copy">Ainda não tem conta? <button type="button" class="inline-action" data-open-mode="cadastro">Criar cadastro</button></p>
+        </form>
+
+        <form id="registerForm" class="auth-form" novalidate hidden>
+          <div class="grid two">
+            <div class="field-group">
+              <label class="field-label" for="registerName">Nome completo</label>
+              <input id="registerName" class="field-input" type="text" placeholder="Seu nome completo" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="registerPhoto">Foto de perfil *</label>
+              <input id="registerPhoto" class="field-input" type="text" placeholder="URL da foto ou nome do arquivo" />
+            </div>
+          </div>
+
+          <div class="grid two" id="registerIdentityGrid">
+            <div class="field-group">
+              <label class="field-label" for="registerPhone">Telefone</label>
+              <input id="registerPhone" class="field-input" type="tel" placeholder="(00) 00000-0000" />
+            </div>
+            <div class="field-group" id="documentGroup" hidden>
+              <label class="field-label" for="registerDocument">CPF ou CNPJ</label>
+              <input id="registerDocument" class="field-input" type="text" placeholder="000.000.000-00" />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="registerAddress">Endereço padrão</label>
+            <input id="registerAddress" class="field-input" type="text" placeholder="Rua, número, bairro, cidade" />
+            <small class="field-help">Esse endereço será salvo como sua localização padrão para facilitar buscas e atendimento por proximidade.</small>
+          </div>
+
+          <div class="grid two">
+            <div class="field-group">
+              <label class="field-label" for="registerEmail">Email</label>
+              <input id="registerEmail" class="field-input" type="email" placeholder="voce@email.com" />
+            </div>
+            <div class="field-group" id="servicePreferenceGroup">
+              <label class="field-label" for="registerPreference">Preferências de serviços</label>
+              <select id="registerPreference" class="field-input select-input">
+                <option>Selecione uma preferência</option>
+                <option>Eletricista</option>
+                <option>Limpeza</option>
+                <option>Beleza</option>
+                <option>Montagem</option>
+                <option>Encanador</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid two">
+            <div class="field-group">
+              <label class="field-label" for="registerPassword">Senha</label>
+              <div class="password-wrap">
+                <input id="registerPassword" class="field-input" type="password" placeholder="Crie uma senha" />
+                <button type="button" class="password-toggle" data-target="registerPassword">Mostrar</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="registerPasswordConfirm">Confirmar senha</label>
+              <div class="password-wrap">
+                <input id="registerPasswordConfirm" class="field-input" type="password" placeholder="Confirme a senha" />
+                <button type="button" class="password-toggle" data-target="registerPasswordConfirm">Mostrar</button>
+              </div>
+            </div>
+          </div>
+
+          <label class="checkbox-row align-start">
+            <input type="checkbox" checked />
+            <span>Concordo com os termos de uso e com a política de privacidade da plataforma.</span>
+          </label>
+
+          <button type="submit" class="primary-btn full">Criar conta</button>
+
+          <p class="bottom-copy">Já possui conta? <button type="button" class="inline-action" data-open-mode="login">Fazer login</button></p>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>
