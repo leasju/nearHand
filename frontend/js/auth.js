@@ -96,6 +96,31 @@ document.querySelectorAll(".oauth-btn").forEach((button) => {
   button.addEventListener("click", () => showToast("Login social ficará disponível na próxima etapa."));
 });
 
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const themeToggleIcon = document.getElementById("themeToggleIcon");
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  themeToggleIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+}
+
+themeToggleBtn.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  const next = current === "dark" ? "light" : "dark";
+  localStorage.setItem("nearhand_theme", next);
+  applyTheme(next);
+});
+
+applyTheme(
+  document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : document.documentElement.getAttribute("data-theme") === "light"
+      ? "light"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+);
+
 document.querySelector(".text-link").addEventListener("click", (event) => {
   event.preventDefault();
   showToast("Enviaremos um link de recuperação quando o serviço de e-mail estiver conectado.");
@@ -174,6 +199,12 @@ registerForm.addEventListener("submit", (event) => {
     .catch((error) => showToast(error.message))
     .finally(() => { submitButton.disabled = false; });
 });
+
+const urlParams = new URLSearchParams(window.location.search);
+const urlRole = urlParams.get("tipo");
+const urlMode = urlParams.get("modo");
+if (urlRole === "cliente" || urlRole === "prestador") currentRole = urlRole;
+if (urlMode === "login" || urlMode === "cadastro") currentMode = urlMode;
 
 setRole(currentRole);
 setMode(currentMode);

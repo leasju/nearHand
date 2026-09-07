@@ -10,6 +10,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    (function () {
+      var saved = localStorage.getItem("nearhand_theme");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+    })();
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -25,12 +33,15 @@
     </nav>
 
     <div class="top-actions">
+      <button class="icon-btn" id="themeToggleBtn" aria-label="Alternar tema escuro">
+        <span id="themeToggleIcon">🌙</span>
+      </button>
       <button class="icon-btn" id="notificationBtn" aria-label="Notificações">
         <span>🔔</span><span class="badge">3</span>
       </button>
-      <div class="role-switch" aria-label="Alternar perfil de demonstração">
-        <button class="role-btn active" data-role="cliente">Cliente</button>
-        <button class="role-btn" data-role="prestador">Prestador</button>
+      <div class="role-switch" aria-label="Tipo de conta">
+        <button class="role-btn active" data-role="cliente" id="roleBtnCliente">Cliente</button>
+        <button class="role-btn" data-role="prestador" id="roleBtnPrestador">Prestador</button>
       </div>
       <button class="profile-chip" id="profileBtn">
         <span class="avatar">JL</span>
@@ -71,11 +82,11 @@
         <div class="filters-row">
           <select id="categoryFilter" class="filter-control" aria-label="Categoria">
             <option value="all">Todos os serviços</option>
-            <option value="Eletricista">Eletricista</option>
-            <option value="Limpeza">Limpeza</option>
             <option value="Beleza">Beleza</option>
-            <option value="Montagem">Montagem</option>
+            <option value="Eletricista">Eletricista</option>
             <option value="Encanador">Encanador</option>
+            <option value="Limpeza">Limpeza</option>
+            <option value="Montagem">Montagem</option>
           </select>
           <select id="ratingFilter" class="filter-control" aria-label="Avaliação mínima">
             <option value="0">Qualquer avaliação</option>
@@ -87,7 +98,7 @@
             <option value="rating">Melhor avaliado</option>
             <option value="price">Menor preço</option>
           </select>
-          <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="20" value="10" /></div>
+          <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
           <div class="view-toggle" role="group" aria-label="Modo de visualização">
             <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
             <button class="toggle-btn" data-mode="map">⌖ Mapa</button>
@@ -100,11 +111,11 @@
           <div class="side-head"><span class="eyebrow">CATEGORIAS</span><button class="text-btn" id="clearFilters">Limpar</button></div>
           <div class="category-search"><span>🔎</span><input id="categorySearchInput" type="search" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></div>
           <button class="category-item active" data-category="all"><span>✨</span><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
-          <button class="category-item" data-category="Eletricista"><span>⚡</span><div><strong>Eletricistas</strong><small>Instalações e reparos</small></div></button>
-          <button class="category-item" data-category="Limpeza"><span>🧼</span><div><strong>Limpeza</strong><small>Residencial e comercial</small></div></button>
           <button class="category-item" data-category="Beleza"><span>✂️</span><div><strong>Beleza</strong><small>Em casa ou no salão</small></div></button>
-          <button class="category-item" data-category="Montagem"><span>🪛</span><div><strong>Montagem</strong><small>Móveis e instalações</small></div></button>
+          <button class="category-item" data-category="Eletricista"><span>⚡</span><div><strong>Eletricistas</strong><small>Instalações e reparos</small></div></button>
           <button class="category-item" data-category="Encanador"><span>🔧</span><div><strong>Encanadores</strong><small>Vazamentos e reparos</small></div></button>
+          <button class="category-item" data-category="Limpeza"><span>🧼</span><div><strong>Limpeza</strong><small>Residencial e comercial</small></div></button>
+          <button class="category-item" data-category="Montagem"><span>🪛</span><div><strong>Montagem</strong><small>Móveis e instalações</small></div></button>
         </aside>
 
         <div class="results-area">
@@ -126,7 +137,7 @@
         <div class="page-title"><div><span class="eyebrow">AGENDA</span><h1>Seus próximos serviços</h1></div><button class="primary-btn">+ Novo agendamento</button></div>
         <div class="calendar-layout">
           <div class="calendar-card">
-            <div class="calendar-head"><button>‹</button><strong>Setembro 2026</strong><button>›</button></div>
+            <div class="calendar-head"><button id="clientCalendarPrev">‹</button><strong id="clientCalendarLabel">Setembro 2026</strong><button id="clientCalendarNext">›</button></div>
             <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
             <div class="calendar-grid" id="clientCalendar"></div>
           </div>
@@ -178,7 +189,12 @@
         </div>
 
         <div class="panel-card">
-          <div class="panel-head"><div><span class="eyebrow">AGENDA</span><h2>Hoje</h2></div><button class="text-btn">Abrir calendário</button></div>
+          <div class="panel-head"><div><span class="eyebrow">AGENDA</span><h2>Hoje</h2></div></div>
+          <div class="calendar-head"><button id="providerCalendarPrev">‹</button><strong id="providerCalendarLabel">Setembro 2026</strong><button id="providerCalendarNext">›</button></div>
+          <div class="provider-calendar">
+            <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+            <div class="calendar-grid" id="providerCalendar"></div>
+          </div>
           <div class="timeline"><div class="timeline-item"><time>09:00</time><span></span><div><strong>Troca de disjuntor</strong><small>Daniela • Taquaral</small></div></div><div class="timeline-item"><time>14:00</time><span></span><div><strong>Visita técnica</strong><small>Ana • Cambuí</small></div></div><div class="timeline-item"><time>17:30</time><span></span><div><strong>Instalação de luminária</strong><small>Pedro • Guanabara</small></div></div></div>
         </div>
 
@@ -196,6 +212,93 @@
           <div class="review"><div class="review-stars">★★★★★</div><p>“Serviço excelente e preço justo.”</p><small>— Bruno T.</small><button class="text-btn">Responder</button></div>
         </div>
       </section>
+    </section>
+
+    <section id="settingsView" class="app-view" hidden>
+      <div class="generic-view">
+        <div class="page-title">
+          <div><button class="text-btn" id="settingsBackBtn">← Voltar</button><h1>Configurações</h1></div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="panel-card">
+            <div class="panel-head"><div><span class="eyebrow">PERFIL</span><h2>Editar perfil</h2></div></div>
+            <form id="clientProfileForm" class="ad-form settings-form">
+              <label>Nome completo *<input id="cpName" required /></label>
+              <label>Foto de perfil (URL) *<input id="cpPhoto" required /></label>
+              <label>Endereço padrão *<input id="cpAddress" required /></label>
+              <div class="form-row">
+                <label>Telefone<input id="cpPhone" /></label>
+                <label>Email *<input id="cpEmail" type="email" required /></label>
+              </div>
+              <button class="primary-btn" type="submit">Salvar perfil</button>
+            </form>
+            <form id="providerProfileForm" class="ad-form settings-form" hidden>
+              <label>Nome da empresa/prestador *<input id="ppName" required /></label>
+              <label>Endereço padrão *<input id="ppAddress" required /></label>
+              <div class="form-row">
+                <label>Telefone<input id="ppPhone" /></label>
+                <label>Email *<input id="ppEmail" type="email" required /></label>
+              </div>
+              <label>CPF ou CNPJ *<input id="ppDocument" required /></label>
+              <button class="primary-btn" type="submit">Salvar perfil</button>
+            </form>
+          </div>
+
+          <div class="panel-card" id="clientPreferencesCard">
+            <div class="panel-head"><div><span class="eyebrow">PREFERÊNCIAS</span><h2>Serviços de interesse</h2></div></div>
+            <div class="preference-chips" id="settingsPreferences">
+              <button type="button" class="preference-chip" data-value="Beleza">Beleza</button>
+              <button type="button" class="preference-chip" data-value="Eletricista">Eletricista</button>
+              <button type="button" class="preference-chip" data-value="Encanador">Encanador</button>
+              <button type="button" class="preference-chip" data-value="Limpeza">Limpeza</button>
+              <button type="button" class="preference-chip" data-value="Montagem">Montagem</button>
+            </div>
+            <button class="secondary-btn settings-standalone-btn" id="savePreferencesBtn">Salvar preferências</button>
+          </div>
+
+          <div class="panel-card" id="clientPaymentCard">
+            <div class="panel-head"><div><span class="eyebrow">PAGAMENTO</span><h2>Método de pagamento</h2></div></div>
+            <form id="paymentForm" class="ad-form settings-form">
+              <label>Tipo
+                <select id="paymentType">
+                  <option value="pix">Pix</option>
+                  <option value="cartao_credito">Cartão de crédito</option>
+                  <option value="cartao_debito">Cartão de débito</option>
+                </select>
+              </label>
+              <button class="primary-btn" type="submit">Salvar método de pagamento</button>
+            </form>
+          </div>
+
+          <div class="panel-card" id="providerPaymentCard" hidden>
+            <div class="panel-head"><div><span class="eyebrow">RECEBIMENTO</span><h2>Método de recebimento</h2></div></div>
+            <form id="receivingForm" class="ad-form settings-form">
+              <label>Tipo
+                <select id="receivingType">
+                  <option value="pix">Chave Pix</option>
+                  <option value="banco">Conta bancária</option>
+                  <option value="cartao">Cartão</option>
+                </select>
+              </label>
+              <button class="primary-btn" type="submit">Salvar método de recebimento</button>
+            </form>
+            <button class="secondary-btn settings-standalone-btn" id="goToAdsBtn">Gerenciar meus anúncios</button>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-head"><div><span class="eyebrow">CONTAS</span><h2>Contas vinculadas</h2></div></div>
+            <p id="accountRoleSummary" class="field-help"></p>
+            <button class="secondary-btn full" id="switchAccountBtn"></button>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-head"><div><span class="eyebrow">SESSÃO</span><h2>Sair</h2></div></div>
+            <p class="field-help">Encerrar sua sessão atual neste dispositivo.</p>
+            <button class="secondary-btn full" id="settingsLogoutBtn">Sair da conta</button>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -233,7 +336,7 @@
       <span class="eyebrow">NOVO ANÚNCIO</span><h2>Publicar serviço</h2>
       <form id="newAdForm" class="ad-form">
         <label>Título<input required id="adTitle" placeholder="Ex.: Instalação elétrica residencial" /></label>
-        <label>Categoria<select id="adCategory"><option>Eletricista</option><option>Encanador</option><option>Montagem</option><option>Limpeza</option></select></label>
+        <label>Categoria<select id="adCategory"><option>Eletricista</option><option>Encanador</option><option>Limpeza</option><option>Montagem</option></select></label>
         <label>Descrição<textarea id="adDescription" rows="4" placeholder="Descreva o serviço e diferenciais..."></textarea></label>
         <div class="form-row"><label>Valor<input required id="adPrice" type="number" min="0" placeholder="120" /></label><label>Tipo<select id="adPriceType"><option>por hora</option><option>por serviço</option></select></label></div>
         <label>Raio de atendimento <strong id="adRadiusLabel">10 km</strong><input id="adRadius" type="range" min="1" max="30" value="10" /></label>

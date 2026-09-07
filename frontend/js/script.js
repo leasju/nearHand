@@ -91,6 +91,36 @@ const services = [
     lat: -22.8610,
     lng: -47.1120,
   },
+  {
+    id: 7,
+    title: "Limpeza pós-obra",
+    category: "Limpeza",
+    provider: "Jaguar Limpeza",
+    rating: 4.6,
+    reviews: 22,
+    distance: 24.5,
+    price: 220,
+    unit: "",
+    icon: "🧼",
+    style: "clean",
+    lat: -22.7011,
+    lng: -46.9878,
+  },
+  {
+    id: 8,
+    title: "Instalação elétrica rural",
+    category: "Eletricista",
+    provider: "Elétrica Jaguari",
+    rating: 4.8,
+    reviews: 15,
+    distance: 26.2,
+    price: 140,
+    unit: "/h",
+    icon: "⚡",
+    style: "electric",
+    lat: -22.6960,
+    lng: -46.9805,
+  },
 ];
 
 const favorites = new Set();
@@ -264,6 +294,34 @@ document.addEventListener("keydown", (event) => {
 });
 
 // ============================================
+// Tema claro/escuro
+// ============================================
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const themeToggleIcon = document.getElementById("themeToggleIcon");
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  themeToggleIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+}
+
+themeToggleBtn.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  const next = current === "dark" ? "light" : "dark";
+  localStorage.setItem("nearhand_theme", next);
+  applyTheme(next);
+});
+
+applyTheme(
+  document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : document.documentElement.getAttribute("data-theme") === "light"
+      ? "light"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+);
+
+// ============================================
 // Alternância Cards / Mapa
 // ============================================
 const mapViewSection = document.getElementById("mapView");
@@ -406,6 +464,23 @@ document.getElementById("mapSidebar").addEventListener("click", (event) => {
 // Sessão: protege a página e preenche o perfil
 // ============================================
 const profileBtn = document.getElementById("profileBtn");
+let currentSessionRole = null;
+
+function updateStoredUser(partial) {
+  const current = JSON.parse(localStorage.getItem("nearhand_user") || "{}");
+  const updated = { ...current, ...partial };
+  localStorage.setItem("nearhand_user", JSON.stringify(updated));
+
+  const initials = (updated.nome || "NH")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+  document.querySelector("#profileBtn .avatar").textContent = initials || "NH";
+  document.querySelector("#profileBtn .profile-copy strong").textContent = updated.nome || "Minha conta";
+  document.querySelector("#profileBtn .profile-copy small").textContent = updated.email || "";
+}
 
 function initSession() {
   const token = localStorage.getItem("nearhand_access_token");
@@ -423,17 +498,9 @@ function initSession() {
     return null;
   }
 
-  const initials = (user.nome || "NH")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join("");
-  document.querySelector("#profileBtn .avatar").textContent = initials || "NH";
-  document.querySelector("#profileBtn .profile-copy strong").textContent = user.nome || "Minha conta";
-  document.querySelector("#profileBtn .profile-copy small").textContent = user.email || "";
-
-  return localStorage.getItem("nearhand_user_type") || "cliente";
+  updateStoredUser(user);
+  currentSessionRole = localStorage.getItem("nearhand_user_type") || "cliente";
+  return currentSessionRole;
 }
 
 function logout() {
@@ -443,26 +510,73 @@ function logout() {
   window.location.href = "/auth";
 }
 
-profileBtn.addEventListener("click", () => {
-  if (confirm("Sair da sua conta?")) logout();
-});
+async function authFetch(path, options = {}) {
+  const token = localStorage.getItem("nearhand_access_token");
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+  if (response.status === 401) {
+    logout();
+    throw new Error("Sessão expirada. Faça login novamente.");
+  }
+  return response;
+}
+
+async function switchAccountRole(targetRole) {
+  let email = "";
+  try {
+    email = JSON.parse(localStorage.getItem("nearhand_user") || "{}").email || "";
+  } catch {
+    email = "";
+  }
+
+  let mode = "cadastro";
+  if (email) {
+    try {
+      const response = await fetch(`/auth/account-exists?tipo=${encodeURIComponent(targetRole)}&email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      mode = data.exists ? "login" : "cadastro";
+    } catch {
+      mode = "login";
+    }
+  }
+  window.location.href = `/auth?tipo=${targetRole}&modo=${mode}`;
+}
 
 // ============================================
-// Alternância Cliente / Prestador
+// Alternância entre Cliente / Prestador / Configurações
 // ============================================
 const clienteView = document.getElementById("clienteView");
 const providerView = document.getElementById("providerView");
+const settingsView = document.getElementById("settingsView");
 const topRoleButtons = document.querySelectorAll(".top-actions .role-switch .role-btn");
 
+function showAppView(view) {
+  clienteView.hidden = view !== "cliente";
+  providerView.hidden = view !== "prestador";
+  settingsView.hidden = view !== "settings";
+}
+
 function setActiveRole(role) {
-  const isProvider = role === "prestador";
-  clienteView.hidden = isProvider;
-  providerView.hidden = !isProvider;
+  showAppView(role);
   topRoleButtons.forEach((button) => button.classList.toggle("active", button.dataset.role === role));
 }
 
 topRoleButtons.forEach((button) => {
-  button.addEventListener("click", () => setActiveRole(button.dataset.role));
+  button.addEventListener("click", () => {
+    if (button.dataset.role === currentSessionRole) return;
+    switchAccountRole(button.dataset.role);
+  });
+});
+
+profileBtn.addEventListener("click", () => {
+  showAppView("settings");
+  loadSettingsProfile();
 });
 
 // ============================================
@@ -645,16 +759,248 @@ document.querySelectorAll(".review .text-btn").forEach((button) => {
 });
 
 // ============================================
+// Configurações
+// ============================================
+const clientProfileForm = document.getElementById("clientProfileForm");
+const providerProfileForm = document.getElementById("providerProfileForm");
+const settingsPreferences = document.getElementById("settingsPreferences");
+let settingsProfile = null;
+
+document.getElementById("settingsBackBtn").addEventListener("click", () => {
+  setActiveRole(currentSessionRole);
+});
+document.getElementById("settingsLogoutBtn").addEventListener("click", () => {
+  if (confirm("Sair da sua conta?")) logout();
+});
+
+function setSettingsRoleVisibility(role) {
+  const isProvider = role === "prestador";
+  clientProfileForm.hidden = isProvider;
+  providerProfileForm.hidden = !isProvider;
+  document.getElementById("clientPreferencesCard").hidden = isProvider;
+  document.getElementById("clientPaymentCard").hidden = isProvider;
+  document.getElementById("providerPaymentCard").hidden = !isProvider;
+
+  document.getElementById("accountRoleSummary").textContent =
+    `Você está logado como ${isProvider ? "Prestador" : "Cliente"}.`;
+  document.getElementById("switchAccountBtn").textContent =
+    `Entrar como ${isProvider ? "Cliente" : "Prestador"}`;
+}
+
+async function loadSettingsProfile() {
+  setSettingsRoleVisibility(currentSessionRole);
+  try {
+    const path = currentSessionRole === "prestador" ? "/prestadores/me" : "/clientes/me";
+    const response = await authFetch(path);
+    settingsProfile = await response.json();
+
+    if (currentSessionRole === "prestador") {
+      document.getElementById("ppName").value = settingsProfile.nome || "";
+      document.getElementById("ppAddress").value = settingsProfile.endereco || "";
+      document.getElementById("ppPhone").value = settingsProfile.telefone || "";
+      document.getElementById("ppEmail").value = settingsProfile.email || "";
+      document.getElementById("ppDocument").value = settingsProfile.cpf_cnpj || "";
+    } else {
+      document.getElementById("cpName").value = settingsProfile.nome || "";
+      document.getElementById("cpPhoto").value = settingsProfile.foto || "";
+      document.getElementById("cpAddress").value = settingsProfile.endereco || "";
+      document.getElementById("cpPhone").value = settingsProfile.telefone || "";
+      document.getElementById("cpEmail").value = settingsProfile.email || "";
+      const selected = settingsProfile.preferencias || [];
+      settingsPreferences.querySelectorAll(".preference-chip").forEach((chip) => {
+        chip.classList.toggle("active", selected.includes(chip.dataset.value));
+      });
+    }
+  } catch (error) {
+    showToast(error.message || "Não foi possível carregar seu perfil.");
+  }
+}
+
+settingsPreferences.addEventListener("click", (event) => {
+  const chip = event.target.closest(".preference-chip");
+  if (chip) chip.classList.toggle("active");
+});
+
+clientProfileForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const preferencias = Array.from(settingsPreferences.querySelectorAll(".preference-chip.active"))
+    .map((chip) => chip.dataset.value);
+  const payload = {
+    nome: document.getElementById("cpName").value,
+    email: document.getElementById("cpEmail").value,
+    telefone: document.getElementById("cpPhone").value,
+    foto: document.getElementById("cpPhoto").value,
+    endereco: document.getElementById("cpAddress").value,
+    preferencias,
+  };
+  try {
+    const response = await authFetch("/clientes/me", { method: "PUT", body: JSON.stringify(payload) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o perfil.");
+    settingsProfile = data;
+    updateStoredUser({ nome: data.nome, email: data.email });
+    showToast("Perfil atualizado.");
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+document.getElementById("savePreferencesBtn").addEventListener("click", () => {
+  clientProfileForm.requestSubmit();
+});
+
+providerProfileForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = {
+    nome: document.getElementById("ppName").value,
+    email: document.getElementById("ppEmail").value,
+    telefone: document.getElementById("ppPhone").value,
+    cpf_cnpj: document.getElementById("ppDocument").value,
+    endereco: document.getElementById("ppAddress").value,
+  };
+  try {
+    const response = await authFetch("/prestadores/me", { method: "PUT", body: JSON.stringify(payload) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o perfil.");
+    settingsProfile = data;
+    updateStoredUser({ nome: data.nome, email: data.email });
+    showToast("Perfil atualizado.");
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+document.getElementById("paymentForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  showToast("Método de pagamento salvo. Em breve isso fica salvo no banco de dados.");
+});
+document.getElementById("receivingForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  showToast("Método de recebimento salvo. Em breve isso fica salvo no banco de dados.");
+});
+document.getElementById("goToAdsBtn").addEventListener("click", () => {
+  setActiveRole("prestador");
+  document.getElementById("adList").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+document.getElementById("switchAccountBtn").addEventListener("click", () => {
+  switchAccountRole(currentSessionRole === "prestador" ? "cliente" : "prestador");
+});
+
+// ============================================
 // Botões ainda sem tela dedicada
 // ============================================
 document.querySelectorAll(".panel-head .text-btn").forEach((button) => {
-  const label = button.textContent.trim();
-  if (label === "Ver todos" || label === "Abrir calendário") {
+  if (button.textContent.trim() === "Ver todos") {
     button.addEventListener("click", () => showToast("Isso chega em uma próxima etapa."));
   }
 });
 document.querySelector(".results-head .ghost-btn")?.addEventListener("click", () => {
   showToast("Preferências de busca chegam em uma próxima etapa.");
+});
+
+// ============================================
+// Calendários (cliente e prestador)
+// ============================================
+const MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+const today = new Date();
+
+function buildMonthCells(year, month) {
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstWeekday; i++) {
+    cells.push({ day: daysInPrevMonth - firstWeekday + 1 + i, outside: true });
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ day, outside: false });
+  }
+  let nextDay = 1;
+  while (cells.length % 7 !== 0) {
+    cells.push({ day: nextDay++, outside: true });
+  }
+  return cells;
+}
+
+function renderCalendar({ gridEl, labelEl, date, events }) {
+  labelEl.textContent = `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+  gridEl.replaceChildren();
+  buildMonthCells(date.getFullYear(), date.getMonth()).forEach((cell) => {
+    const cellEl = document.createElement("div");
+    cellEl.className = "calendar-day";
+    cellEl.textContent = cell.day;
+    if (cell.outside) {
+      cellEl.classList.add("outside");
+    } else {
+      const isToday = today.getFullYear() === date.getFullYear()
+        && today.getMonth() === date.getMonth()
+        && today.getDate() === cell.day;
+      if (isToday) cellEl.classList.add("today");
+
+      const dayEvent = events.find((event) => event.day === cell.day);
+      if (dayEvent) {
+        cellEl.classList.add("has-event");
+        cellEl.title = dayEvent.label;
+        cellEl.addEventListener("click", () => showToast(dayEvent.label));
+      }
+    }
+    gridEl.appendChild(cellEl);
+  });
+}
+
+const CLIENT_EVENTS = [
+  { day: 8, label: "Eletricista residencial — 09:00 • Marcos Elétrica" },
+  { day: 11, label: "Limpeza completa — 14:30 • Brilho Certo" },
+];
+let clientCalendarDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+function renderClientCalendar() {
+  const isCurrentMonth = clientCalendarDate.getMonth() === today.getMonth()
+    && clientCalendarDate.getFullYear() === today.getFullYear();
+  renderCalendar({
+    gridEl: document.getElementById("clientCalendar"),
+    labelEl: document.getElementById("clientCalendarLabel"),
+    date: clientCalendarDate,
+    events: isCurrentMonth ? CLIENT_EVENTS : [],
+  });
+}
+
+document.getElementById("clientCalendarPrev").addEventListener("click", () => {
+  clientCalendarDate = new Date(clientCalendarDate.getFullYear(), clientCalendarDate.getMonth() - 1, 1);
+  renderClientCalendar();
+});
+document.getElementById("clientCalendarNext").addEventListener("click", () => {
+  clientCalendarDate = new Date(clientCalendarDate.getFullYear(), clientCalendarDate.getMonth() + 1, 1);
+  renderClientCalendar();
+});
+
+const PROVIDER_EVENTS = [
+  { day: today.getDate(), label: "3 serviços hoje: Troca de disjuntor, Visita técnica, Instalação de luminária" },
+  { day: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getDate(), label: "Instalação de luminária — 09:00 • Rafael Braga" },
+];
+let providerCalendarDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+function renderProviderCalendar() {
+  const isCurrentMonth = providerCalendarDate.getMonth() === today.getMonth()
+    && providerCalendarDate.getFullYear() === today.getFullYear();
+  renderCalendar({
+    gridEl: document.getElementById("providerCalendar"),
+    labelEl: document.getElementById("providerCalendarLabel"),
+    date: providerCalendarDate,
+    events: isCurrentMonth ? PROVIDER_EVENTS : [],
+  });
+}
+
+document.getElementById("providerCalendarPrev").addEventListener("click", () => {
+  providerCalendarDate = new Date(providerCalendarDate.getFullYear(), providerCalendarDate.getMonth() - 1, 1);
+  renderProviderCalendar();
+});
+document.getElementById("providerCalendarNext").addEventListener("click", () => {
+  providerCalendarDate = new Date(providerCalendarDate.getFullYear(), providerCalendarDate.getMonth() + 1, 1);
+  renderProviderCalendar();
 });
 
 // ============================================
@@ -664,6 +1010,8 @@ const initialRole = initSession();
 if (initialRole) {
   setActiveRole(initialRole);
   setActiveSection("explorar");
-  renderCards();
+  applyFilters();
   renderFavorites();
+  renderClientCalendar();
+  renderProviderCalendar();
 }

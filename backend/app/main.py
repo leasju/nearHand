@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -12,6 +12,8 @@ from app.auth import (
     create_access_token,
     create_role_access_token,
     get_current_admin,
+    get_current_client_id,
+    get_current_provider_id,
     hash_password,
     verify_password,
 )
@@ -34,8 +36,9 @@ def frontend_home():
 
 
 @app.get("/auth", include_in_schema=False)
-def frontend_auth():
-    return RedirectResponse(url="/frontend/auth.html")
+def frontend_auth(request: Request):
+    query = f"?{request.url.query}" if request.url.query else ""
+    return RedirectResponse(url=f"/frontend/auth.html{query}")
 
 
 class CategoryCreate(BaseModel):
@@ -190,6 +193,172 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
         "tipo": account_type,
         "user": {"id": user["id"], "nome": user["nome"], "email": user["email"]},
     }
+
+
+@app.get("/auth/account-exists")
+def account_exists(tipo: str, email: str, db: Session = Depends(get_db)):
+    account_type = tipo.strip().lower()
+    normalized_email = email.strip().lower()
+
+    if account_type == "cliente":
+        row = db.execute(
+            text("SELECT id FROM cliente WHERE LOWER(email) = :email"),
+            {"email": normalized_email},
+        ).first()
+    elif account_type == "prestador":
+        row = db.execute(
+            text("SELECT id FROM prestador WHERE LOWER(email) = :email"),
+            {"email": normalized_email},
+        ).first()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid account type")
+
+    return {"exists": row is not None}
+
+
+class ClientProfileUpdate(BaseModel):
+    nome: str
+    email: str
+    telefone: str = ""
+    foto: str = ""
+    endereco: str
+    preferencias: list[str] = []
+
+
+@app.get("/clientes/me")
+def get_client_profile(db: Session = Depends(get_db), client_id: int = Depends(get_current_client_id)):
+    row = db.execute(
+        text("""
+            SELECT c.id, c.nome_completo AS nome, c.email, c.telefone, c.foto, c.preferencias,
+                   e.rua AS endereco
+            FROM cliente c
+            JOIN endereco e ON e.id = c.endereco_id
+            WHERE c.id = :id
+        """),
+        {"id": client_id},
+    ).mappings().first()
+
+    profile = dict(row)
+    profile["preferencias"] = profile["preferencias"].split(",") if profile["preferencias"] else []
+    return profile
+
+
+@app.put("/clientes/me")
+def update_client_profile(
+    payload: ClientProfileUpdate,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    name = payload.nome.strip()
+    email = payload.email.strip().lower()
+    address = payload.endereco.strip()
+
+    if not name or not email or not address:
+        raise HTTPException(status_code=400, detail="Name, email, and address are required")
+
+    preferencias = ",".join(p.strip() for p in payload.preferencias if p.strip()) or None
+
+    try:
+        db.execute(
+            text("""
+                UPDATE cliente
+                SET nome_completo = :nome, email = :email, telefone = :telefone,
+                    foto = :foto, preferencias = :preferencias
+                WHERE id = :id
+            """),
+            {
+                "nome": name,
+                "email": email,
+                "telefone": payload.telefone.strip() or None,
+                "foto": payload.foto.strip() or None,
+                "preferencias": preferencias,
+                "id": client_id,
+            },
+        )
+        db.execute(
+            text("""
+                UPDATE endereco
+                JOIN cliente ON cliente.endereco_id = endereco.id
+                SET endereco.rua = :rua
+                WHERE cliente.id = :id
+            """),
+            {"rua": address[:200], "id": client_id},
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email already in use")
+
+    return get_client_profile(db=db, client_id=client_id)
+
+
+class ProviderProfileUpdate(BaseModel):
+    nome: str
+    email: str
+    telefone: str = ""
+    cpf_cnpj: str
+    endereco: str
+
+
+@app.get("/prestadores/me")
+def get_provider_profile(db: Session = Depends(get_db), provider_id: int = Depends(get_current_provider_id)):
+    row = db.execute(
+        text("""
+            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj,
+                   e.rua AS endereco
+            FROM prestador p
+            JOIN endereco e ON e.id = p.endereco_id
+            WHERE p.id = :id
+        """),
+        {"id": provider_id},
+    ).mappings().first()
+    return row
+
+
+@app.put("/prestadores/me")
+def update_provider_profile(
+    payload: ProviderProfileUpdate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    name = payload.nome.strip()
+    email = payload.email.strip().lower()
+    address = payload.endereco.strip()
+    cpf_cnpj = payload.cpf_cnpj.strip()
+
+    if not name or not email or not address or not cpf_cnpj:
+        raise HTTPException(status_code=400, detail="Name, email, address, and CPF/CNPJ are required")
+
+    try:
+        db.execute(
+            text("""
+                UPDATE prestador
+                SET nome_empresa = :nome, email = :email, telefone = :telefone, cpf_cnpj = :cpf_cnpj
+                WHERE id = :id
+            """),
+            {
+                "nome": name,
+                "email": email,
+                "telefone": payload.telefone.strip() or None,
+                "cpf_cnpj": cpf_cnpj,
+                "id": provider_id,
+            },
+        )
+        db.execute(
+            text("""
+                UPDATE endereco
+                JOIN prestador ON prestador.endereco_id = endereco.id
+                SET endereco.rua = :rua
+                WHERE prestador.id = :id
+            """),
+            {"rua": address[:200], "id": provider_id},
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or CPF/CNPJ already in use")
+
+    return get_provider_profile(db=db, provider_id=provider_id)
 
 
 @app.post("/admin/login")

@@ -70,3 +70,57 @@ def get_current_admin(
         raise unauthorized
 
     return admin
+
+
+def get_current_client_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+    db: Session = Depends(get_db),
+) -> int:
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Client authentication required",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if credentials is None:
+        raise unauthorized
+
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        account_id = int(payload["sub"])
+        if payload.get("role") != "cliente":
+            raise unauthorized
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise unauthorized
+
+    if db.execute(text("SELECT id FROM cliente WHERE id = :id"), {"id": account_id}).first() is None:
+        raise unauthorized
+
+    return account_id
+
+
+def get_current_provider_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+    db: Session = Depends(get_db),
+) -> int:
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Provider authentication required",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if credentials is None:
+        raise unauthorized
+
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        account_id = int(payload["sub"])
+        if payload.get("role") != "prestador":
+            raise unauthorized
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise unauthorized
+
+    if db.execute(text("SELECT id FROM prestador WHERE id = :id"), {"id": account_id}).first() is None:
+        raise unauthorized
+
+    return account_id

@@ -9,6 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/auth.css" />
+  <script>
+    (function () {
+      var saved = localStorage.getItem("nearhand_theme");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="auth-shell">
@@ -66,7 +74,10 @@
             <span class="eyebrow">ACESSO</span>
             <h2>Bem-vinda(o) à NearHand</h2>
           </div>
-          <a class="ghost-btn" href="/admin/login">🛠 Entrar como admin</a>
+          <div class="top-btn-row">
+            <button class="ghost-btn" id="themeToggleBtn" type="button"><span id="themeToggleIcon">🌙</span></button>
+            <a class="ghost-btn" href="/admin/login">🛠 Entrar como admin</a>
+          </div>
         </div>
 
         <div class="switches">
@@ -158,11 +169,11 @@
               <label class="field-label">Preferências de serviços</label>
               <small class="field-help">Selecione uma ou mais.</small>
               <div class="preference-chips" id="registerPreferences" role="group" aria-label="Preferências de serviços">
-                <button type="button" class="preference-chip" data-value="Eletricista">Eletricista</button>
-                <button type="button" class="preference-chip" data-value="Limpeza">Limpeza</button>
                 <button type="button" class="preference-chip" data-value="Beleza">Beleza</button>
-                <button type="button" class="preference-chip" data-value="Montagem">Montagem</button>
+                <button type="button" class="preference-chip" data-value="Eletricista">Eletricista</button>
                 <button type="button" class="preference-chip" data-value="Encanador">Encanador</button>
+                <button type="button" class="preference-chip" data-value="Limpeza">Limpeza</button>
+                <button type="button" class="preference-chip" data-value="Montagem">Montagem</button>
               </div>
             </div>
           </div>
