@@ -1,4 +1,5 @@
 const favorites = new Set();
+let favoriteServices = [];
 let services = [];
 let visibleServices = [];
 let servicesRequest = null;
@@ -142,7 +143,7 @@ async function loadCategories() {
 }
 
 function serviceCard(service) {
-  const isFavorite = favorites.has(service.id);
+  const isFavorite = favorites.has(service.prestador_id);
   const visual = serviceVisual(service);
   const distance = service.distance == null ? "Distância indisponível" : `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
   const card = document.createElement("article");
@@ -180,11 +181,27 @@ function renderCards() {
 
 function renderFavorites() {
   favoritesGrid.replaceChildren();
-  services.filter((service) => favorites.has(service.id)).forEach((service) => {
+  favoriteServices.forEach((service) => {
     favoritesGrid.appendChild(serviceCard(service));
   });
-  if (!favorites.size) {
+  if (!favoriteServices.length) {
     favoritesGrid.innerHTML = "<p class=\"empty-state\">Você ainda não adicionou prestadores aos favoritos.</p>";
+  }
+}
+
+async function loadFavorites() {
+  if (currentSessionRole !== "cliente") return;
+  try {
+    const response = await authFetch("/clientes/me/favoritos");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível carregar os favoritos.");
+    favoriteServices = data;
+    favorites.clear();
+    favoriteServices.forEach((service) => favorites.add(service.prestador_id));
+    renderCards();
+    renderFavorites();
+  } catch (error) {
+    showToast(error.message);
   }
 }
 
@@ -211,7 +228,8 @@ function handleCardAction(event) {
   const action = event.target.closest("[data-action]")?.dataset.action;
   const card = event.target.closest(".service-card");
   if (!action || !card) return;
-  const service = services.find((item) => item.id === Number(card.dataset.id));
+  const service = [...services, ...favoriteServices]
+    .find((item) => item.id === Number(card.dataset.id));
   if (!service) return;
 
   if (action === "favorite") {
@@ -222,9 +240,28 @@ function handleCardAction(event) {
 }
 
 async function updateFavorite(service) {
-  favorites.has(service.id) ? favorites.delete(service.id) : favorites.add(service.id);
-  renderCards();
-  renderFavorites();
+  const isFavorite = favorites.has(service.prestador_id);
+  try {
+    const response = isFavorite
+      ? await authFetch(`/favoritos/${service.prestador_id}`, { method: "DELETE" })
+      : await authFetch("/favoritos", {
+        method: "POST",
+        body: JSON.stringify({ prestador_id: service.prestador_id }),
+      });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível atualizar o favorito.");
+    if (isFavorite) {
+      favorites.delete(service.prestador_id);
+      favoriteServices = favoriteServices.filter((item) => item.prestador_id !== service.prestador_id);
+    } else {
+      favorites.add(service.prestador_id);
+      favoriteServices.push(service);
+    }
+    renderCards();
+    renderFavorites();
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function closeModals() {
@@ -1349,7 +1386,7 @@ if (initialRole) {
   setActiveProviderSection("painel");
   loadCategories().then(loadServices);
   loadProviderServices();
-  renderFavorites();
+  loadFavorites();
   renderClientCalendar();
   renderProviderAgenda();
 }

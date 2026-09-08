@@ -84,6 +84,10 @@ class ServiceStatusUpdate(BaseModel):
     status: str
 
 
+class FavoriteCreate(BaseModel):
+    prestador_id: int
+
+
 class AddressFields(BaseModel):
     cep: str = ""
     rua: str
@@ -245,6 +249,74 @@ def list_public_categories(db: Session = Depends(get_db)):
         """)
     ).mappings().all()
     return rows
+
+
+@app.post("/favoritos")
+def add_favorite(
+    favorite: FavoriteCreate,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    provider_id = favorite.prestador_id
+
+    provider_exists = db.execute(
+        text("SELECT id FROM prestador WHERE id = :id"),
+        {"id": provider_id},
+    ).first()
+    if provider_exists is None:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    try:
+        db.execute(
+            text("""
+                INSERT INTO favorito (cliente_id, prestador_id)
+                VALUES (:cliente_id, :prestador_id)
+                ON DUPLICATE KEY UPDATE id = id
+            """),
+            {"cliente_id": client_id, "prestador_id": provider_id},
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Could not save favorite")
+
+    return {"status": "favorited", "prestador_id": provider_id}
+
+
+@app.delete("/favoritos/{provider_id}")
+def remove_favorite(
+    provider_id: int,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    result = db.execute(
+        text("""
+            DELETE FROM favorito
+            WHERE cliente_id = :cliente_id AND prestador_id = :prestador_id
+        """),
+        {"cliente_id": client_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Favorite not found")
+    return {"status": "unfavorited", "prestador_id": provider_id}
+
+
+@app.get("/clientes/me/favoritos")
+def list_my_favorites(
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    query = text(SERVICE_SELECT.format(distance_expression="NULL") + """
+        JOIN favorito fav ON fav.prestador_id = s.prestador_id
+                         AND fav.cliente_id = :cliente_id
+        WHERE s.status = 'ativo'
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+        ORDER BY p.nome_empresa, s.titulo
+    """)
+    rows = db.execute(query, {"cliente_id": client_id, "lat": 0, "lng": 0}).mappings().all()
+    return [_decode_service_row(row) for row in rows]
 
 
 SERVICE_SELECT = """
