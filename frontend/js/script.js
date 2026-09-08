@@ -84,6 +84,41 @@ async function readApiResponse(response) {
   }
 }
 
+function setupCepLookup(cepId, fields) {
+  const cepInput = document.getElementById(cepId);
+  if (!cepInput) return;
+  cepInput.addEventListener("blur", async () => {
+    const cep = cepInput.value.trim();
+    if (cep.replace(/\D/g, "").length !== 8) return;
+    try {
+      const response = await fetch(`/addresses/cep/${encodeURIComponent(cep)}`);
+      const data = await readApiResponse(response);
+      if (!response.ok) throw new Error(data.detail || "CEP não encontrado.");
+      Object.entries(fields).forEach(([key, id]) => {
+        const input = document.getElementById(id);
+        if (input && data[key]) input.value = data[key];
+      });
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+}
+
+setupCepLookup("cpCep", {
+  rua: "cpRua",
+  complemento: "cpComplemento",
+  bairro: "cpBairro",
+  cidade: "cpCidade",
+  estado: "cpEstado",
+});
+setupCepLookup("ppCep", {
+  rua: "ppRua",
+  complemento: "ppComplemento",
+  bairro: "ppBairro",
+  cidade: "ppCidade",
+  estado: "ppEstado",
+});
+
 function formatPrice(value) {
   return value.toLocaleString("pt-BR", { minimumFractionDigits: 0 });
 }

@@ -1,5 +1,9 @@
 from datetime import date, datetime, time
 from pathlib import Path
+import re
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as UrlRequest, urlopen
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -115,6 +119,35 @@ class AvailabilityCreate(BaseModel):
     bloqueado: bool = False
 
 
+@app.get("/addresses/cep/{cep}")
+def lookup_address_by_cep(cep: str):
+    normalized_cep = re.sub(r"\D", "", cep)
+    if len(normalized_cep) != 8:
+        raise HTTPException(status_code=400, detail="CEP must contain 8 digits")
+
+    request = UrlRequest(
+        f"https://viacep.com.br/ws/{normalized_cep}/json/",
+        headers={"Accept": "application/json", "User-Agent": "NearHand/1.0"},
+    )
+    try:
+        with urlopen(request, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        raise HTTPException(status_code=502, detail="Could not contact the CEP service")
+
+    if data.get("erro"):
+        raise HTTPException(status_code=404, detail="CEP not found")
+
+    return {
+        "cep": data.get("cep", normalized_cep),
+        "rua": data.get("logradouro", ""),
+        "complemento": data.get("complemento", ""),
+        "bairro": data.get("bairro", ""),
+        "cidade": data.get("localidade", ""),
+        "estado": data.get("uf", ""),
+    }
+
+
 class AddressFields(BaseModel):
     cep: str = ""
     rua: str
@@ -135,6 +168,10 @@ def _address_params(payload: AddressFields) -> dict:
         "cidade": payload.cidade.strip()[:100] or "Nao informada",
         "estado": (payload.estado.strip()[:2] or "NA").upper(),
     }
+
+
+def _normalize_phone(value: str) -> str:
+    return re.sub(r"\D", "", value)
 
 
 class AccountRegister(AddressFields):
@@ -192,7 +229,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
                     "nome": name,
                     "foto": account.foto.strip() or None,
                     "endereco_id": address_id,
-                    "telefone": account.telefone.strip() or None,
+                    "telefone": _normalize_phone(account.telefone) or None,
                     "email": email,
                     "senha_hash": password_hash,
                     "preferencias": preferencias,
@@ -209,7 +246,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
                     "nome": name,
                     "foto": account.foto.strip() or None,
                     "endereco_id": address_id,
-                    "telefone": account.telefone.strip() or None,
+                    "telefone": _normalize_phone(account.telefone) or None,
                     "email": email,
                     "cpf_cnpj": account.cpf_cnpj.strip(),
                     "senha_hash": password_hash,
@@ -237,9 +274,10 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
             text("""
                 SELECT id, nome_completo AS nome, email, foto, senha_hash
                 FROM cliente
-                WHERE LOWER(email) = :identifier OR telefone = :phone
+                WHERE LOWER(email) = :identifier
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '-', ''), '(', ''), ')', '') = :phone
             """),
-            {"identifier": identifier, "phone": account.identificador.strip()},
+            {"identifier": identifier, "phone": _normalize_phone(account.identificador)},
         ).mappings().first()
     elif account_type == "prestador":
         user = db.execute(
