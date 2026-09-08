@@ -2,6 +2,7 @@ const favorites = new Set();
 let favoriteServices = [];
 let services = [];
 let visibleServices = [];
+let currentService = null;
 let servicesRequest = null;
 let servicesRequestTimer = null;
 
@@ -210,6 +211,7 @@ function applyFilters() {
 }
 
 function showServiceDetails(service) {
+  currentService = service;
   document.getElementById("modalCategory").textContent = service.category;
   document.getElementById("serviceTitle").textContent = service.title;
   document.getElementById("modalProvider").textContent = service.provider;
@@ -637,9 +639,25 @@ document.querySelector(".popover-head .text-btn").addEventListener("click", () =
 // ============================================
 // Modal de serviço: solicitar e abrir chat
 // ============================================
-document.getElementById("hireBtn").addEventListener("click", () => {
-  document.getElementById("serviceModal").hidden = true;
-  showToast("Solicitação enviada! Acompanhe em Pedidos.");
+document.getElementById("hireBtn").addEventListener("click", async () => {
+  if (!currentService) return;
+  try {
+    const response = await authFetch("/solicitacoes", {
+      method: "POST",
+      body: JSON.stringify({
+        servico_id: currentService.id,
+        data_hora_agendada: new Date().toISOString(),
+        valor_proposto: currentService.price,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível solicitar o serviço.");
+    document.getElementById("serviceModal").hidden = true;
+    showToast("Solicitação enviada! Acompanhe em Pedidos.");
+    await loadClientRequests();
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 document.getElementById("openChatBtn").addEventListener("click", () => {
   document.getElementById("serviceModal").hidden = true;
@@ -668,18 +686,73 @@ chatForm.addEventListener("submit", (event) => {
 // ============================================
 // Pedidos (histórico do cliente)
 // ============================================
-document.querySelectorAll(".table-card .text-btn").forEach((button) => {
-  button.addEventListener("click", () => {
-    const label = button.textContent.trim();
-    if (label === "Abrir chat") {
-      document.getElementById("chatModal").hidden = false;
-    } else if (label === "Avaliar") {
-      const rating = prompt("Dê uma nota de 1 a 5 para este serviço:");
-      if (rating) showToast("Obrigado pela avaliação!");
-    } else {
-      showToast("Detalhes completos chegam em uma próxima etapa.");
+function formatRequestDate(value) {
+  if (!value) return "Data a combinar";
+  return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function requestStatusLabel(status) {
+  return {
+    solicitado: "Solicitado",
+    confirmado: "Confirmado",
+    em_andamento: "Em andamento",
+    concluido: "Concluído",
+    cancelado: "Cancelado",
+  }[status] || status;
+}
+
+function requestStatusClass(status) {
+  if (status === "concluido") return "done";
+  if (status === "confirmado" || status === "em_andamento") return "confirmed";
+  return status === "cancelado" ? "cancelled" : "pending";
+}
+
+async function loadClientRequests() {
+  if (currentSessionRole !== "cliente") return;
+  const body = document.querySelector(".table-card tbody");
+  if (!body) return;
+  try {
+    const response = await authFetch("/clientes/me/solicitacoes");
+    const requests = await response.json();
+    if (!response.ok) throw new Error(requests.detail || "Não foi possível carregar seus pedidos.");
+    body.replaceChildren();
+    if (!requests.length) {
+      body.innerHTML = '<tr><td colspan="6">Você ainda não possui solicitações.</td></tr>';
+      return;
     }
-  });
+    requests.forEach((request) => {
+      const row = document.createElement("tr");
+      row.dataset.requestId = request.id;
+      row.innerHTML = `
+        <td>${request.servico_titulo}</td>
+        <td>${request.prestador_nome}</td>
+        <td>${formatRequestDate(request.data_hora_agendada)}</td>
+        <td>R$ ${formatPrice(request.valor_proposto || 0)}</td>
+        <td><span class="status ${requestStatusClass(request.status)}">${requestStatusLabel(request.status)}</span></td>
+        <td>${["solicitado", "confirmado"].includes(request.status) ? '<button class="text-btn" data-request-action="cancel">Cancelar</button>' : ""}</td>
+      `;
+      body.appendChild(row);
+    });
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+document.querySelector(".table-card tbody").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-request-action]");
+  if (!button) return;
+  const row = button.closest("tr");
+  try {
+    const response = await authFetch(`/solicitacoes/${row.dataset.requestId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "cancelado" }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível cancelar o pedido.");
+    await loadClientRequests();
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 // ============================================
@@ -687,21 +760,57 @@ document.querySelectorAll(".table-card .text-btn").forEach((button) => {
 // ============================================
 const requestList = document.getElementById("requestList");
 
-requestList.addEventListener("click", (event) => {
-  const button = event.target.closest(".small-btn");
+async function loadProviderRequests() {
+  if (currentSessionRole !== "prestador") return;
+  try {
+    const response = await authFetch("/prestadores/me/solicitacoes");
+    const requests = await response.json();
+    if (!response.ok) throw new Error(requests.detail || "Não foi possível carregar as solicitações.");
+    requestList.replaceChildren();
+    if (!requests.length) {
+      requestList.innerHTML = '<p class="empty-state">Nenhuma solicitação recebida.</p>';
+      return;
+    }
+    requests.forEach((request) => {
+      const item = document.createElement("article");
+      item.className = "request-item";
+      item.dataset.requestId = request.id;
+      const initials = request.cliente_nome.split(" ").map((part) => part[0]).slice(0, 2).join("");
+      const actions = request.status === "solicitado"
+        ? '<button class="small-btn accept" data-request-status="confirmado">Aceitar</button><button class="small-btn propose" data-request-status="confirmado">Propor</button><button class="small-btn reject" data-request-status="cancelado">Recusar</button>'
+        : request.status === "confirmado"
+          ? '<button class="small-btn accept" data-request-status="em_andamento">Iniciar</button><button class="small-btn reject" data-request-status="cancelado">Cancelar</button>'
+          : request.status === "em_andamento"
+            ? '<button class="small-btn accept" data-request-status="concluido">Concluir</button>'
+            : "";
+      item.innerHTML = `
+        <div class="request-avatar">${initials}</div>
+        <div><strong>${request.cliente_nome}</strong><small>${request.servico_titulo} • ${formatRequestDate(request.data_hora_agendada)}</small></div>
+        <strong>R$ ${formatPrice(request.valor_proposto || 0)}</strong>
+        <div class="request-actions">${actions}</div>
+      `;
+      requestList.appendChild(item);
+    });
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+requestList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-request-status]");
   if (!button) return;
   const item = button.closest(".request-item");
-  if (!item) return;
-  const clientName = item.querySelector("strong")?.textContent ?? "Solicitação";
-
-  if (button.classList.contains("accept")) {
-    showToast(`Solicitação de ${clientName} aceita.`);
-    item.remove();
-  } else if (button.classList.contains("reject")) {
-    showToast(`Solicitação de ${clientName} recusada.`);
-    item.remove();
-  } else {
-    showToast("Envie sua proposta de valor/horário pelo chat.");
+  try {
+    const response = await authFetch(`/solicitacoes/${item.dataset.requestId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: button.dataset.requestStatus }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível atualizar a solicitação.");
+    await loadProviderRequests();
+    showToast(`Solicitação ${requestStatusLabel(data.status).toLowerCase()}.`);
+  } catch (error) {
+    showToast(error.message);
   }
 });
 
@@ -1386,6 +1495,8 @@ if (initialRole) {
   setActiveProviderSection("painel");
   loadCategories().then(loadServices);
   loadProviderServices();
+  loadClientRequests();
+  loadProviderRequests();
   loadFavorites();
   renderClientCalendar();
   renderProviderAgenda();

@@ -1,7 +1,10 @@
+from datetime import datetime
 from pathlib import Path
 
+import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -15,6 +18,8 @@ from app.auth import (
     get_current_client_id,
     get_current_provider_id,
     hash_password,
+    BEARER,
+    SECRET_KEY,
     verify_password,
 )
 from app.database import get_db
@@ -86,6 +91,16 @@ class ServiceStatusUpdate(BaseModel):
 
 class FavoriteCreate(BaseModel):
     prestador_id: int
+
+
+class RequestCreate(BaseModel):
+    servico_id: int
+    data_hora_agendada: datetime | None = None
+    valor_proposto: float | None = None
+
+
+class RequestStatusUpdate(BaseModel):
+    status: str
 
 
 class AddressFields(BaseModel):
@@ -317,6 +332,176 @@ def list_my_favorites(
     """)
     rows = db.execute(query, {"cliente_id": client_id, "lat": 0, "lng": 0}).mappings().all()
     return [_decode_service_row(row) for row in rows]
+
+
+def _request_row(row) -> dict:
+    request = dict(row)
+    for key in ("data_hora_agendada", "criado_em"):
+        if request.get(key) is not None:
+            request[key] = request[key].isoformat()
+    if request.get("valor_proposto") is not None:
+        request["valor_proposto"] = float(request["valor_proposto"])
+    return request
+
+
+REQUEST_SELECT = """
+    SELECT
+        so.id,
+        so.cliente_id,
+        so.servico_id,
+        so.data_hora_agendada,
+        so.valor_proposto,
+        so.status,
+        so.criado_em,
+        s.titulo AS servico_titulo,
+        s.descricao AS servico_descricao,
+        p.id AS prestador_id,
+        p.nome_empresa AS prestador_nome,
+        c.nome_completo AS cliente_nome,
+        c.email AS cliente_email
+    FROM solicitacao so
+    JOIN servico s ON s.id = so.servico_id
+    JOIN prestador p ON p.id = s.prestador_id
+    JOIN cliente c ON c.id = so.cliente_id
+"""
+
+
+@app.post("/solicitacoes")
+def create_request(
+    request: RequestCreate,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    service = db.execute(
+        text("SELECT id, valor, status FROM servico WHERE id = :id"),
+        {"id": request.servico_id},
+    ).mappings().first()
+    if service is None or service["status"] != "ativo":
+        raise HTTPException(status_code=404, detail="Active service not found")
+    if request.valor_proposto is not None and request.valor_proposto < 0:
+        raise HTTPException(status_code=400, detail="Proposed value cannot be negative")
+
+    result = db.execute(
+        text("""
+            INSERT INTO solicitacao
+                (cliente_id, servico_id, data_hora_agendada, valor_proposto, status)
+            VALUES
+                (:cliente_id, :servico_id, :data_hora_agendada, :valor_proposto, 'solicitado')
+        """),
+        {
+            "cliente_id": client_id,
+            "servico_id": request.servico_id,
+            "data_hora_agendada": request.data_hora_agendada,
+            "valor_proposto": request.valor_proposto if request.valor_proposto is not None else service["valor"],
+        },
+    )
+    db.commit()
+    return _get_request(result.lastrowid, db, client_id=client_id)
+
+
+@app.get("/clientes/me/solicitacoes")
+def list_client_requests(
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    rows = db.execute(
+        text(REQUEST_SELECT + """
+            WHERE so.cliente_id = :client_id
+            ORDER BY so.criado_em DESC
+        """),
+        {"client_id": client_id},
+    ).mappings().all()
+    return [_request_row(row) for row in rows]
+
+
+@app.get("/prestadores/me/solicitacoes")
+def list_provider_requests(
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    rows = db.execute(
+        text(REQUEST_SELECT + """
+            WHERE s.prestador_id = :provider_id
+            ORDER BY so.criado_em DESC
+        """),
+        {"provider_id": provider_id},
+    ).mappings().all()
+    return [_request_row(row) for row in rows]
+
+
+def _get_request(
+    request_id: int,
+    db: Session,
+    client_id: int | None = None,
+    provider_id: int | None = None,
+):
+    row = db.execute(
+        text(REQUEST_SELECT + """
+            WHERE so.id = :request_id
+              AND (:client_id IS NULL OR so.cliente_id = :client_id)
+              AND (:provider_id IS NULL OR s.prestador_id = :provider_id)
+        """),
+        {"request_id": request_id, "client_id": client_id, "provider_id": provider_id},
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return _request_row(row)
+
+
+@app.get("/solicitacoes/{request_id}")
+def get_request_detail(request_id: int, db: Session = Depends(get_db)):
+    return _get_request(request_id, db)
+
+
+@app.patch("/solicitacoes/{request_id}/status")
+def update_request_status(
+    request_id: int,
+    payload: RequestStatusUpdate,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        token_payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        account_id = int(token_payload["sub"])
+        role = token_payload["role"]
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    request_row = db.execute(
+        text(REQUEST_SELECT + " WHERE so.id = :request_id"),
+        {"request_id": request_id},
+    ).mappings().first()
+    if request_row is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    current_status = request_row["status"]
+    next_status = payload.status
+    provider_transitions = {
+        "solicitado": {"confirmado", "cancelado"},
+        "confirmado": {"em_andamento", "cancelado"},
+        "em_andamento": {"concluido"},
+    }
+    client_transitions = {
+        "solicitado": {"cancelado"},
+        "confirmado": {"cancelado"},
+    }
+    if role == "prestador":
+        if request_row["prestador_id"] != account_id or next_status not in provider_transitions.get(current_status, set()):
+            raise HTTPException(status_code=403, detail="Invalid provider status transition")
+    elif role == "cliente":
+        if request_row["cliente_id"] != account_id or next_status not in client_transitions.get(current_status, set()):
+            raise HTTPException(status_code=403, detail="Invalid client status transition")
+    else:
+        raise HTTPException(status_code=403, detail="Only clients and providers can update requests")
+
+    db.execute(
+        text("UPDATE solicitacao SET status = :status WHERE id = :id"),
+        {"status": next_status, "id": request_id},
+    )
+    db.commit()
+    return _get_request(request_id, db)
 
 
 SERVICE_SELECT = """
