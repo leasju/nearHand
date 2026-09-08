@@ -119,6 +119,16 @@ class AvailabilityCreate(BaseModel):
     bloqueado: bool = False
 
 
+class EvaluationCreate(BaseModel):
+    solicitacao_id: int
+    nota: int
+    comentario: str = ""
+
+
+class EvaluationReply(BaseModel):
+    resposta_prestador: str
+
+
 @app.get("/addresses/cep/{cep}")
 def lookup_address_by_cep(cep: str):
     normalized_cep = re.sub(r"\D", "", cep)
@@ -585,6 +595,145 @@ def update_request_status(
     )
     db.commit()
     return _get_request(request_id, db)
+
+
+def _evaluation_row(row) -> dict:
+    evaluation = dict(row)
+    if evaluation.get("criado_em") is not None:
+        evaluation["criado_em"] = evaluation["criado_em"].isoformat()
+    return evaluation
+
+
+EVALUATION_SELECT = """
+    SELECT
+        a.id,
+        a.solicitacao_id,
+        a.nota,
+        a.comentario,
+        a.resposta_prestador,
+        a.denunciada,
+        a.criado_em,
+        so.cliente_id,
+        so.servico_id,
+        s.titulo AS servico_titulo,
+        p.id AS prestador_id,
+        p.nome_empresa AS prestador_nome,
+        c.nome_completo AS cliente_nome
+    FROM avaliacao a
+    JOIN solicitacao so ON so.id = a.solicitacao_id
+    JOIN servico s ON s.id = so.servico_id
+    JOIN prestador p ON p.id = s.prestador_id
+    JOIN cliente c ON c.id = so.cliente_id
+"""
+
+
+@app.post("/avaliacoes")
+def create_evaluation(
+    evaluation: EvaluationCreate,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    if evaluation.nota < 1 or evaluation.nota > 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+    request = db.execute(
+        text("""
+            SELECT id FROM solicitacao
+            WHERE id = :id AND cliente_id = :cliente_id AND status = 'concluido'
+        """),
+        {"id": evaluation.solicitacao_id, "cliente_id": client_id},
+    ).first()
+    if request is None:
+        raise HTTPException(status_code=400, detail="Only completed requests can be evaluated")
+    try:
+        result = db.execute(
+            text("""
+                INSERT INTO avaliacao (solicitacao_id, nota, comentario)
+                VALUES (:solicitacao_id, :nota, :comentario)
+            """),
+            {
+                "solicitacao_id": evaluation.solicitacao_id,
+                "nota": evaluation.nota,
+                "comentario": evaluation.comentario.strip() or None,
+            },
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="This request has already been evaluated")
+    row = db.execute(
+        text(EVALUATION_SELECT + " WHERE a.id = :id"), {"id": result.lastrowid}
+    ).mappings().first()
+    return _evaluation_row(row)
+
+
+@app.get("/prestadores/{provider_id}/avaliacoes")
+def list_provider_evaluations(provider_id: int, db: Session = Depends(get_db)):
+    rows = db.execute(
+        text(EVALUATION_SELECT + """
+            WHERE p.id = :provider_id AND a.denunciada = FALSE
+            ORDER BY a.criado_em DESC
+        """),
+        {"provider_id": provider_id},
+    ).mappings().all()
+    return [_evaluation_row(row) for row in rows]
+
+
+@app.patch("/avaliacoes/{evaluation_id}/resposta")
+def reply_to_evaluation(
+    evaluation_id: int,
+    reply: EvaluationReply,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    text_reply = reply.resposta_prestador.strip()
+    if not text_reply:
+        raise HTTPException(status_code=400, detail="Reply cannot be empty")
+    result = db.execute(
+        text("""
+            UPDATE avaliacao a
+            JOIN solicitacao so ON so.id = a.solicitacao_id
+            JOIN servico s ON s.id = so.servico_id
+            SET a.resposta_prestador = :resposta
+            WHERE a.id = :id AND s.prestador_id = :prestador_id
+        """),
+        {"resposta": text_reply, "id": evaluation_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    row = db.execute(
+        text(EVALUATION_SELECT + " WHERE a.id = :id"), {"id": evaluation_id}
+    ).mappings().first()
+    return _evaluation_row(row)
+
+
+@app.patch("/avaliacoes/{evaluation_id}/denunciar")
+def report_evaluation(
+    evaluation_id: int,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        account_id = int(payload["sub"])
+        role = payload["role"]
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    row = db.execute(
+        text(EVALUATION_SELECT + " WHERE a.id = :id"), {"id": evaluation_id}
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    allowed = (role == "cliente" and row["cliente_id"] == account_id) or (
+        role == "prestador" and row["prestador_id"] == account_id
+    )
+    if not allowed:
+        raise HTTPException(status_code=403, detail="You cannot report this evaluation")
+    db.execute(text("UPDATE avaliacao SET denunciada = TRUE WHERE id = :id"), {"id": evaluation_id})
+    db.commit()
+    return {"status": "reported"}
 
 
 def _availability_row(row) -> dict:

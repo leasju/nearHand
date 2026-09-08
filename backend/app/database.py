@@ -28,6 +28,9 @@ def ensure_optional_schema():
         columns = connection.execute(text("SHOW COLUMNS FROM prestador LIKE 'foto'"))
         if columns.first() is None:
             connection.execute(text("ALTER TABLE prestador ADD COLUMN foto VARCHAR(255) NULL"))
+        columns = connection.execute(text("SHOW COLUMNS FROM avaliacao LIKE 'resposta_prestador'"))
+        if columns.first() is None:
+            connection.execute(text("ALTER TABLE avaliacao ADD COLUMN resposta_prestador TEXT NULL"))
 
 # Open a database connection and provide a session
 def get_db():

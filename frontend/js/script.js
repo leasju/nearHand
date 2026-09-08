@@ -269,7 +269,35 @@ function showServiceDetails(service) {
   galleryMain.style.backgroundImage = firstPhoto ? `url("${firstPhoto}")` : "";
   galleryMain.style.backgroundSize = firstPhoto ? "cover" : "";
   loadServiceAvailability(service.prestador_id);
+  loadServiceReviews(service.prestador_id);
   document.getElementById("serviceModal").hidden = false;
+}
+
+function renderStars(rating) {
+  return "★".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating));
+}
+
+async function loadServiceReviews(providerId) {
+  const container = document.querySelector(".reviews-block");
+  if (!container) return;
+  try {
+    const response = await fetch(`/prestadores/${providerId}/avaliacoes`);
+    const reviews = await response.json();
+    if (!response.ok) throw new Error(reviews.detail || "Não foi possível carregar as avaliações.");
+    container.querySelectorAll(".review-inline").forEach((review) => review.remove());
+    if (!reviews.length) {
+      container.insertAdjacentHTML("beforeend", '<p class="empty-state review-inline">Ainda não há avaliações.</p>');
+      return;
+    }
+    reviews.slice(0, 3).forEach((review) => {
+      const item = document.createElement("div");
+      item.className = "review-inline";
+      item.innerHTML = `<strong>${renderStars(review.nota)}</strong><p>${review.comentario || "Sem comentário."}</p><small>${review.cliente_nome}${review.resposta_prestador ? ` · Resposta: ${review.resposta_prestador}` : ""}</small>`;
+      container.appendChild(item);
+    });
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function renderServiceAvailability(slots) {
@@ -848,7 +876,7 @@ async function loadClientRequests() {
         <td>${formatRequestDate(request.data_hora_agendada)}</td>
         <td>R$ ${formatPrice(request.valor_proposto || 0)}</td>
         <td><span class="status ${requestStatusClass(request.status)}">${requestStatusLabel(request.status)}</span></td>
-        <td>${["solicitado", "confirmado"].includes(request.status) ? '<button class="text-btn" data-request-action="cancel">Cancelar</button>' : ""}</td>
+        <td>${request.status === "concluido" ? '<button class="text-btn" data-request-action="evaluate">Avaliar</button>' : ["solicitado", "confirmado"].includes(request.status) ? '<button class="text-btn" data-request-action="cancel">Cancelar</button>' : ""}</td>
       `;
       body.appendChild(row);
     });
@@ -862,6 +890,20 @@ document.querySelector(".table-card tbody").addEventListener("click", async (eve
   if (!button) return;
   const row = button.closest("tr");
   try {
+    if (button.dataset.requestAction === "evaluate") {
+      const nota = Number(window.prompt("Dê uma nota de 1 a 5:"));
+      if (!Number.isInteger(nota) || nota < 1 || nota > 5) return;
+      const comentario = window.prompt("Escreva um comentário:") || "";
+      const evaluationResponse = await authFetch("/avaliacoes", {
+        method: "POST",
+        body: JSON.stringify({ solicitacao_id: Number(row.dataset.requestId), nota, comentario }),
+      });
+      const evaluation = await evaluationResponse.json();
+      if (!evaluationResponse.ok) throw new Error(evaluation.detail || "Não foi possível salvar a avaliação.");
+      await loadClientRequests();
+      showToast("Avaliação enviada.");
+      return;
+    }
     const response = await authFetch(`/solicitacoes/${row.dataset.requestId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: "cancelado" }),
@@ -1190,11 +1232,56 @@ newAdForm.addEventListener("submit", async (event) => {
 // ============================================
 // Painel do prestador: avaliações
 // ============================================
-document.querySelectorAll(".review .text-btn").forEach((button) => {
-  button.addEventListener("click", () => {
-    const reply = prompt("Escreva sua resposta pública para esta avaliação:");
-    if (reply) showToast("Resposta publicada.");
-  });
+async function loadProviderEvaluations() {
+  if (currentSessionRole !== "prestador") return;
+  const panel = document.querySelector('[data-provider-view="avaliacoes"] .panel-card');
+  if (!panel) return;
+  try {
+    const profileResponse = await authFetch("/prestadores/me");
+    const profile = await profileResponse.json();
+    const response = await fetch(`/prestadores/${profile.id}/avaliacoes`);
+    const reviews = await response.json();
+    if (!response.ok) throw new Error(reviews.detail || "Não foi possível carregar as avaliações.");
+    panel.querySelectorAll(".review").forEach((review) => review.remove());
+    if (!reviews.length) {
+      panel.insertAdjacentHTML("beforeend", '<p class="empty-state">Você ainda não recebeu avaliações.</p>');
+      return;
+    }
+    reviews.forEach((review) => {
+      const item = document.createElement("div");
+      item.className = "review";
+      item.dataset.evaluationId = review.id;
+      item.innerHTML = `<div class="review-stars">${renderStars(review.nota)}</div><p>${review.comentario || "Sem comentário."}</p><small>— ${review.cliente_nome}</small>${review.resposta_prestador ? `<p class="field-help">Sua resposta: ${review.resposta_prestador}</p>` : '<button class="text-btn" data-review-action="reply">Responder</button>'}<button class="text-btn" data-review-action="report">Denunciar</button>`;
+      panel.appendChild(item);
+    });
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+document.querySelector('[data-provider-view="avaliacoes"] .panel-card').addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-review-action]");
+  if (!button) return;
+  const item = button.closest(".review");
+  try {
+    if (button.dataset.reviewAction === "reply") {
+      const resposta_prestador = window.prompt("Escreva sua resposta pública:");
+      if (!resposta_prestador?.trim()) return;
+      const response = await authFetch(`/avaliacoes/${item.dataset.evaluationId}/resposta`, { method: "PATCH", body: JSON.stringify({ resposta_prestador }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Não foi possível responder.");
+      await loadProviderEvaluations();
+      showToast("Resposta publicada.");
+    } else {
+      const response = await authFetch(`/avaliacoes/${item.dataset.evaluationId}/denunciar`, { method: "PATCH" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Não foi possível denunciar.");
+      await loadProviderEvaluations();
+      showToast("Avaliação denunciada.");
+    }
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 // ============================================
@@ -1680,6 +1767,7 @@ if (initialRole) {
   loadClientRequests();
   loadProviderRequests();
   loadProviderAvailability();
+  loadProviderEvaluations();
   loadFavorites();
   renderClientCalendar();
   renderProviderAgenda();

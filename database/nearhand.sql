@@ -141,6 +141,7 @@ CREATE TABLE avaliacao (
     solicitacao_id INT NOT NULL UNIQUE,
     nota INT NOT NULL CHECK (nota BETWEEN 1 AND 5),
     comentario TEXT,
+    resposta_prestador TEXT,
     denunciada BOOLEAN NOT NULL DEFAULT FALSE,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solicitacao_id) REFERENCES solicitacao(id)
