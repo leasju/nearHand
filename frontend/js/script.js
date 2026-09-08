@@ -1582,13 +1582,81 @@ providerProfileForm.addEventListener("submit", async (event) => {
   }
 });
 
-document.getElementById("paymentForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  showToast("Método de pagamento salvo. Em breve isso fica salvo no banco de dados.");
+function methodLabel(method) {
+  const labels = { pix: "Pix", cartao_credito: "Cartão de crédito", cartao_debito: "Cartão de débito", banco: "Conta bancária", cartao: "Cartão" };
+  return labels[method.tipo] || method.tipo;
+}
+
+function renderSavedMethods(containerId, methods, receiving = false) {
+  const container = document.getElementById(containerId);
+  container.replaceChildren();
+  methods.forEach((method) => {
+    const item = document.createElement("div");
+    item.className = "saved-method";
+    const detail = method.tipo === "pix" ? method.chave_pix : method.tipo === "banco" ? `${method.banco} · Ag. ${method.agencia || "-"} · Conta ${method.conta || "-"}` : `Cartão terminado em ${method.ultimos_4_digitos}`;
+    item.innerHTML = `<span><strong>${methodLabel(method)}</strong><small>${detail}</small></span><button type="button" class="text-btn" data-method-id="${method.id}" data-receiving="${receiving}">Excluir</button>`;
+    container.appendChild(item);
+  });
+}
+
+async function loadPaymentMethods() {
+  if (currentSessionRole !== "cliente") return;
+  const response = await authFetch("/clientes/me/metodos-pagamento");
+  const methods = await response.json();
+  if (response.ok) renderSavedMethods("paymentMethodsList", methods);
+}
+
+async function loadReceivingMethods() {
+  if (currentSessionRole !== "prestador") return;
+  const response = await authFetch("/prestadores/me/metodos-recebimento");
+  const methods = await response.json();
+  if (response.ok) renderSavedMethods("receivingMethodsList", methods, true);
+}
+
+document.getElementById("paymentType").addEventListener("change", () => {
+  const pix = document.getElementById("paymentType").value === "pix";
+  document.getElementById("paymentPixField").hidden = !pix;
+  document.getElementById("paymentCardField").hidden = pix;
 });
-document.getElementById("receivingForm").addEventListener("submit", (event) => {
+document.getElementById("receivingType").addEventListener("change", () => {
+  const type = document.getElementById("receivingType").value;
+  document.getElementById("receivingPixField").hidden = type !== "pix";
+  document.getElementById("receivingBankField").hidden = type !== "banco";
+  document.getElementById("receivingBankDetails").hidden = type !== "banco";
+  document.getElementById("receivingCardField").hidden = type !== "cartao";
+});
+
+document.getElementById("paymentForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  showToast("Método de recebimento salvo. Em breve isso fica salvo no banco de dados.");
+  const tipo = document.getElementById("paymentType").value;
+  try {
+    const response = await authFetch("/clientes/me/metodos-pagamento", { method: "POST", body: JSON.stringify({ tipo, chave_pix: document.getElementById("paymentPixKey").value, ultimos_4_digitos: document.getElementById("paymentLast4").value }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o pagamento.");
+    event.target.reset(); await loadPaymentMethods(); showToast("Método de pagamento salvo.");
+  } catch (error) { showToast(error.message); }
+});
+
+document.getElementById("receivingForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const tipo = document.getElementById("receivingType").value;
+  try {
+    const response = await authFetch("/prestadores/me/metodos-recebimento", { method: "POST", body: JSON.stringify({ tipo, chave_pix: document.getElementById("receivingPixKey").value, ultimos_4_digitos: document.getElementById("receivingLast4").value, banco: document.getElementById("receivingBank").value, agencia: document.getElementById("receivingAgency").value, conta: document.getElementById("receivingAccount").value }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o recebimento.");
+    event.target.reset(); await loadReceivingMethods(); showToast("Método de recebimento salvo.");
+  } catch (error) { showToast(error.message); }
+});
+
+document.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-method-id]");
+  if (!button) return;
+  const base = button.dataset.receiving === "true" ? "/prestadores/me/metodos-recebimento" : "/clientes/me/metodos-pagamento";
+  try {
+    const response = await authFetch(`${base}/${button.dataset.methodId}`, { method: "DELETE" });
+    if (!response.ok) throw new Error("Não foi possível excluir o método.");
+    button.closest(".saved-method").remove(); showToast("Método excluído.");
+  } catch (error) { showToast(error.message); }
 });
 document.getElementById("goToAdsBtn").addEventListener("click", () => {
   setActiveRole("prestador");
@@ -1836,6 +1904,8 @@ if (initialRole) {
   loadClientRequests();
   loadProviderRequests();
   loadProviderMetrics();
+  loadPaymentMethods();
+  loadReceivingMethods();
   loadProviderAvailability();
   loadProviderEvaluations();
   loadFavorites();

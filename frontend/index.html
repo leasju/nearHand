@@ -309,7 +309,10 @@
                   <option value="cartao_debito">Cartão de débito</option>
                 </select>
               </label>
+              <label id="paymentPixField">Chave Pix<input id="paymentPixKey" placeholder="sua chave Pix" /></label>
+              <label id="paymentCardField" hidden>Últimos 4 dígitos<input id="paymentLast4" inputmode="numeric" maxlength="4" placeholder="1234" /></label>
               <button class="primary-btn" type="submit">Salvar método de pagamento</button>
+              <div id="paymentMethodsList" class="saved-methods"></div>
             </form>
           </div>
 
@@ -323,7 +326,12 @@
                   <option value="cartao">Cartão</option>
                 </select>
               </label>
+              <label id="receivingPixField">Chave Pix<input id="receivingPixKey" placeholder="sua chave Pix" /></label>
+              <label id="receivingBankField" hidden>Banco<input id="receivingBank" placeholder="Nome do banco" /></label>
+              <div class="form-row" id="receivingBankDetails" hidden><label>Agência<input id="receivingAgency" /></label><label>Conta<input id="receivingAccount" /></label></div>
+              <label id="receivingCardField" hidden>Últimos 4 dígitos<input id="receivingLast4" inputmode="numeric" maxlength="4" placeholder="1234" /></label>
               <button class="primary-btn" type="submit">Salvar método de recebimento</button>
+              <div id="receivingMethodsList" class="saved-methods"></div>
             </form>
             <button class="secondary-btn settings-standalone-btn" id="goToAdsBtn">Gerenciar meus anúncios</button>
           </div>

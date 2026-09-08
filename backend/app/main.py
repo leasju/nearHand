@@ -133,6 +133,21 @@ class EvaluationReply(BaseModel):
     resposta_prestador: str
 
 
+class PaymentMethodCreate(BaseModel):
+    tipo: str
+    chave_pix: str = ""
+    ultimos_4_digitos: str = ""
+
+
+class ReceivingMethodCreate(BaseModel):
+    tipo: str
+    chave_pix: str = ""
+    ultimos_4_digitos: str = ""
+    banco: str = ""
+    agencia: str = ""
+    conta: str = ""
+
+
 @app.get("/prestadores/me/metrics")
 def provider_metrics(
     mes: int | None = Query(None, ge=1, le=12),
@@ -171,6 +186,164 @@ def provider_metrics(
         "faturamento": float(result["revenue"] or 0),
         "servicos_realizados": int(result["completed_services"] or 0),
     }
+
+
+def _payment_row(row) -> dict:
+    return dict(row)
+
+
+@app.post("/clientes/me/metodos-pagamento")
+def add_payment_method(
+    method: PaymentMethodCreate,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    if method.tipo not in {"pix", "cartao_credito", "cartao_debito"}:
+        raise HTTPException(status_code=400, detail="Invalid payment method")
+    if method.tipo == "pix" and not method.chave_pix.strip():
+        raise HTTPException(status_code=400, detail="Pix key is required")
+    if method.tipo.startswith("cartao") and not re.fullmatch(r"\d{4}", method.ultimos_4_digitos):
+        raise HTTPException(status_code=400, detail="Provide only the last 4 card digits")
+    result = db.execute(
+        text("""
+            INSERT INTO metodo_pagamento (cliente_id, tipo, chave_pix, ultimos_4_digitos)
+            VALUES (:cliente_id, :tipo, :chave_pix, :ultimos_4)
+        """),
+        {
+            "cliente_id": client_id,
+            "tipo": method.tipo,
+            "chave_pix": method.chave_pix.strip() or None,
+            "ultimos_4": method.ultimos_4_digitos or None,
+        },
+    )
+    db.commit()
+    return get_payment_method(result.lastrowid, db, client_id)
+
+
+def get_payment_method(method_id: int, db: Session, client_id: int):
+    row = db.execute(
+        text("""
+            SELECT id, tipo, chave_pix, ultimos_4_digitos
+            FROM metodo_pagamento
+            WHERE id = :id AND cliente_id = :cliente_id
+        """),
+        {"id": method_id, "cliente_id": client_id},
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Payment method not found")
+    return _payment_row(row)
+
+
+@app.get("/clientes/me/metodos-pagamento")
+def list_payment_methods(
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    rows = db.execute(
+        text("""
+            SELECT id, tipo, chave_pix, ultimos_4_digitos
+            FROM metodo_pagamento
+            WHERE cliente_id = :cliente_id ORDER BY id DESC
+        """),
+        {"cliente_id": client_id},
+    ).mappings().all()
+    return [_payment_row(row) for row in rows]
+
+
+@app.delete("/clientes/me/metodos-pagamento/{method_id}")
+def delete_payment_method(
+    method_id: int,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    result = db.execute(
+        text("DELETE FROM metodo_pagamento WHERE id = :id AND cliente_id = :cliente_id"),
+        {"id": method_id, "cliente_id": client_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Payment method not found")
+    return {"status": "deleted"}
+
+
+@app.post("/prestadores/me/metodos-recebimento")
+def add_receiving_method(
+    method: ReceivingMethodCreate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    if method.tipo not in {"pix", "banco", "cartao"}:
+        raise HTTPException(status_code=400, detail="Invalid receiving method")
+    if method.tipo == "pix" and not method.chave_pix.strip():
+        raise HTTPException(status_code=400, detail="Pix key is required")
+    if method.tipo == "banco" and not method.banco.strip():
+        raise HTTPException(status_code=400, detail="Bank is required")
+    if method.tipo == "cartao" and not re.fullmatch(r"\d{4}", method.ultimos_4_digitos):
+        raise HTTPException(status_code=400, detail="Provide only the last 4 card digits")
+    result = db.execute(
+        text("""
+            INSERT INTO metodo_recebimento
+                (prestador_id, tipo, chave_pix, ultimos_4_digitos, banco, agencia, conta)
+            VALUES (:prestador_id, :tipo, :chave_pix, :ultimos_4, :banco, :agencia, :conta)
+        """),
+        {
+            "prestador_id": provider_id,
+            "tipo": method.tipo,
+            "chave_pix": method.chave_pix.strip() or None,
+            "ultimos_4": method.ultimos_4_digitos or None,
+            "banco": method.banco.strip() or None,
+            "agencia": method.agencia.strip() or None,
+            "conta": method.conta.strip() or None,
+        },
+    )
+    db.commit()
+    return get_receiving_method(result.lastrowid, db, provider_id)
+
+
+def get_receiving_method(method_id: int, db: Session, provider_id: int):
+    row = db.execute(
+        text("""
+            SELECT id, tipo, chave_pix, ultimos_4_digitos, banco, agencia, conta
+            FROM metodo_recebimento
+            WHERE id = :id AND prestador_id = :prestador_id
+        """),
+        {"id": method_id, "prestador_id": provider_id},
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Receiving method not found")
+    return _payment_row(row)
+
+
+@app.get("/prestadores/me/metodos-recebimento")
+def list_receiving_methods(
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    rows = db.execute(
+        text("""
+            SELECT id, tipo, chave_pix, ultimos_4_digitos, banco, agencia, conta
+            FROM metodo_recebimento
+            WHERE prestador_id = :prestador_id ORDER BY id DESC
+        """),
+        {"prestador_id": provider_id},
+    ).mappings().all()
+    return [_payment_row(row) for row in rows]
+
+
+@app.delete("/prestadores/me/metodos-recebimento/{method_id}")
+def delete_receiving_method(
+    method_id: int,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    result = db.execute(
+        text("DELETE FROM metodo_recebimento WHERE id = :id AND prestador_id = :prestador_id"),
+        {"id": method_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Receiving method not found")
+    return {"status": "deleted"}
 
 
 def _current_account(credentials: HTTPAuthorizationCredentials | None) -> tuple[int, str]:

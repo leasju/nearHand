@@ -31,6 +31,25 @@ def ensure_optional_schema():
         columns = connection.execute(text("SHOW COLUMNS FROM avaliacao LIKE 'resposta_prestador'"))
         if columns.first() is None:
             connection.execute(text("ALTER TABLE avaliacao ADD COLUMN resposta_prestador TEXT NULL"))
+        payment_columns = {
+            "chave_pix": "VARCHAR(140) NULL",
+            "ultimos_4_digitos": "CHAR(4) NULL",
+        }
+        for name, definition in payment_columns.items():
+            columns = connection.execute(text(f"SHOW COLUMNS FROM metodo_pagamento LIKE '{name}'"))
+            if columns.first() is None:
+                connection.execute(text(f"ALTER TABLE metodo_pagamento ADD COLUMN {name} {definition}"))
+        receiving_columns = {
+            "chave_pix": "VARCHAR(140) NULL",
+            "ultimos_4_digitos": "CHAR(4) NULL",
+            "banco": "VARCHAR(100) NULL",
+            "agencia": "VARCHAR(20) NULL",
+            "conta": "VARCHAR(30) NULL",
+        }
+        for name, definition in receiving_columns.items():
+            columns = connection.execute(text(f"SHOW COLUMNS FROM metodo_recebimento LIKE '{name}'"))
+            if columns.first() is None:
+                connection.execute(text(f"ALTER TABLE metodo_recebimento ADD COLUMN {name} {definition}"))
 
 # Open a database connection and provide a session
 def get_db():

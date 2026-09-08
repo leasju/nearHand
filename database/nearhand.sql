@@ -179,6 +179,8 @@ CREATE TABLE metodo_pagamento (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_id INT NOT NULL,
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('cartao_credito', 'cartao_debito', 'pix')),
+    chave_pix VARCHAR(140),
+    ultimos_4_digitos CHAR(4),
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
 );
 
@@ -189,5 +191,10 @@ CREATE TABLE metodo_recebimento (
     id INT AUTO_INCREMENT PRIMARY KEY,
     prestador_id INT NOT NULL,
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('banco', 'pix', 'cartao')),
+    chave_pix VARCHAR(140),
+    ultimos_4_digitos CHAR(4),
+    banco VARCHAR(100),
+    agencia VARCHAR(20),
+    conta VARCHAR(30),
     FOREIGN KEY (prestador_id) REFERENCES prestador(id)
 );
