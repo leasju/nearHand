@@ -1,32 +1,4 @@
 // ============================================
-// Tema claro/escuro (compartilhado com o resto do site)
-// ============================================
-const themeToggleBtn = document.getElementById("themeToggleBtn");
-const themeToggleIcon = document.getElementById("themeToggleIcon");
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  themeToggleIcon.textContent = theme === "dark" ? "☀️" : "🌙";
-}
-
-themeToggleBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-  const next = current === "dark" ? "light" : "dark";
-  localStorage.setItem("nearhand_theme", next);
-  applyTheme(next);
-});
-
-applyTheme(
-  document.documentElement.getAttribute("data-theme") === "dark"
-    ? "dark"
-    : document.documentElement.getAttribute("data-theme") === "light"
-      ? "light"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-);
-
-// ============================================
 // Login do admin
 // ============================================
 const adminLoginForm = document.getElementById("adminLoginForm");

@@ -10,14 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="css/styles.css" />
-  <script>
-    (function () {
-      var saved = localStorage.getItem("nearhand_theme");
-      if (saved === "dark" || saved === "light") {
-        document.documentElement.setAttribute("data-theme", saved);
-      }
-    })();
-  </script>
 </head>
 <body>
   <header class="topbar">
@@ -32,10 +24,14 @@
       <button class="nav-link" data-section="favoritos">Favoritos</button>
     </nav>
 
+    <nav class="main-nav provider-nav" aria-label="Navegação do prestador" hidden>
+      <button class="nav-link active" data-provider-section="painel">Painel</button>
+      <button class="nav-link" data-provider-section="agenda">Agenda</button>
+      <button class="nav-link" data-provider-section="anuncios">Meus anúncios</button>
+      <button class="nav-link" data-provider-section="avaliacoes">Avaliações</button>
+    </nav>
+
     <div class="top-actions">
-      <button class="icon-btn" id="themeToggleBtn" aria-label="Alternar tema escuro">
-        <span id="themeToggleIcon">🌙</span>
-      </button>
       <button class="icon-btn" id="notificationBtn" aria-label="Notificações">
         <span>🔔</span><span class="badge">3</span>
       </button>
@@ -94,7 +90,7 @@
             <option value="price">Menor preço</option>
           </select>
           <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
-          <div class="view-toggle" role="group" aria-label="Modo de visualização">
+          <div class="view-toggle" id="exploreViewToggle" role="group" aria-label="Modo de visualização">
             <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
             <button class="toggle-btn" data-mode="map">⌖ Mapa</button>
           </div>
@@ -158,45 +154,66 @@
     </section>
 
     <section id="providerView" class="app-view" hidden>
-      <section class="provider-hero">
-        <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, Marcos 👋</h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
-        <button class="primary-btn" id="newAdBtn">+ Criar anúncio</button>
+      <section class="provider-section" data-provider-view="painel">
+        <section class="provider-hero">
+          <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, Marcos 👋</h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
+        </section>
+
+        <section class="metric-grid">
+          <article class="metric-card"><span>📥</span><div><small>Solicitações no mês</small><strong>24</strong><em>+12% vs. agosto</em></div></article>
+          <article class="metric-card"><span>✅</span><div><small>Taxa de aceitação</small><strong>87%</strong><em>21 aceitas</em></div></article>
+          <article class="metric-card"><span>⭐</span><div><small>Nota média</small><strong>4,9</strong><em>126 avaliações</em></div></article>
+          <article class="metric-card"><span>💳</span><div><small>Faturamento</small><strong>R$ 4.820</strong><em>Setembro/2026</em></div></article>
+        </section>
+
+        <section class="generic-view">
+          <div class="panel-card">
+            <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn">Ver todos</button></div>
+            <div class="request-list" id="requestList">
+              <article class="request-item"><div class="request-avatar">AC</div><div><strong>Ana Costa</strong><small>Troca de tomadas • 1,8 km • Hoje, 14:00</small></div><strong>R$ 140</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
+              <article class="request-item"><div class="request-avatar">RB</div><div><strong>Rafael Braga</strong><small>Instalação de luminária • 3,2 km • Amanhã, 09:00</small></div><strong>R$ 110</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
+            </div>
+          </div>
+        </section>
       </section>
 
-      <section class="metric-grid">
-        <article class="metric-card"><span>📥</span><div><small>Solicitações no mês</small><strong>24</strong><em>+12% vs. agosto</em></div></article>
-        <article class="metric-card"><span>✅</span><div><small>Taxa de aceitação</small><strong>87%</strong><em>21 aceitas</em></div></article>
-        <article class="metric-card"><span>⭐</span><div><small>Nota média</small><strong>4,9</strong><em>126 avaliações</em></div></article>
-        <article class="metric-card"><span>💳</span><div><small>Faturamento</small><strong>R$ 4.820</strong><em>Setembro/2026</em></div></article>
-      </section>
-
-      <section class="provider-grid">
-        <div class="panel-card span-2">
-          <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn">Ver todos</button></div>
-          <div class="request-list" id="requestList">
-            <article class="request-item"><div class="request-avatar">AC</div><div><strong>Ana Costa</strong><small>Troca de tomadas • 1,8 km • Hoje, 14:00</small></div><strong>R$ 140</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
-            <article class="request-item"><div class="request-avatar">RB</div><div><strong>Rafael Braga</strong><small>Instalação de luminária • 3,2 km • Amanhã, 09:00</small></div><strong>R$ 110</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
+      <section class="generic-view provider-section" data-provider-view="agenda" hidden>
+        <div class="page-title">
+          <div><span class="eyebrow">AGENDA</span><h1>Sua agenda</h1></div>
+          <div class="view-toggle" id="agendaViewToggle" role="group" aria-label="Modo de visualização da agenda">
+            <button class="toggle-btn active" data-agenda-mode="month">Mês</button>
+            <button class="toggle-btn" data-agenda-mode="week">Semana</button>
           </div>
         </div>
 
+        <div class="calendar-card" id="providerMonthView">
+          <div class="calendar-head"><button id="providerAgendaMonthPrev">‹</button><strong id="providerAgendaMonthLabel">Setembro 2026</strong><button id="providerAgendaMonthNext">›</button></div>
+          <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+          <div class="calendar-grid" id="providerAgendaMonthGrid"></div>
+        </div>
+
+        <div class="calendar-card" id="providerWeekView" hidden>
+          <div class="calendar-head"><button id="providerAgendaWeekPrev">‹</button><strong id="providerAgendaWeekLabel">08 – 14 Set 2026</strong><button id="providerAgendaWeekNext">›</button></div>
+          <div class="week-grid" id="providerAgendaWeekGrid"></div>
+        </div>
+
+        <div class="panel-card provider-upcoming">
+          <div class="panel-head"><div><h2>Próximos serviços</h2></div></div>
+          <div class="timeline" id="providerUpcomingList"></div>
+        </div>
+      </section>
+
+      <section class="generic-view provider-section" data-provider-view="anuncios" hidden>
         <div class="panel-card">
-          <div class="panel-head"><div><span class="eyebrow">AGENDA</span><h2>Hoje</h2></div></div>
-          <div class="calendar-head"><button id="providerCalendarPrev">‹</button><strong id="providerCalendarLabel">Setembro 2026</strong><button id="providerCalendarNext">›</button></div>
-          <div class="provider-calendar">
-            <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-            <div class="calendar-grid" id="providerCalendar"></div>
-          </div>
-          <div class="timeline"><div class="timeline-item"><time>09:00</time><span></span><div><strong>Troca de disjuntor</strong><small>Daniela • Taquaral</small></div></div><div class="timeline-item"><time>14:00</time><span></span><div><strong>Visita técnica</strong><small>Ana • Cambuí</small></div></div><div class="timeline-item"><time>17:30</time><span></span><div><strong>Instalação de luminária</strong><small>Pedro • Guanabara</small></div></div></div>
-        </div>
-
-        <div class="panel-card span-2">
-          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><button class="text-btn" id="manageAdsBtn">Gerenciar anúncios</button></div>
+          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><button class="primary-btn" id="newAdBtn">+ Criar anúncio</button></div>
           <div class="ad-list" id="adList">
             <article class="ad-item"><div class="ad-thumb electric">⚡</div><div><strong>Eletricista residencial</strong><small>R$ 120/h • Raio de 10 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
             <article class="ad-item"><div class="ad-thumb electric">💡</div><div><strong>Instalação de luminárias</strong><small>A partir de R$ 90 • Raio de 8 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
           </div>
         </div>
+      </section>
 
+      <section class="generic-view provider-section" data-provider-view="avaliacoes" hidden>
         <div class="panel-card">
           <div class="panel-head"><div><span class="eyebrow">REPUTAÇÃO</span><h2>Avaliações recentes</h2></div></div>
           <div class="review"><div class="review-stars">★★★★★</div><p>“Pontual, explicou tudo e resolveu rápido.”</p><small>— Carla M.</small><button class="text-btn">Responder</button></div>
@@ -217,20 +234,13 @@
             <form id="clientProfileForm" class="ad-form settings-form">
               <label>Nome completo *<input id="cpName" required /></label>
               <label>Foto de perfil *
-                <div class="photo-field">
+                <div class="photo-dropzone" id="cpPhotoDropzone">
                   <img class="photo-thumb" id="cpPhotoPreview" alt="Pré-visualização da foto" hidden />
-                  <div class="photo-thumb-empty" id="cpPhotoEmpty">Sem foto</div>
-                  <div class="photo-field-controls">
-                    <select id="cpPhotoMode">
-                      <option value="url">Colar link</option>
-                      <option value="file">Enviar arquivo</option>
-                    </select>
-                    <input id="cpPhotoUrl" type="text" placeholder="https://..." />
-                    <label class="file-btn" id="cpPhotoFileLabel" hidden>
-                      Escolher arquivo
-                      <input id="cpPhotoFile" type="file" accept="image/*" hidden />
-                    </label>
+                  <div class="photo-dropzone-empty" id="cpPhotoEmpty">
+                    <span>📷</span>
+                    <small>Arraste uma foto ou clique para enviar</small>
                   </div>
+                  <input id="cpPhotoFile" type="file" accept="image/*" hidden />
                 </div>
               </label>
               <label>Endereço padrão *
@@ -362,13 +372,13 @@
         <div class="form-row"><label>Valor<input required id="adPrice" type="number" min="0" placeholder="120" /></label><label>Tipo<select id="adPriceType"><option>por hora</option><option>por serviço</option></select></label></div>
         <label>Raio de atendimento <strong id="adRadiusLabel">10 km</strong><input id="adRadius" type="range" min="1" max="30" value="10" /></label>
         <label>Fotos do carrossel <span class="hint">mín. 2 para publicar</span></label>
-        <div class="ad-photos-grid" id="adPhotosGrid"></div>
-        <div class="ad-photos-actions">
-          <label class="file-btn">
-            Enviar arquivos
-            <input id="adPhotoFile" type="file" accept="image/*" multiple hidden />
-          </label>
-          <button type="button" class="secondary-btn" id="adPhotoLinkBtn">+ Adicionar por link</button>
+        <div class="ad-photos-dropzone" id="adPhotosDropzone">
+          <div class="ad-photos-grid" id="adPhotosGrid"></div>
+          <div class="ad-photos-empty" id="adPhotosEmpty">
+            <span>📷</span>
+            <small>Arraste fotos aqui ou clique para enviar</small>
+          </div>
+          <input id="adPhotoFile" type="file" accept="image/*" multiple hidden />
         </div>
         <button class="primary-btn full">Publicar anúncio</button>
       </form>

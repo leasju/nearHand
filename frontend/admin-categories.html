@@ -16,14 +16,6 @@
     .category-row input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink)}
     #adminMessage{min-height:22px;color:var(--purple-dark);font-weight:600}
   </style>
-  <script>
-    (function () {
-      var saved = localStorage.getItem("nearhand_theme");
-      if (saved === "dark" || saved === "light") {
-        document.documentElement.setAttribute("data-theme", saved);
-      }
-    })();
-  </script>
 </head>
 <body>
   <header class="topbar">
@@ -31,7 +23,6 @@
       <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
     </a>
     <div class="top-actions">
-      <button class="icon-btn" id="themeToggleBtn" aria-label="Alternar tema escuro"><span id="themeToggleIcon">🌙</span></button>
       <button class="secondary-btn" id="adminLogoutBtn">Sair</button>
     </div>
   </header>

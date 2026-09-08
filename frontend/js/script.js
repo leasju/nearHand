@@ -374,38 +374,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 // ============================================
-// Tema claro/escuro
-// ============================================
-const themeToggleBtn = document.getElementById("themeToggleBtn");
-const themeToggleIcon = document.getElementById("themeToggleIcon");
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  themeToggleIcon.textContent = theme === "dark" ? "☀️" : "🌙";
-}
-
-themeToggleBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-  const next = current === "dark" ? "light" : "dark";
-  localStorage.setItem("nearhand_theme", next);
-  applyTheme(next);
-});
-
-applyTheme(
-  document.documentElement.getAttribute("data-theme") === "dark"
-    ? "dark"
-    : document.documentElement.getAttribute("data-theme") === "light"
-      ? "light"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-);
-
-// ============================================
 // Alternância Cards / Mapa
 // ============================================
 const mapViewSection = document.getElementById("mapView");
-const viewToggleButtons = document.querySelectorAll(".view-toggle .toggle-btn");
+const viewToggleButtons = document.querySelectorAll("#exploreViewToggle .toggle-btn");
 
 viewToggleButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -636,13 +608,15 @@ const providerView = document.getElementById("providerView");
 const settingsView = document.getElementById("settingsView");
 const topRoleButtons = document.querySelectorAll(".top-actions .role-switch .role-btn");
 
-const mainNav = document.querySelector(".main-nav");
+const mainNav = document.querySelector(".main-nav:not(.provider-nav)");
+const providerNav = document.querySelector(".provider-nav");
 
 function showAppView(view) {
   clienteView.hidden = view !== "cliente";
   providerView.hidden = view !== "prestador";
   settingsView.hidden = view !== "settings";
   mainNav.hidden = view !== "cliente";
+  providerNav.hidden = view !== "prestador";
 }
 
 function setActiveRole(role) {
@@ -665,7 +639,7 @@ profileBtn.addEventListener("click", () => {
 // ============================================
 // Navegação entre seções (Explorar / Agenda / Pedidos / Favoritos)
 // ============================================
-const navLinks = document.querySelectorAll(".main-nav .nav-link");
+const navLinks = document.querySelectorAll(".main-nav:not(.provider-nav) .nav-link");
 const sectionViews = document.querySelectorAll(".section-view");
 
 function setActiveSection(section) {
@@ -675,6 +649,21 @@ function setActiveSection(section) {
 
 navLinks.forEach((link) => {
   link.addEventListener("click", () => setActiveSection(link.dataset.section));
+});
+
+// ============================================
+// Navegação do prestador (Painel / Agenda / Anúncios / Avaliações)
+// ============================================
+const providerNavLinks = document.querySelectorAll(".provider-nav .nav-link");
+const providerSectionViews = document.querySelectorAll(".provider-section");
+
+function setActiveProviderSection(section) {
+  providerNavLinks.forEach((link) => link.classList.toggle("active", link.dataset.providerSection === section));
+  providerSectionViews.forEach((view) => { view.hidden = view.dataset.providerView !== section; });
+}
+
+providerNavLinks.forEach((link) => {
+  link.addEventListener("click", () => setActiveProviderSection(link.dataset.providerSection));
 });
 
 // ============================================
@@ -783,14 +772,14 @@ document.getElementById("newAdBtn").addEventListener("click", () => {
   renderAdPhotosGrid();
   newAdModal.hidden = false;
 });
-document.getElementById("manageAdsBtn").addEventListener("click", () => {
-  adList.scrollIntoView({ behavior: "smooth", block: "center" });
-});
 
 // ============================================
-// Fotos do anúncio: enviar arquivo(s) ou adicionar por link
+// Fotos do anúncio: arrastar ou clicar para enviar arquivos
 // ============================================
+const adPhotosDropzone = document.getElementById("adPhotosDropzone");
 const adPhotosGrid = document.getElementById("adPhotosGrid");
+const adPhotosEmpty = document.getElementById("adPhotosEmpty");
+const adPhotoFile = document.getElementById("adPhotoFile");
 let adPhotos = [];
 
 function renderAdPhotosGrid() {
@@ -801,11 +790,13 @@ function renderAdPhotosGrid() {
     thumb.innerHTML = `<img src="${url}" alt="Foto ${index + 1}" /><button type="button" class="ad-photo-remove" data-index="${index}" aria-label="Remover foto">×</button>`;
     adPhotosGrid.appendChild(thumb);
   });
+  adPhotosEmpty.hidden = adPhotos.length > 0;
 }
 
 adPhotosGrid.addEventListener("click", (event) => {
   const button = event.target.closest(".ad-photo-remove");
   if (!button) return;
+  event.stopPropagation();
   adPhotos.splice(Number(button.dataset.index), 1);
   renderAdPhotosGrid();
 });
@@ -832,21 +823,28 @@ function resizeImageFile(file, size = 480) {
   });
 }
 
-document.getElementById("adPhotoFile").addEventListener("change", async (event) => {
-  const files = Array.from(event.target.files || []);
+async function addAdPhotos(fileList) {
+  const files = Array.from(fileList || []).filter((file) => file.type.startsWith("image/"));
   for (const file of files) {
     adPhotos.push(await resizeImageFile(file));
   }
   renderAdPhotosGrid();
+}
+
+adPhotosDropzone.addEventListener("click", () => adPhotoFile.click());
+adPhotoFile.addEventListener("change", async (event) => {
+  await addAdPhotos(event.target.files);
   event.target.value = "";
 });
-
-document.getElementById("adPhotoLinkBtn").addEventListener("click", () => {
-  const url = prompt("Cole o link da foto:");
-  if (url && url.trim()) {
-    adPhotos.push(url.trim());
-    renderAdPhotosGrid();
-  }
+adPhotosDropzone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  adPhotosDropzone.classList.add("dragover");
+});
+adPhotosDropzone.addEventListener("dragleave", () => adPhotosDropzone.classList.remove("dragover"));
+adPhotosDropzone.addEventListener("drop", async (event) => {
+  event.preventDefault();
+  adPhotosDropzone.classList.remove("dragover");
+  await addAdPhotos(event.dataTransfer.files);
 });
 
 adRadius?.addEventListener("input", () => {
@@ -964,11 +962,9 @@ function readAddressFields(prefix) {
   };
 }
 
-function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, emptyId }) {
-  const modeSelect = document.getElementById(modeId);
-  const urlInput = document.getElementById(urlId);
+function setupPhotoDropzone({ dropzoneId, fileId, previewId, emptyId }) {
+  const dropzone = document.getElementById(dropzoneId);
   const fileInput = document.getElementById(fileId);
-  const fileLabel = document.getElementById(fileLabelId);
   const preview = document.getElementById(previewId);
   const empty = document.getElementById(emptyId);
   let value = "";
@@ -984,20 +980,8 @@ function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, empty
     }
   }
 
-  function applyMode() {
-    const isFile = modeSelect.value === "file";
-    urlInput.hidden = isFile;
-    fileLabel.hidden = !isFile;
-  }
-
-  modeSelect.addEventListener("change", applyMode);
-  urlInput.addEventListener("input", () => {
-    value = urlInput.value.trim();
-    updatePreview();
-  });
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) return;
+  function handleFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -1017,22 +1001,32 @@ function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, empty
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  dropzone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+  dropzone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    dropzone.classList.add("dragover");
+  });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragover");
+    handleFile(event.dataTransfer.files[0]);
   });
 
-  applyMode();
   updatePreview();
 
   return {
     getValue: () => value,
-    setValue: (newValue) => { value = newValue || ""; urlInput.value = value; updatePreview(); },
+    setValue: (newValue) => { value = newValue || ""; updatePreview(); },
   };
 }
 
-const cpPhotoPicker = setupPhotoPicker({
-  modeId: "cpPhotoMode",
-  urlId: "cpPhotoUrl",
+const cpPhotoPicker = setupPhotoDropzone({
+  dropzoneId: "cpPhotoDropzone",
   fileId: "cpPhotoFile",
-  fileLabelId: "cpPhotoFileLabel",
   previewId: "cpPhotoPreview",
   emptyId: "cpPhotoEmpty",
 });
@@ -1156,7 +1150,7 @@ document.getElementById("receivingForm").addEventListener("submit", (event) => {
 });
 document.getElementById("goToAdsBtn").addEventListener("click", () => {
   setActiveRole("prestador");
-  document.getElementById("adList").scrollIntoView({ behavior: "smooth", block: "center" });
+  setActiveProviderSection("anuncios");
 });
 document.getElementById("switchAccountBtn").addEventListener("click", () => {
   switchAccountRole(currentSessionRole === "prestador" ? "cliente" : "prestador");
@@ -1253,30 +1247,142 @@ document.getElementById("clientCalendarNext").addEventListener("click", () => {
   renderClientCalendar();
 });
 
-const PROVIDER_EVENTS = [
-  { day: today.getDate(), label: "3 serviços hoje: Troca de disjuntor, Visita técnica, Instalação de luminária" },
-  { day: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getDate(), label: "Instalação de luminária — 09:00 • Rafael Braga" },
-];
-let providerCalendarDate = new Date(today.getFullYear(), today.getMonth(), 1);
+function addDays(date, amount) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
+}
 
-function renderProviderCalendar() {
-  const isCurrentMonth = providerCalendarDate.getMonth() === today.getMonth()
-    && providerCalendarDate.getFullYear() === today.getFullYear();
-  renderCalendar({
-    gridEl: document.getElementById("providerCalendar"),
-    labelEl: document.getElementById("providerCalendarLabel"),
-    date: providerCalendarDate,
-    events: isCurrentMonth ? PROVIDER_EVENTS : [],
+function isSameDate(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+const PROVIDER_EVENTS = [
+  { date: addDays(today, 0), label: "3 serviços hoje: Troca de disjuntor, Visita técnica, Instalação de luminária" },
+  { date: addDays(today, 1), label: "Instalação de luminária — 09:00 • Rafael Braga" },
+  { date: addDays(today, 4), label: "Manutenção elétrica — 10:00 • Ana Costa" },
+  { date: addDays(today, 9), label: "Revisão de quadro de força — 14:00 • Marina Sales" },
+  { date: addDays(today, 16), label: "Instalação de tomadas — 11:00 • Fernanda Lopes" },
+  { date: addDays(today, 35), label: "Instalação residencial completa — 09:00 • Novo cliente" },
+];
+
+function eventsOnDate(date) {
+  return PROVIDER_EVENTS.filter((event) => isSameDate(event.date, date));
+}
+
+let providerAgendaMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+let providerAgendaWeekDate = new Date(today);
+
+function renderProviderMonth() {
+  const gridEl = document.getElementById("providerAgendaMonthGrid");
+  const labelEl = document.getElementById("providerAgendaMonthLabel");
+  labelEl.textContent = `${MONTH_NAMES[providerAgendaMonthDate.getMonth()]} ${providerAgendaMonthDate.getFullYear()}`;
+  gridEl.replaceChildren();
+  buildMonthCells(providerAgendaMonthDate.getFullYear(), providerAgendaMonthDate.getMonth()).forEach((cell) => {
+    const cellEl = document.createElement("div");
+    cellEl.className = "calendar-day";
+    cellEl.textContent = cell.day;
+    if (cell.outside) {
+      cellEl.classList.add("outside");
+    } else {
+      const cellDate = new Date(providerAgendaMonthDate.getFullYear(), providerAgendaMonthDate.getMonth(), cell.day);
+      if (isSameDate(cellDate, today)) cellEl.classList.add("today");
+      const dayEvents = eventsOnDate(cellDate);
+      if (dayEvents.length) {
+        cellEl.classList.add("has-event");
+        cellEl.title = dayEvents.map((event) => event.label).join(" | ");
+        cellEl.addEventListener("click", () => dayEvents.forEach((event) => showToast(event.label)));
+      }
+    }
+    gridEl.appendChild(cellEl);
   });
 }
 
-document.getElementById("providerCalendarPrev").addEventListener("click", () => {
-  providerCalendarDate = new Date(providerCalendarDate.getFullYear(), providerCalendarDate.getMonth() - 1, 1);
-  renderProviderCalendar();
+function startOfWeek(date) {
+  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  result.setDate(result.getDate() - result.getDay());
+  return result;
+}
+
+function renderProviderWeek() {
+  const gridEl = document.getElementById("providerAgendaWeekGrid");
+  const labelEl = document.getElementById("providerAgendaWeekLabel");
+  const start = startOfWeek(providerAgendaWeekDate);
+  const end = addDays(start, 6);
+  const shortDate = (date) => `${String(date.getDate()).padStart(2, "0")} ${MONTH_NAMES[date.getMonth()].slice(0, 3)}`;
+  labelEl.textContent = `${shortDate(start)} – ${shortDate(end)} ${end.getFullYear()}`;
+
+  gridEl.replaceChildren();
+  const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  for (let i = 0; i < 7; i++) {
+    const day = addDays(start, i);
+    const cell = document.createElement("div");
+    cell.className = "week-day";
+    if (isSameDate(day, today)) cell.classList.add("today");
+    cell.innerHTML = `
+      <div class="week-day-label">${dayLabels[i]}</div>
+      <div class="week-day-number">${day.getDate()}</div>
+    `;
+    eventsOnDate(day).forEach((event) => {
+      const chip = document.createElement("div");
+      chip.className = "week-event";
+      chip.textContent = event.label;
+      chip.addEventListener("click", () => showToast(event.label));
+      cell.appendChild(chip);
+    });
+    gridEl.appendChild(cell);
+  }
+}
+
+function renderProviderUpcoming() {
+  const list = document.getElementById("providerUpcomingList");
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const upcoming = PROVIDER_EVENTS
+    .filter((event) => event.date >= startOfToday)
+    .sort((a, b) => a.date - b.date);
+
+  list.replaceChildren();
+  if (!upcoming.length) {
+    list.innerHTML = '<p class="empty-state">Nenhum serviço agendado.</p>';
+    return;
+  }
+  upcoming.forEach((event) => {
+    const item = document.createElement("div");
+    item.className = "timeline-item";
+    const dateLabel = `${String(event.date.getDate()).padStart(2, "0")}/${String(event.date.getMonth() + 1).padStart(2, "0")}`;
+    item.innerHTML = `<time>${dateLabel}</time><span></span><div><strong>${event.label}</strong></div>`;
+    list.appendChild(item);
+  });
+}
+
+function renderProviderAgenda() {
+  renderProviderMonth();
+  renderProviderWeek();
+  renderProviderUpcoming();
+}
+
+document.querySelectorAll("#agendaViewToggle .toggle-btn").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll("#agendaViewToggle .toggle-btn").forEach((btn) => btn.classList.toggle("active", btn === button));
+    const mode = button.dataset.agendaMode;
+    document.getElementById("providerMonthView").hidden = mode !== "month";
+    document.getElementById("providerWeekView").hidden = mode !== "week";
+  });
 });
-document.getElementById("providerCalendarNext").addEventListener("click", () => {
-  providerCalendarDate = new Date(providerCalendarDate.getFullYear(), providerCalendarDate.getMonth() + 1, 1);
-  renderProviderCalendar();
+
+document.getElementById("providerAgendaMonthPrev").addEventListener("click", () => {
+  providerAgendaMonthDate = new Date(providerAgendaMonthDate.getFullYear(), providerAgendaMonthDate.getMonth() - 1, 1);
+  renderProviderMonth();
+});
+document.getElementById("providerAgendaMonthNext").addEventListener("click", () => {
+  providerAgendaMonthDate = new Date(providerAgendaMonthDate.getFullYear(), providerAgendaMonthDate.getMonth() + 1, 1);
+  renderProviderMonth();
+});
+document.getElementById("providerAgendaWeekPrev").addEventListener("click", () => {
+  providerAgendaWeekDate = addDays(providerAgendaWeekDate, -7);
+  renderProviderWeek();
+});
+document.getElementById("providerAgendaWeekNext").addEventListener("click", () => {
+  providerAgendaWeekDate = addDays(providerAgendaWeekDate, 7);
+  renderProviderWeek();
 });
 
 // ============================================
@@ -1286,8 +1392,9 @@ const initialRole = initSession();
 if (initialRole) {
   setActiveRole(initialRole);
   setActiveSection("explorar");
+  setActiveProviderSection("painel");
   loadCategories().then(applyFilters);
   renderFavorites();
   renderClientCalendar();
-  renderProviderCalendar();
+  renderProviderAgenda();
 }

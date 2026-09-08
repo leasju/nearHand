@@ -4,61 +4,26 @@ const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 const contextBanner = document.getElementById("contextBanner");
 const documentGroup = document.getElementById("documentGroup");
-const servicePreferenceGroup = document.getElementById("servicePreferenceGroup");
+const preferencesFutureHint = document.getElementById("preferencesFutureHint");
 const registerNameLabel = document.querySelector('label[for="registerName"]');
 const registerNameInput = document.getElementById("registerName");
-const registerPreferences = document.getElementById("registerPreferences");
 const toast = document.getElementById("toast");
 
 let currentRole = "cliente";
 let currentMode = "login";
-const selectedPreferences = new Set();
 
-// ============================================
-// Categorias (preferências de serviço) — vindas do backend, ordenadas por popularidade
-// ============================================
-function renderPreferenceChips(container, categories, selected) {
-  container.replaceChildren();
-  categories.forEach((category) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "preference-chip";
-    chip.dataset.value = category.nome;
-    chip.classList.toggle("active", selected.has(category.nome));
-    chip.innerHTML = category.servico_count > 0
-      ? `${category.nome} <span class="trending-badge">🔥</span>`
-      : category.nome;
-    chip.addEventListener("click", () => {
-      if (selectedPreferences.has(category.nome)) {
-        selectedPreferences.delete(category.nome);
-        chip.classList.remove("active");
-      } else {
-        selectedPreferences.add(category.nome);
-        chip.classList.add("active");
-      }
-    });
-    container.appendChild(chip);
-  });
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  window.setTimeout(() => toast.classList.remove("show"), 3200);
 }
 
-fetch("/categories/public")
-  .then((response) => response.json())
-  .then((categories) => {
-    renderPreferenceChips(registerPreferences, categories, selectedPreferences);
-    const trendingCount = categories.filter((c) => c.servico_count > 0).length;
-    document.getElementById("preferencesHint").textContent =
-      trendingCount > 0 ? "🔥 = categoria em alta agora." : "";
-  })
-  .catch(() => showToast("Não foi possível carregar as categorias."));
-
 // ============================================
-// Foto de perfil: colar link ou enviar arquivo
+// Foto de perfil: arrastar ou clicar para enviar um arquivo
 // ============================================
-function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, emptyId }) {
-  const modeSelect = document.getElementById(modeId);
-  const urlInput = document.getElementById(urlId);
+function setupPhotoDropzone({ dropzoneId, fileId, previewId, emptyId }) {
+  const dropzone = document.getElementById(dropzoneId);
   const fileInput = document.getElementById(fileId);
-  const fileLabel = document.getElementById(fileLabelId);
   const preview = document.getElementById(previewId);
   const empty = document.getElementById(emptyId);
   let value = "";
@@ -74,20 +39,8 @@ function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, empty
     }
   }
 
-  function applyMode() {
-    const isFile = modeSelect.value === "file";
-    urlInput.hidden = isFile;
-    fileLabel.hidden = !isFile;
-  }
-
-  modeSelect.addEventListener("change", applyMode);
-  urlInput.addEventListener("input", () => {
-    value = urlInput.value.trim();
-    updatePreview();
-  });
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) return;
+  function handleFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -107,19 +60,29 @@ function setupPhotoPicker({ modeId, urlId, fileId, fileLabelId, previewId, empty
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  dropzone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+  dropzone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    dropzone.classList.add("dragover");
+  });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragover");
+    handleFile(event.dataTransfer.files[0]);
   });
 
-  applyMode();
   updatePreview();
 
   return { getValue: () => value };
 }
 
-const registerPhotoPicker = setupPhotoPicker({
-  modeId: "registerPhotoMode",
-  urlId: "registerPhotoUrl",
+const registerPhotoPicker = setupPhotoDropzone({
+  dropzoneId: "registerPhotoDropzone",
   fileId: "registerPhotoFile",
-  fileLabelId: "registerPhotoFileLabel",
   previewId: "registerPhotoPreview",
   emptyId: "registerPhotoEmpty",
 });
@@ -138,12 +101,6 @@ const roleCopy = {
     placeholder: "Nome que seus clientes verão",
   },
 };
-
-function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("show");
-  window.setTimeout(() => toast.classList.remove("show"), 3200);
-}
 
 function setMode(mode) {
   currentMode = mode;
@@ -169,7 +126,7 @@ function setRole(role) {
   registerNameLabel.textContent = copy.name;
   registerNameInput.placeholder = copy.placeholder;
   documentGroup.hidden = role !== "prestador";
-  servicePreferenceGroup.hidden = role !== "cliente";
+  preferencesFutureHint.hidden = role !== "cliente";
   registerNameInput.name = role === "cliente" ? "nome_completo" : "nome_empresa";
 }
 
@@ -191,31 +148,6 @@ document.querySelectorAll(".password-toggle").forEach((button) => {
 document.querySelectorAll(".oauth-btn").forEach((button) => {
   button.addEventListener("click", () => showToast("Login social ficará disponível na próxima etapa."));
 });
-
-const themeToggleBtn = document.getElementById("themeToggleBtn");
-const themeToggleIcon = document.getElementById("themeToggleIcon");
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  themeToggleIcon.textContent = theme === "dark" ? "☀️" : "🌙";
-}
-
-themeToggleBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-  const next = current === "dark" ? "light" : "dark";
-  localStorage.setItem("nearhand_theme", next);
-  applyTheme(next);
-});
-
-applyTheme(
-  document.documentElement.getAttribute("data-theme") === "dark"
-    ? "dark"
-    : document.documentElement.getAttribute("data-theme") === "light"
-      ? "light"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-);
 
 document.querySelector(".text-link").addEventListener("click", (event) => {
   event.preventDefault();
@@ -267,7 +199,7 @@ registerForm.addEventListener("submit", (event) => {
     return;
   }
   if (currentRole === "cliente" && !registerPhotoPicker.getValue()) {
-    showToast("Adicione uma foto de perfil (link ou arquivo).");
+    showToast("Adicione uma foto de perfil (arraste ou envie um arquivo).");
     return;
   }
   const payload = {
@@ -284,7 +216,6 @@ registerForm.addEventListener("submit", (event) => {
     cidade: document.getElementById("registerCidade").value,
     estado: document.getElementById("registerEstado").value,
     foto: registerPhotoPicker.getValue(),
-    preferencias: currentRole === "cliente" ? Array.from(selectedPreferences) : [],
     senha: password,
   };
 
