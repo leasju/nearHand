@@ -40,7 +40,7 @@
         <button class="role-btn" data-role="prestador" id="roleBtnPrestador">Prestador</button>
       </div>
       <button class="profile-chip" id="profileBtn">
-        <span class="avatar">JL</span>
+        <span class="avatar"><img id="profileAvatar" alt="Foto de perfil" hidden /><span id="profileInitials">JL</span></span>
         <span class="profile-copy"><strong>Julia</strong><small>Campinas, SP</small></span>
       </button>
     </div>
@@ -185,6 +185,15 @@
             <button class="toggle-btn" data-agenda-mode="week">Semana</button>
           </div>
         </div>
+
+        <form id="availabilityForm" class="availability-form panel-card">
+          <strong>Adicionar horário</strong>
+          <label>Data<input id="availabilityDate" type="date" required /></label>
+          <label>Início<input id="availabilityStart" type="time" required /></label>
+          <label>Fim<input id="availabilityEnd" type="time" required /></label>
+          <label class="checkbox-row"><input id="availabilityBlocked" type="checkbox" /> Bloquear este horário</label>
+          <button class="primary-btn" type="submit">Salvar horário</button>
+        </form>
 
         <div class="calendar-card" id="providerMonthView">
           <div class="calendar-head"><button id="providerAgendaMonthPrev">‹</button><strong id="providerAgendaMonthLabel">Setembro 2026</strong><button id="providerAgendaMonthNext">›</button></div>
@@ -367,7 +376,9 @@
       <span class="eyebrow">NOVO ANÚNCIO</span><h2>Publicar serviço</h2>
       <form id="newAdForm" class="ad-form">
         <label>Título<input required id="adTitle" placeholder="Ex.: Instalação elétrica residencial" /></label>
-        <label>Categoria<select id="adCategory"></select></label>
+        <label>Categoria
+          <span class="category-create-row"><select id="adCategory"></select><button type="button" class="small-btn" id="addCategoryBtn">+ Nova</button></span>
+        </label>
         <label>Descrição<textarea id="adDescription" rows="4" placeholder="Descreva o serviço e diferenciais..."></textarea></label>
         <div class="form-row"><label>Valor<input required id="adPrice" type="number" min="0" placeholder="120" /></label><label>Tipo<select id="adPriceType"><option value="por_hora">por hora</option><option value="fixo">por serviço</option></select></label></div>
         <label>Raio de atendimento <strong id="adRadiusLabel">10 km</strong><input id="adRadius" type="range" min="1" max="30" value="10" /></label>

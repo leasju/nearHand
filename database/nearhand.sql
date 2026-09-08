@@ -64,6 +64,7 @@ CREATE TABLE cliente (
 CREATE TABLE prestador (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome_empresa VARCHAR(150) NOT NULL,
+    foto VARCHAR(255),
     endereco_id INT NOT NULL,
     telefone VARCHAR(11),
     email VARCHAR(200) NOT NULL UNIQUE,

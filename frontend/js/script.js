@@ -3,6 +3,7 @@ let favoriteServices = [];
 let services = [];
 let visibleServices = [];
 let currentService = null;
+let selectedAvailability = null;
 let servicesRequest = null;
 let servicesRequestTimer = null;
 
@@ -72,6 +73,15 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
   window.setTimeout(() => toast.classList.remove("show"), 3200);
+}
+
+async function readApiResponse(response) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`O servidor retornou um erro inesperado (${response.status}). Reinicie o backend atualizado.`);
+  }
 }
 
 function formatPrice(value) {
@@ -194,7 +204,7 @@ async function loadFavorites() {
   if (currentSessionRole !== "cliente") return;
   try {
     const response = await authFetch("/clientes/me/favoritos");
-    const data = await response.json();
+    const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.detail || "Não foi possível carregar os favoritos.");
     favoriteServices = data;
     favorites.clear();
@@ -223,7 +233,65 @@ function showServiceDetails(service) {
   galleryMain.textContent = firstPhoto ? "" : serviceVisual(service).icon;
   galleryMain.style.backgroundImage = firstPhoto ? `url("${firstPhoto}")` : "";
   galleryMain.style.backgroundSize = firstPhoto ? "cover" : "";
+  loadServiceAvailability(service.prestador_id);
   document.getElementById("serviceModal").hidden = false;
+}
+
+function renderServiceAvailability(slots) {
+  const dateOptions = document.querySelector(".date-options");
+  const timeOptions = document.querySelector(".time-options");
+  const availableSlots = slots.filter((slot) => !slot.bloqueado);
+  dateOptions.replaceChildren();
+  timeOptions.replaceChildren();
+  selectedAvailability = null;
+  const dates = [...new Set(availableSlots.map((slot) => slot.data))];
+  if (!dates.length) {
+    dateOptions.innerHTML = '<small class="empty-state">Nenhum horário livre cadastrado.</small>';
+    return;
+  }
+
+  function renderTimes(date) {
+    timeOptions.replaceChildren();
+    availableSlots.filter((slot) => slot.data === date).forEach((slot) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = slot.hora_inicio.slice(0, 5);
+      button.classList.toggle("active", selectedAvailability?.data === slot.data && selectedAvailability?.hora_inicio === slot.hora_inicio);
+      button.addEventListener("click", () => {
+        selectedAvailability = slot;
+        renderTimes(date);
+      });
+      timeOptions.appendChild(button);
+    });
+  }
+
+  dates.forEach((date, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `date-option${index === 0 ? " active" : ""}`;
+    const dateValue = new Date(`${date}T00:00:00`);
+    button.innerHTML = `<small>${dateValue.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "").toUpperCase()}</small><strong>${dateValue.getDate()}</strong>`;
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".date-option").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      renderTimes(date);
+    });
+    dateOptions.appendChild(button);
+  });
+  selectedAvailability = availableSlots.find((slot) => slot.data === dates[0]);
+  renderTimes(dates[0]);
+}
+
+async function loadServiceAvailability(providerId) {
+  try {
+    const response = await fetch(`/prestadores/${providerId}/disponibilidade`);
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Não foi possível carregar os horários.");
+    renderServiceAvailability(data);
+  } catch (error) {
+    renderServiceAvailability([]);
+    showToast(error.message);
+  }
 }
 
 function handleCardAction(event) {
@@ -478,7 +546,14 @@ function updateStoredUser(partial) {
     .slice(0, 2)
     .map((part) => part[0].toUpperCase())
     .join("");
-  document.querySelector("#profileBtn .avatar").textContent = initials || "NH";
+  const profileAvatar = document.getElementById("profileAvatar");
+  const profileInitials = document.getElementById("profileInitials");
+  if (profileAvatar && profileInitials) {
+    profileAvatar.hidden = !updated.foto;
+    profileAvatar.src = updated.foto || "";
+    profileInitials.textContent = initials || "NH";
+    profileInitials.hidden = Boolean(updated.foto);
+  }
   document.querySelector("#profileBtn .profile-copy strong").textContent = updated.nome || "Minha conta";
   document.querySelector("#profileBtn .profile-copy small").textContent = updated.email || "";
 }
@@ -646,7 +721,9 @@ document.getElementById("hireBtn").addEventListener("click", async () => {
       method: "POST",
       body: JSON.stringify({
         servico_id: currentService.id,
-        data_hora_agendada: new Date().toISOString(),
+        data_hora_agendada: selectedAvailability
+          ? `${selectedAvailability.data}T${selectedAvailability.hora_inicio}`
+          : null,
         valor_proposto: currentService.price,
       }),
     });
@@ -715,6 +792,13 @@ async function loadClientRequests() {
     const response = await authFetch("/clientes/me/solicitacoes");
     const requests = await response.json();
     if (!response.ok) throw new Error(requests.detail || "Não foi possível carregar seus pedidos.");
+    CLIENT_EVENTS = requests
+      .filter((request) => request.data_hora_agendada && request.status !== "cancelado")
+      .map((request) => ({
+        date: new Date(request.data_hora_agendada),
+        label: `${request.servico_titulo} — ${formatRequestDate(request.data_hora_agendada)} • ${request.prestador_nome}`,
+      }));
+    renderClientCalendar();
     body.replaceChildren();
     if (!requests.length) {
       body.innerHTML = '<tr><td colspan="6">Você ainda não possui solicitações.</td></tr>';
@@ -766,6 +850,13 @@ async function loadProviderRequests() {
     const response = await authFetch("/prestadores/me/solicitacoes");
     const requests = await response.json();
     if (!response.ok) throw new Error(requests.detail || "Não foi possível carregar as solicitações.");
+    PROVIDER_EVENTS = requests
+      .filter((request) => request.data_hora_agendada && !["cancelado", "concluido"].includes(request.status))
+      .map((request) => ({
+        date: new Date(request.data_hora_agendada),
+        label: `${request.servico_titulo} — ${formatRequestDate(request.data_hora_agendada)} • ${request.cliente_nome}`,
+      }));
+    renderProviderAgenda();
     requestList.replaceChildren();
     if (!requests.length) {
       requestList.innerHTML = '<p class="empty-state">Nenhuma solicitação recebida.</p>';
@@ -814,6 +905,47 @@ requestList.addEventListener("click", async (event) => {
   }
 });
 
+const availabilityForm = document.getElementById("availabilityForm");
+const availabilityDate = document.getElementById("availabilityDate");
+const availabilityStart = document.getElementById("availabilityStart");
+const availabilityEnd = document.getElementById("availabilityEnd");
+const availabilityBlocked = document.getElementById("availabilityBlocked");
+
+async function loadProviderAvailability() {
+  if (currentSessionRole !== "prestador") return;
+  try {
+    const response = await authFetch("/prestadores/me/disponibilidade");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível carregar sua disponibilidade.");
+    providerAvailability = data;
+    renderProviderAgenda();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+availabilityForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const response = await authFetch("/disponibilidade", {
+      method: "POST",
+      body: JSON.stringify({
+        data: availabilityDate.value,
+        hora_inicio: availabilityStart.value,
+        hora_fim: availabilityEnd.value,
+        bloqueado: availabilityBlocked.checked,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o horário.");
+    availabilityForm.reset();
+    await loadProviderAvailability();
+    showToast("Horário salvo na agenda.");
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
 // ============================================
 // Painel do prestador: meus anúncios
 // ============================================
@@ -822,6 +954,25 @@ const newAdModal = document.getElementById("newAdModal");
 const newAdForm = document.getElementById("newAdForm");
 const adRadius = document.getElementById("adRadius");
 const adRadiusLabel = document.getElementById("adRadiusLabel");
+
+document.getElementById("addCategoryBtn").addEventListener("click", async () => {
+  const name = window.prompt("Nome da nova categoria:");
+  if (!name?.trim()) return;
+  try {
+    const response = await authFetch("/categories/provider", {
+      method: "POST",
+      body: JSON.stringify({ nome: name.trim() }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível criar a categoria.");
+    await loadCategories();
+    const adCategory = document.getElementById("adCategory");
+    adCategory.value = String(data.id);
+    showToast(`Categoria "${data.nome}" disponível.`);
+  } catch (error) {
+    showToast(error.message);
+  }
+});
 
 document.getElementById("newAdBtn").addEventListener("click", () => {
   adPhotos = [];
@@ -988,7 +1139,7 @@ newAdForm.addEventListener("submit", async (event) => {
         fotos: adPhotos,
       }),
     });
-    const data = await response.json();
+    const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.detail || "Não foi possível publicar o anúncio.");
     newAdModal.hidden = true;
     newAdForm.reset();
@@ -1208,7 +1359,7 @@ clientProfileForm.addEventListener("submit", async (event) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o perfil.");
     settingsProfile = data;
-    updateStoredUser({ nome: data.nome, email: data.email });
+    updateStoredUser({ nome: data.nome, email: data.email, foto: data.foto });
     showToast("Perfil atualizado.");
   } catch (error) {
     showToast(error.message);
@@ -1310,31 +1461,27 @@ function renderCalendar({ gridEl, labelEl, date, events }) {
         && today.getDate() === cell.day;
       if (isToday) cellEl.classList.add("today");
 
-      const dayEvent = events.find((event) => event.day === cell.day);
-      if (dayEvent) {
+      const cellDate = new Date(date.getFullYear(), date.getMonth(), cell.day);
+      const dayEvents = events.filter((event) => isSameDate(event.date, cellDate));
+      if (dayEvents.length) {
         cellEl.classList.add("has-event");
-        cellEl.title = dayEvent.label;
-        cellEl.addEventListener("click", () => showToast(dayEvent.label));
+        cellEl.title = dayEvents.map((event) => event.label).join(" | ");
+        cellEl.addEventListener("click", () => dayEvents.forEach((event) => showToast(event.label)));
       }
     }
     gridEl.appendChild(cellEl);
   });
 }
 
-const CLIENT_EVENTS = [
-  { day: 8, label: "Eletricista residencial — 09:00 • Marcos Elétrica" },
-  { day: 11, label: "Limpeza completa — 14:30 • Brilho Certo" },
-];
+let CLIENT_EVENTS = [];
 let clientCalendarDate = new Date(today.getFullYear(), today.getMonth(), 1);
 
 function renderClientCalendar() {
-  const isCurrentMonth = clientCalendarDate.getMonth() === today.getMonth()
-    && clientCalendarDate.getFullYear() === today.getFullYear();
   renderCalendar({
     gridEl: document.getElementById("clientCalendar"),
     labelEl: document.getElementById("clientCalendarLabel"),
     date: clientCalendarDate,
-    events: isCurrentMonth ? CLIENT_EVENTS : [],
+    events: CLIENT_EVENTS,
   });
 }
 
@@ -1355,17 +1502,17 @@ function isSameDate(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-const PROVIDER_EVENTS = [
-  { date: addDays(today, 0), label: "3 serviços hoje: Troca de disjuntor, Visita técnica, Instalação de luminária" },
-  { date: addDays(today, 1), label: "Instalação de luminária — 09:00 • Rafael Braga" },
-  { date: addDays(today, 4), label: "Manutenção elétrica — 10:00 • Ana Costa" },
-  { date: addDays(today, 9), label: "Revisão de quadro de força — 14:00 • Marina Sales" },
-  { date: addDays(today, 16), label: "Instalação de tomadas — 11:00 • Fernanda Lopes" },
-  { date: addDays(today, 35), label: "Instalação residencial completa — 09:00 • Novo cliente" },
-];
+let PROVIDER_EVENTS = [];
+let providerAvailability = [];
 
 function eventsOnDate(date) {
-  return PROVIDER_EVENTS.filter((event) => isSameDate(event.date, date));
+  const blockedEvents = providerAvailability
+    .filter((slot) => slot.bloqueado && slot.data)
+    .map((slot) => ({
+      date: new Date(`${slot.data}T${slot.hora_inicio}`),
+      label: `Bloqueado — ${slot.data} ${slot.hora_inicio.slice(0, 5)}–${slot.hora_fim.slice(0, 5)}`,
+    }));
+  return [...PROVIDER_EVENTS, ...blockedEvents].filter((event) => isSameDate(event.date, date));
 }
 
 let providerAgendaMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1497,6 +1644,7 @@ if (initialRole) {
   loadProviderServices();
   loadClientRequests();
   loadProviderRequests();
+  loadProviderAvailability();
   loadFavorites();
   renderClientCalendar();
   renderProviderAgenda();

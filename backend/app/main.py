@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, time
 from pathlib import Path
 
 import jwt
@@ -22,12 +22,17 @@ from app.auth import (
     SECRET_KEY,
     verify_password,
 )
-from app.database import get_db
+from app.database import ensure_optional_schema, get_db
 
 app = FastAPI(title="NearHand API")
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+
+
+@app.on_event("startup")
+def initialize_database_schema():
+    ensure_optional_schema()
 
 
 @app.get("/", include_in_schema=False)
@@ -103,6 +108,13 @@ class RequestStatusUpdate(BaseModel):
     status: str
 
 
+class AvailabilityCreate(BaseModel):
+    data: date
+    hora_inicio: time
+    hora_fim: time
+    bloqueado: bool = False
+
+
 class AddressFields(BaseModel):
     cep: str = ""
     rua: str
@@ -150,8 +162,8 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
             status_code=400,
             detail="Name, email, address, and an 8-character password are required",
         )
-    if account_type == "cliente" and not account.foto.strip():
-        raise HTTPException(status_code=400, detail="Profile photo is required")
+    if not account.foto.strip():
+        raise HTTPException(status_code=400, detail="Profile or company photo is required")
     if account_type == "prestador" and not account.cpf_cnpj.strip():
         raise HTTPException(status_code=400, detail="CPF or CNPJ is required")
 
@@ -190,11 +202,12 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
             user_result = db.execute(
                 text("""
                     INSERT INTO prestador
-                        (nome_empresa, endereco_id, telefone, email, cpf_cnpj, senha_hash)
-                    VALUES (:nome, :endereco_id, :telefone, :email, :cpf_cnpj, :senha_hash)
+                        (nome_empresa, foto, endereco_id, telefone, email, cpf_cnpj, senha_hash)
+                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :cpf_cnpj, :senha_hash)
                 """),
                 {
                     "nome": name,
+                    "foto": account.foto.strip() or None,
                     "endereco_id": address_id,
                     "telefone": account.telefone.strip() or None,
                     "email": email,
@@ -222,7 +235,7 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
     if account_type == "cliente":
         user = db.execute(
             text("""
-                SELECT id, nome_completo AS nome, email, senha_hash
+                SELECT id, nome_completo AS nome, email, foto, senha_hash
                 FROM cliente
                 WHERE LOWER(email) = :identifier OR telefone = :phone
             """),
@@ -231,7 +244,7 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
     elif account_type == "prestador":
         user = db.execute(
             text("""
-                SELECT id, nome_empresa AS nome, email, senha_hash
+                SELECT id, nome_empresa AS nome, email, foto, senha_hash
                 FROM prestador
                 WHERE LOWER(email) = :identifier
                    OR LOWER(cpf_cnpj) = :identifier
@@ -248,7 +261,12 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
         "access_token": create_role_access_token(user["id"], account_type),
         "token_type": "bearer",
         "tipo": account_type,
-        "user": {"id": user["id"], "nome": user["nome"], "email": user["email"]},
+        "user": {
+            "id": user["id"],
+            "nome": user["nome"],
+            "email": user["email"],
+            "foto": user.get("foto"),
+        },
     }
 
 
@@ -264,6 +282,33 @@ def list_public_categories(db: Session = Depends(get_db)):
         """)
     ).mappings().all()
     return rows
+
+
+@app.post("/categories/provider")
+def create_provider_category(
+    category: CategoryCreate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    name = category.nome.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name is required")
+    try:
+        result = db.execute(
+            text("INSERT INTO categoria (nome) VALUES (:nome)"),
+            {"nome": name},
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = db.execute(
+            text("SELECT id, nome FROM categoria WHERE nome = :nome"),
+            {"nome": name},
+        ).mappings().first()
+        if existing:
+            return existing
+        raise HTTPException(status_code=409, detail="Category already exists")
+    return {"id": result.lastrowid, "nome": name}
 
 
 @app.post("/favoritos")
@@ -502,6 +547,106 @@ def update_request_status(
     )
     db.commit()
     return _get_request(request_id, db)
+
+
+def _availability_row(row) -> dict:
+    availability = dict(row)
+    for key in ("data", "hora_inicio", "hora_fim"):
+        if availability.get(key) is not None:
+            availability[key] = availability[key].isoformat()
+    availability["bloqueado"] = bool(availability["bloqueado"])
+    return availability
+
+
+@app.post("/disponibilidade")
+def create_availability(
+    availability: AvailabilityCreate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    if availability.hora_fim <= availability.hora_inicio:
+        raise HTTPException(status_code=400, detail="End time must be after start time")
+    result = db.execute(
+        text("""
+            INSERT INTO disponibilidade
+                (prestador_id, data, hora_inicio, hora_fim, bloqueado)
+            VALUES (:prestador_id, :data, :hora_inicio, :hora_fim, :bloqueado)
+        """),
+        {
+            "prestador_id": provider_id,
+            "data": availability.data,
+            "hora_inicio": availability.hora_inicio,
+            "hora_fim": availability.hora_fim,
+            "bloqueado": availability.bloqueado,
+        },
+    )
+    db.commit()
+    return get_availability(result.lastrowid, db)
+
+
+def get_availability(availability_id: int, db: Session):
+    row = db.execute(
+        text("""
+            SELECT id, prestador_id, data, hora_inicio, hora_fim, bloqueado
+            FROM disponibilidade
+            WHERE id = :id
+        """),
+        {"id": availability_id},
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Availability not found")
+    return _availability_row(row)
+
+
+def list_availability(provider_id: int, db: Session, include_blocked: bool = True):
+    rows = db.execute(
+        text("""
+            SELECT id, prestador_id, data, hora_inicio, hora_fim, bloqueado
+            FROM disponibilidade
+                        WHERE prestador_id = :prestador_id
+                            AND (:include_blocked OR bloqueado = FALSE)
+            ORDER BY data, hora_inicio
+        """),
+        {"prestador_id": provider_id, "include_blocked": include_blocked},
+    ).mappings().all()
+    return [_availability_row(row) for row in rows]
+
+
+@app.get("/prestadores/me/disponibilidade")
+def get_my_availability(
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    return list_availability(provider_id, db, include_blocked=False)
+
+
+@app.get("/prestadores/{provider_id}/disponibilidade")
+def get_provider_availability(provider_id: int, db: Session = Depends(get_db)):
+    exists = db.execute(
+        text("SELECT id FROM prestador WHERE id = :id"), {"id": provider_id}
+    ).first()
+    if exists is None:
+        raise HTTPException(status_code=404, detail="Provider not found")
+    return list_availability(provider_id, db)
+
+
+@app.delete("/disponibilidade/{availability_id}")
+def delete_availability(
+    availability_id: int,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    result = db.execute(
+        text("""
+            DELETE FROM disponibilidade
+            WHERE id = :id AND prestador_id = :prestador_id
+        """),
+        {"id": availability_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Availability not found")
+    return {"status": "deleted"}
 
 
 SERVICE_SELECT = """
@@ -906,13 +1051,14 @@ class ProviderProfileUpdate(AddressFields):
     email: str
     telefone: str = ""
     cpf_cnpj: str
+    foto: str = ""
 
 
 @app.get("/prestadores/me")
 def get_provider_profile(db: Session = Depends(get_db), provider_id: int = Depends(get_current_provider_id)):
     row = db.execute(
         text(f"""
-            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj,
+            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj, p.foto,
                    {ADDRESS_COLUMNS_SQL}
             FROM prestador p
             JOIN endereco e ON e.id = p.endereco_id
@@ -941,7 +1087,8 @@ def update_provider_profile(
         db.execute(
             text("""
                 UPDATE prestador
-                SET nome_empresa = :nome, email = :email, telefone = :telefone, cpf_cnpj = :cpf_cnpj
+                SET nome_empresa = :nome, email = :email, telefone = :telefone,
+                    cpf_cnpj = :cpf_cnpj, foto = :foto
                 WHERE id = :id
             """),
             {
@@ -949,6 +1096,7 @@ def update_provider_profile(
                 "email": email,
                 "telefone": payload.telefone.strip() or None,
                 "cpf_cnpj": cpf_cnpj,
+                "foto": payload.foto.strip() or None,
                 "id": provider_id,
             },
         )

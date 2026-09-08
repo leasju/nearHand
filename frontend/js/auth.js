@@ -18,6 +18,15 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("show"), 3200);
 }
 
+async function readApiResponse(response) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`O servidor retornou um erro inesperado (${response.status}).`);
+  }
+}
+
 // ============================================
 // Foto de perfil: arrastar ou clicar para enviar um arquivo
 // ============================================
@@ -124,6 +133,9 @@ function setRole(role) {
   contextBanner.querySelector("strong").textContent = copy.title;
   contextBanner.querySelector("p").textContent = copy.description;
   registerNameLabel.textContent = copy.name;
+  document.querySelector(".provider-photo-field .field-label").textContent = role === "prestador"
+    ? "Foto da empresa *"
+    : "Foto de perfil *";
   registerNameInput.placeholder = copy.placeholder;
   documentGroup.hidden = role !== "prestador";
   preferencesFutureHint.hidden = role !== "cliente";
@@ -143,10 +155,6 @@ document.querySelectorAll(".password-toggle").forEach((button) => {
     input.type = showing ? "password" : "text";
     button.textContent = showing ? "Mostrar" : "Ocultar";
   });
-});
-
-document.querySelectorAll(".oauth-btn").forEach((button) => {
-  button.addEventListener("click", () => showToast("Login social ficará disponível na próxima etapa."));
 });
 
 document.querySelector(".text-link").addEventListener("click", (event) => {
@@ -172,7 +180,7 @@ loginForm.addEventListener("submit", (event) => {
     }),
   })
     .then(async (response) => {
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok) throw new Error(data.detail || "Não foi possível entrar.");
       localStorage.setItem("nearhand_access_token", data.access_token);
       localStorage.setItem("nearhand_user", JSON.stringify(data.user));
@@ -198,8 +206,8 @@ registerForm.addEventListener("submit", (event) => {
     showToast("As senhas precisam ser iguais.");
     return;
   }
-  if (currentRole === "cliente" && !registerPhotoPicker.getValue()) {
-    showToast("Adicione uma foto de perfil (arraste ou envie um arquivo).");
+  if (!registerPhotoPicker.getValue()) {
+    showToast("Adicione uma foto de perfil ou da empresa.");
     return;
   }
   const payload = {
@@ -227,7 +235,7 @@ registerForm.addEventListener("submit", (event) => {
     body: JSON.stringify(payload),
   })
     .then(async (response) => {
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok) throw new Error(data.detail || "Não foi possível criar a conta.");
       showToast("Conta criada. Agora faça login.");
       document.getElementById("loginIdentity").value = payload.email;

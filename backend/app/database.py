@@ -2,7 +2,7 @@ import os
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
@@ -20,6 +20,14 @@ DATABASE_URL = (
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+
+def ensure_optional_schema():
+    """Add columns introduced after the initial database script."""
+    with engine.begin() as connection:
+        columns = connection.execute(text("SHOW COLUMNS FROM prestador LIKE 'foto'"))
+        if columns.first() is None:
+            connection.execute(text("ALTER TABLE prestador ADD COLUMN foto VARCHAR(255) NULL"))
 
 # Open a database connection and provide a session
 def get_db():

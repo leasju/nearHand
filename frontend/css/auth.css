@@ -58,7 +58,7 @@ button{cursor:pointer;border:none;background:none}
   width:max-content;
 }
 .brand-lockup{display:block}
-.brand-logo{height:58px;width:auto;display:block}
+.brand-logo{height:76px;width:auto;display:block}
 .brand-lockup p{margin:10px 0 0;color:var(--muted);max-width:28rem}
 .eyebrow{
   display:inline-flex;align-items:center;gap:8px;
