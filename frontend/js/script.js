@@ -1,145 +1,8 @@
-// Coordenadas de exemplo espalhadas perto de Campinas/SP (mock).
-// Quando existir GET /services de verdade, isso vem do banco (endereco.latitude/longitude).
-const services = [
-  {
-    id: 1,
-    title: "Eletricista residencial",
-    category: "Eletricista",
-    provider: "Marcos Elétrica",
-    rating: 4.9,
-    reviews: 126,
-    distance: 2.3,
-    price: 120,
-    unit: "/h",
-    icon: "⚡",
-    style: "electric",
-    lat: -22.8965,
-    lng: -47.0480,
-  },
-  {
-    id: 2,
-    title: "Corte e escova",
-    category: "Cabeleireiro",
-    provider: "Studio Bela Vista",
-    rating: 4.8,
-    reviews: 89,
-    distance: 3.1,
-    price: 160,
-    unit: "",
-    icon: "💇",
-    style: "clean",
-    lat: -22.9260,
-    lng: -47.0810,
-  },
-  {
-    id: 3,
-    title: "Manicure completa",
-    category: "Manicure",
-    provider: "Studio Ana",
-    rating: 4.7,
-    reviews: 74,
-    distance: 4.6,
-    price: 75,
-    unit: "",
-    icon: "💅",
-    style: "beauty",
-    lat: -22.8790,
-    lng: -47.0310,
-  },
-  {
-    id: 4,
-    title: "Reparo hidráulico",
-    category: "Marido de Aluguel",
-    provider: "Água Certa",
-    rating: 4.9,
-    reviews: 61,
-    distance: 1.7,
-    price: 95,
-    unit: "/h",
-    icon: "🔧",
-    style: "plumber",
-    lat: -22.9020,
-    lng: -47.0530,
-  },
-  {
-    id: 5,
-    title: "Montagem de móveis",
-    category: "Marido de Aluguel",
-    provider: "Resolve Móveis",
-    rating: 4.6,
-    reviews: 52,
-    distance: 5.2,
-    price: 90,
-    unit: "",
-    icon: "🪛",
-    style: "assembly",
-    lat: -22.9420,
-    lng: -47.1010,
-  },
-  {
-    id: 9,
-    title: "Pedicure spa",
-    category: "Pedicure",
-    provider: "Studio Ana",
-    rating: 4.7,
-    reviews: 40,
-    distance: 3.8,
-    price: 60,
-    unit: "",
-    icon: "🦶",
-    style: "beauty",
-    lat: -22.9140,
-    lng: -47.0700,
-  },
-  {
-    id: 6,
-    title: "Instalação de luminárias",
-    category: "Eletricista",
-    provider: "Luz & Casa",
-    rating: 4.5,
-    reviews: 38,
-    distance: 6.8,
-    price: 90,
-    unit: "",
-    icon: "💡",
-    style: "electric",
-    lat: -22.8610,
-    lng: -47.1120,
-  },
-  {
-    id: 7,
-    title: "Limpeza pós-obra",
-    category: "Marido de Aluguel",
-    provider: "Jaguar Limpeza",
-    rating: 4.6,
-    reviews: 22,
-    distance: 24.5,
-    price: 220,
-    unit: "",
-    icon: "🧼",
-    style: "clean",
-    lat: -22.7011,
-    lng: -46.9878,
-  },
-  {
-    id: 8,
-    title: "Instalação elétrica rural",
-    category: "Eletricista",
-    provider: "Elétrica Jaguari",
-    rating: 4.8,
-    reviews: 15,
-    distance: 26.2,
-    price: 140,
-    unit: "/h",
-    icon: "⚡",
-    style: "electric",
-    lat: -22.6960,
-    lng: -46.9805,
-  },
-];
-
 const favorites = new Set();
-let visibleServices = [...services];
+let services = [];
+let visibleServices = [];
+let servicesRequest = null;
+let servicesRequestTimer = null;
 
 const cardsView = document.getElementById("cardsView");
 const favoritesGrid = document.getElementById("favoritesGrid");
@@ -151,6 +14,57 @@ const sortFilter = document.getElementById("sortFilter");
 const radiusFilter = document.getElementById("radiusFilter");
 const radiusLabel = document.getElementById("radiusLabel");
 const toast = document.getElementById("toast");
+
+const SERVICE_VISUALS = [
+  ["⚡", "electric"],
+  ["🧼", "clean"],
+  ["💅", "beauty"],
+  ["🔧", "plumber"],
+  ["🪛", "assembly"],
+];
+
+function serviceVisual(service) {
+  const index = Math.max(0, Number(service.categoria_id || service.id || 1) - 1) % SERVICE_VISUALS.length;
+  const [icon, style] = SERVICE_VISUALS[index];
+  return { icon, style };
+}
+
+function serviceQueryParams() {
+  const params = new URLSearchParams();
+  const search = searchInput.value.trim();
+  if (search) params.set("busca", search);
+  if (categoryFilter.value !== "all") params.set("categoria", categoryFilter.value);
+  if (ratingFilter.value !== "0") params.set("avaliacao_min", ratingFilter.value);
+  if (radiusFilter.value) params.set("raio_km", radiusFilter.value);
+  if (mapCenter?.lat != null && mapCenter?.lng != null) {
+    params.set("lat", mapCenter.lat);
+    params.set("lng", mapCenter.lng);
+  }
+  params.set("ordenacao", sortFilter.value === "rating" ? "avaliacao" : sortFilter.value === "price" ? "preco" : "distancia");
+  return params;
+}
+
+async function loadServices() {
+  if (servicesRequest) servicesRequest.abort();
+  servicesRequest = new AbortController();
+  try {
+    const response = await fetch(`/services?${serviceQueryParams()}`, { signal: servicesRequest.signal });
+    if (!response.ok) throw new Error("Não foi possível carregar os serviços.");
+    visibleServices = await response.json();
+    services = [...visibleServices];
+    renderCards();
+    updateProximityMap();
+  } catch (error) {
+    if (error.name !== "AbortError") showToast(error.message);
+  } finally {
+    servicesRequest = null;
+  }
+}
+
+function queueServicesLoad() {
+  window.clearTimeout(servicesRequestTimer);
+  servicesRequestTimer = window.setTimeout(loadServices, 300);
+}
 
 function showToast(message) {
   toast.textContent = message;
@@ -209,7 +123,7 @@ function renderAdCategoryOptions() {
   adCategory.replaceChildren();
   categoriesData.forEach((category) => {
     const option = document.createElement("option");
-    option.value = category.nome;
+    option.value = category.id;
     option.textContent = category.nome;
     adCategory.appendChild(option);
   });
@@ -229,12 +143,14 @@ async function loadCategories() {
 
 function serviceCard(service) {
   const isFavorite = favorites.has(service.id);
+  const visual = serviceVisual(service);
+  const distance = service.distance == null ? "Distância indisponível" : `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
   const card = document.createElement("article");
   card.className = "service-card";
   card.dataset.id = service.id;
   card.innerHTML = `
-    <div class="service-image ${service.style}">
-      <span aria-hidden="true">${service.icon}</span>
+    <div class="service-image ${visual.style}">
+      <span aria-hidden="true">${visual.icon}</span>
       <button class="favorite-btn ${isFavorite ? "active" : ""}" data-action="favorite" aria-label="${isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}">
         ${isFavorite ? "♥" : "♡"}
       </button>
@@ -242,7 +158,7 @@ function serviceCard(service) {
     <div class="service-body">
       <div class="service-topline">
         <span class="service-pill">${service.category}</span>
-        <span class="distance">📍 ${service.distance.toFixed(1).replace(".", ",")} km</span>
+        <span class="distance">${distance}</span>
       </div>
       <h3>${service.title}</h3>
       <p class="provider-name">${service.provider}</p>
@@ -273,25 +189,7 @@ function renderFavorites() {
 }
 
 function applyFilters() {
-  const search = searchInput.value.trim().toLowerCase();
-  const category = categoryFilter.value;
-  const minimumRating = Number(ratingFilter.value);
-  const maxDistance = Number(radiusFilter.value);
-
-  visibleServices = services.filter((service) => {
-    const matchesSearch = [service.title, service.provider, service.category]
-      .some((value) => value.toLowerCase().includes(search));
-    const matchesCategory = category === "all" || service.category === category;
-    return matchesSearch && matchesCategory && service.rating >= minimumRating && service.distance <= maxDistance;
-  });
-
-  visibleServices.sort((first, second) => {
-    if (sortFilter.value === "rating") return second.rating - first.rating;
-    if (sortFilter.value === "price") return first.price - second.price;
-    return first.distance - second.distance;
-  });
-  renderCards();
-  updateProximityMap();
+  queueServicesLoad();
 }
 
 function showServiceDetails(service) {
@@ -301,7 +199,11 @@ function showServiceDetails(service) {
   document.getElementById("modalRating").textContent = `⭐ ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
   document.getElementById("modalDistance").textContent = `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
   document.getElementById("modalPrice").textContent = `💳 R$ ${formatPrice(service.price)}${service.unit}`;
-  document.getElementById("galleryMain").textContent = service.icon;
+  const firstPhoto = service.photos?.[0]?.url;
+  const galleryMain = document.getElementById("galleryMain");
+  galleryMain.textContent = firstPhoto ? "" : serviceVisual(service).icon;
+  galleryMain.style.backgroundImage = firstPhoto ? `url("${firstPhoto}")` : "";
+  galleryMain.style.backgroundSize = firstPhoto ? "cover" : "";
   document.getElementById("serviceModal").hidden = false;
 }
 
@@ -313,12 +215,16 @@ function handleCardAction(event) {
   if (!service) return;
 
   if (action === "favorite") {
-    favorites.has(service.id) ? favorites.delete(service.id) : favorites.add(service.id);
-    renderCards();
-    renderFavorites();
+    updateFavorite(service);
     return;
   }
   showServiceDetails(service);
+}
+
+async function updateFavorite(service) {
+  favorites.has(service.id) ? favorites.delete(service.id) : favorites.add(service.id);
+  renderCards();
+  renderFavorites();
 }
 
 function closeModals() {
@@ -433,9 +339,12 @@ function renderMapSidebar() {
   visibleServices.forEach((service) => {
     const card = document.createElement("div");
     card.className = "map-mini";
+    const distance = service.distance == null
+      ? "distância indisponível"
+      : `${service.distance.toFixed(1).replace(".", ",")} km`;
     card.innerHTML = `
       <strong>${service.title}</strong>
-      <small>${service.provider} • 📍 ${service.distance.toFixed(1).replace(".", ",")} km</small>
+      <small>${service.provider} • 📍 ${distance}</small>
       <button class="ghost-btn" data-focus="${service.id}">Ver no mapa</button>
     `;
     mapSidebar.appendChild(card);
@@ -478,6 +387,7 @@ function initProximityMap(center) {
     .bindPopup("Você está aqui");
 
   updateProximityMap();
+  loadServices();
 }
 
 function openProximityMap() {
@@ -856,23 +766,58 @@ adList.addEventListener("click", (event) => {
   if (!button) return;
   const item = button.closest(".ad-item");
   if (!item) return;
+  const serviceId = item.dataset.serviceId;
   const status = item.querySelector(".status");
 
   if (button.classList.contains("ad-pause")) {
     const isPaused = status.textContent.trim() === "Pausado";
-    status.textContent = isPaused ? "Ativo" : "Pausado";
-    status.classList.toggle("done", isPaused);
-    status.classList.toggle("pending", !isPaused);
-    showToast(isPaused ? "Anúncio reativado." : "Anúncio pausado.");
+    authFetch(`/services/${serviceId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: isPaused ? "ativo" : "pausado" }),
+    }).then(async (response) => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Não foi possível atualizar o anúncio.");
+      await loadProviderServices();
+      showToast(isPaused ? "Anúncio reativado." : "Anúncio pausado.");
+    }).catch((error) => showToast(error.message));
   } else if (button.classList.contains("ad-remove")) {
     if (confirm("Remover este anúncio?")) {
-      item.remove();
-      showToast("Anúncio removido.");
+      authFetch(`/services/${serviceId}`, { method: "DELETE" }).then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Não foi possível remover o anúncio.");
+        await loadProviderServices();
+        showToast("Anúncio removido.");
+      }).catch((error) => showToast(error.message));
     }
   }
 });
 
-newAdForm.addEventListener("submit", (event) => {
+async function loadProviderServices() {
+  if (currentSessionRole !== "prestador") return;
+  try {
+    const response = await authFetch("/services/mine");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível carregar seus anúncios.");
+    adList.replaceChildren();
+    data.forEach((service) => {
+      const item = document.createElement("article");
+      item.className = "ad-item";
+      item.dataset.serviceId = service.id;
+      item.innerHTML = `
+        <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
+        <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"} • Raio de ${service.raio_atendimento_km} km</small></div>
+        <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
+        <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}>⏸</button>
+        <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}>🗑</button>
+      `;
+      adList.appendChild(item);
+    });
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+newAdForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = document.getElementById("adTitle").value.trim();
   const price = document.getElementById("adPrice").value;
@@ -884,21 +829,30 @@ newAdForm.addEventListener("submit", (event) => {
     return;
   }
 
-  const item = document.createElement("article");
-  item.className = "ad-item";
-  item.innerHTML = `
-    <div class="ad-thumb electric" style="background-image:url('${adPhotos[0]}');background-size:cover;background-position:center"></div>
-    <div><strong>${title}</strong><small>R$ ${price} ${priceType} • Raio de ${radius} km</small></div>
-    <span class="status done">Ativo</span>
-    <button class="icon-btn ad-pause" title="Pausar">⏸</button>
-    <button class="icon-btn ad-remove" title="Remover">🗑</button>
-  `;
-  adList.prepend(item);
-  newAdModal.hidden = true;
-  newAdForm.reset();
-  adPhotos = [];
-  renderAdPhotosGrid();
-  showToast("Anúncio publicado. Em breve isso fica salvo no banco de dados.");
+  try {
+    const response = await authFetch("/services", {
+      method: "POST",
+      body: JSON.stringify({
+        titulo: title,
+        descricao: document.getElementById("adDescription").value,
+        categoria_id: Number(document.getElementById("adCategory").value),
+        valor: Number(price),
+        tipo_valor: priceType,
+        raio_atendimento_km: Number(radius),
+        fotos: adPhotos,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível publicar o anúncio.");
+    newAdModal.hidden = true;
+    newAdForm.reset();
+    adPhotos = [];
+    renderAdPhotosGrid();
+    await loadProviderServices();
+    showToast("Anúncio publicado.");
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 // ============================================
@@ -1393,7 +1347,8 @@ if (initialRole) {
   setActiveRole(initialRole);
   setActiveSection("explorar");
   setActiveProviderSection("painel");
-  loadCategories().then(applyFilters);
+  loadCategories().then(loadServices);
+  loadProviderServices();
   renderFavorites();
   renderClientCalendar();
   renderProviderAgenda();

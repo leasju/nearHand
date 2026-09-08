@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -58,6 +58,30 @@ class AccountLogin(BaseModel):
     tipo: str
     identificador: str
     senha: str
+
+
+class ServiceCreate(BaseModel):
+    titulo: str
+    descricao: str = ""
+    categoria_id: int
+    valor: float
+    tipo_valor: str
+    raio_atendimento_km: int = 5
+    fotos: list[str]
+
+
+class ServiceUpdate(BaseModel):
+    titulo: str
+    descricao: str = ""
+    categoria_id: int
+    valor: float
+    tipo_valor: str
+    raio_atendimento_km: int = 5
+    fotos: list[str] | None = None
+
+
+class ServiceStatusUpdate(BaseModel):
+    status: str
 
 
 class AddressFields(BaseModel):
@@ -221,6 +245,300 @@ def list_public_categories(db: Session = Depends(get_db)):
         """)
     ).mappings().all()
     return rows
+
+
+SERVICE_SELECT = """
+    SELECT
+        s.id,
+        s.titulo AS title,
+        s.descricao AS description,
+        s.valor AS price,
+        s.tipo_valor AS price_type,
+        s.status,
+        s.raio_atendimento_km,
+        c.id AS categoria_id,
+        c.nome AS category,
+        p.id AS prestador_id,
+        p.nome_empresa AS provider,
+        e.latitude AS lat,
+        e.longitude AS lng,
+        COALESCE(r.rating, 0) AS rating,
+        COALESCE(r.reviews, 0) AS reviews,
+        {distance_expression} AS distance,
+        COALESCE(
+            JSON_ARRAYAGG(
+                CASE WHEN f.id IS NOT NULL THEN JSON_OBJECT(
+                    'id', f.id, 'url', f.url, 'tipo', f.tipo, 'ordem', f.ordem
+                ) END
+            ), JSON_ARRAY()
+        ) AS photos
+    FROM servico s
+    JOIN categoria c ON c.id = s.categoria_id
+    JOIN prestador p ON p.id = s.prestador_id
+    JOIN endereco e ON e.id = p.endereco_id
+    LEFT JOIN (
+        SELECT
+            so.servico_id,
+            AVG(a.nota) AS rating,
+            COUNT(a.id) AS reviews
+        FROM solicitacao so
+        JOIN avaliacao a ON a.solicitacao_id = so.id
+        WHERE so.status = 'concluido' AND a.denunciada = FALSE
+        GROUP BY so.servico_id
+    ) r ON r.servico_id = s.id
+    LEFT JOIN foto_servico f ON f.servico_id = s.id AND f.tipo = 'carrossel'
+"""
+
+
+def _distance_expression(lat_param: str = ":lat", lng_param: str = ":lng") -> str:
+    return f"""
+        6371 * 2 * ASIN(SQRT(
+            POWER(SIN(RADIANS({lat_param} - e.latitude) / 2), 2)
+            + COS(RADIANS({lat_param})) * COS(RADIANS(e.latitude))
+            * POWER(SIN(RADIANS({lng_param} - e.longitude) / 2), 2)
+        ))
+    """
+
+
+def _decode_service_row(row) -> dict:
+    service = dict(row)
+    photos = service.get("photos") or []
+    if isinstance(photos, str):
+        import json
+
+        photos = json.loads(photos)
+    service["photos"] = [photo for photo in photos if photo and photo.get("url")]
+    service["price"] = float(service["price"])
+    service["rating"] = float(service["rating"])
+    service["reviews"] = int(service["reviews"])
+    service["distance"] = float(service["distance"]) if service["distance"] is not None else None
+    service["unit"] = "/h" if service["price_type"] == "por_hora" else ""
+    return service
+
+
+@app.post("/services")
+def create_service(
+    service: ServiceCreate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    if service.tipo_valor not in {"fixo", "por_hora"}:
+        raise HTTPException(status_code=400, detail="tipo_valor must be fixo or por_hora")
+    if not service.titulo.strip() or service.valor < 0 or service.raio_atendimento_km <= 0:
+        raise HTTPException(status_code=400, detail="Price and radius must be positive")
+    photos = [photo.strip() for photo in service.fotos if photo.strip()]
+    if len(photos) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 photos are required")
+
+    category_exists = db.execute(
+        text("SELECT id FROM categoria WHERE id = :id"), {"id": service.categoria_id}
+    ).first()
+    if category_exists is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    try:
+        result = db.execute(
+            text("""
+                INSERT INTO servico
+                    (prestador_id, categoria_id, titulo, descricao, valor, tipo_valor, raio_atendimento_km)
+                VALUES
+                    (:prestador_id, :categoria_id, :titulo, :descricao, :valor, :tipo_valor, :raio)
+            """),
+            {
+                "prestador_id": provider_id,
+                "categoria_id": service.categoria_id,
+                "titulo": service.titulo.strip(),
+                "descricao": service.descricao.strip() or None,
+                "valor": service.valor,
+                "tipo_valor": service.tipo_valor,
+                "raio": service.raio_atendimento_km,
+            },
+        )
+        service_id = result.lastrowid
+        db.execute(
+            text("""
+                INSERT INTO foto_servico (servico_id, url, tipo, ordem)
+                VALUES (:servico_id, :url, 'carrossel', :ordem)
+            """),
+            [{"servico_id": service_id, "url": url, "ordem": index} for index, url in enumerate(photos)],
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid service data")
+
+    return get_service(service_id, db)
+
+
+@app.get("/services")
+def list_services(
+    categoria: str | None = None,
+    preco_min: float | None = None,
+    preco_max: float | None = None,
+    avaliacao_min: float = 0,
+    busca: str | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
+    raio_km: float | None = None,
+    ordenacao: str = Query("distancia", alias="ordenacao"),
+    db: Session = Depends(get_db),
+):
+    if (lat is None) != (lng is None):
+        raise HTTPException(status_code=400, detail="lat and lng must be provided together")
+    if ordenacao not in {"distancia", "avaliacao", "preco"}:
+        raise HTTPException(status_code=400, detail="Invalid ordering")
+
+    params = {
+        "lat": lat if lat is not None else 0,
+        "lng": lng if lng is not None else 0,
+        "preco_min": preco_min,
+        "preco_max": preco_max,
+        "avaliacao_min": avaliacao_min,
+        "busca": f"%{busca.strip()}%" if busca and busca.strip() else None,
+        "categoria": categoria,
+        "raio_km": raio_km,
+    }
+    distance = _distance_expression() if lat is not None else "NULL"
+    query = text(SERVICE_SELECT.format(distance_expression=distance) + """
+        WHERE s.status = 'ativo'
+          AND (:categoria IS NULL OR c.nome = :categoria OR CAST(c.id AS CHAR) = :categoria)
+          AND (:preco_min IS NULL OR s.valor >= :preco_min)
+          AND (:preco_max IS NULL OR s.valor <= :preco_max)
+          AND (:avaliacao_min <= COALESCE(r.rating, 0))
+          AND (:busca IS NULL OR s.titulo LIKE :busca OR s.descricao LIKE :busca OR p.nome_empresa LIKE :busca)
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+        HAVING (:raio_km IS NULL OR {distance} <= :raio_km)
+        ORDER BY {order_by}
+    """.format(
+        distance=distance,
+        order_by={
+            "distancia": "distance ASC, s.id DESC",
+            "avaliacao": "rating DESC, s.id DESC",
+            "preco": "s.valor ASC, s.id DESC",
+        }[ordenacao],
+    ))
+    return [_decode_service_row(row) for row in db.execute(query, params).mappings().all()]
+
+
+@app.get("/services/mine")
+def list_my_services(
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    query = text(SERVICE_SELECT.format(distance_expression="0") + """
+        WHERE s.prestador_id = :provider_id
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+        ORDER BY s.criado_em DESC
+    """)
+    return [
+        _decode_service_row(row)
+        for row in db.execute(query, {"provider_id": provider_id, "lat": 0, "lng": 0}).mappings().all()
+    ]
+
+
+@app.get("/services/{service_id}")
+def get_service(service_id: int, db: Session = Depends(get_db)):
+    query = text(SERVICE_SELECT.format(distance_expression="0") + """
+        WHERE s.id = :service_id
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+    """)
+    row = db.execute(query, {"service_id": service_id, "lat": 0, "lng": 0}).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return _decode_service_row(row)
+
+
+def _check_service_owner(service_id: int, provider_id: int, db: Session):
+    row = db.execute(
+        text("SELECT id FROM servico WHERE id = :id AND prestador_id = :prestador_id"),
+        {"id": service_id, "prestador_id": provider_id},
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+
+@app.put("/services/{service_id}")
+def update_service(
+    service_id: int,
+    service: ServiceUpdate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    _check_service_owner(service_id, provider_id, db)
+    if service.tipo_valor not in {"fixo", "por_hora"} or service.valor < 0 or service.raio_atendimento_km <= 0:
+        raise HTTPException(status_code=400, detail="Invalid service values")
+    if service.fotos is not None and len([photo for photo in service.fotos if photo.strip()]) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 photos are required")
+    try:
+        db.execute(
+            text("""
+                UPDATE servico
+                SET categoria_id = :categoria_id, titulo = :titulo, descricao = :descricao,
+                    valor = :valor, tipo_valor = :tipo_valor, raio_atendimento_km = :raio
+                WHERE id = :id AND prestador_id = :prestador_id
+            """),
+            {
+                "categoria_id": service.categoria_id,
+                "titulo": service.titulo.strip(),
+                "descricao": service.descricao.strip() or None,
+                "valor": service.valor,
+                "tipo_valor": service.tipo_valor,
+                "raio": service.raio_atendimento_km,
+                "id": service_id,
+                "prestador_id": provider_id,
+            },
+        )
+        if service.fotos is not None:
+            db.execute(text("DELETE FROM foto_servico WHERE servico_id = :id"), {"id": service_id})
+            photos = [photo.strip() for photo in service.fotos if photo.strip()]
+            db.execute(
+                text("""
+                    INSERT INTO foto_servico (servico_id, url, tipo, ordem)
+                    VALUES (:servico_id, :url, 'carrossel', :ordem)
+                """),
+                [{"servico_id": service_id, "url": url, "ordem": index} for index, url in enumerate(photos)],
+            )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid service data")
+    return get_service(service_id, db)
+
+
+@app.patch("/services/{service_id}/status")
+def update_service_status(
+    service_id: int,
+    payload: ServiceStatusUpdate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    _check_service_owner(service_id, provider_id, db)
+    if payload.status not in {"ativo", "pausado", "removido"}:
+        raise HTTPException(status_code=400, detail="Invalid service status")
+    db.execute(
+        text("UPDATE servico SET status = :status WHERE id = :id AND prestador_id = :prestador_id"),
+        {"status": payload.status, "id": service_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    return {"id": service_id, "status": payload.status}
+
+
+@app.delete("/services/{service_id}")
+def delete_service(
+    service_id: int,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    _check_service_owner(service_id, provider_id, db)
+    db.execute(
+        text("DELETE FROM servico WHERE id = :id AND prestador_id = :prestador_id"),
+        {"id": service_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    return {"status": "deleted"}
 
 
 @app.get("/auth/account-exists")
