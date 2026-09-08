@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 import re
 import json
@@ -12,7 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -481,6 +481,17 @@ def create_message(
             "texto": text_message,
         },
     )
+    participant = db.execute(
+        text("""
+            SELECT so.cliente_id, s.prestador_id
+            FROM solicitacao so JOIN servico s ON s.id = so.servico_id
+            WHERE so.id = :id
+        """),
+        {"id": request_id},
+    ).mappings().one()
+    recipient_id = participant["prestador_id"] if role == "cliente" else participant["cliente_id"]
+    recipient_type = "prestador" if role == "cliente" else "cliente"
+    create_notification(db, recipient_id, recipient_type, "nova_mensagem", "Você recebeu uma nova mensagem.")
     db.commit()
     row = db.execute(
         text("""
@@ -669,6 +680,9 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="The account data conflicts with an existing account")
+    except DataError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
 
     return {
         "message": "Account created successfully",
@@ -1161,11 +1175,28 @@ def report_evaluation(
     return {"status": "reported"}
 
 
+def _format_time_value(value) -> str:
+    # MySQL TIME columns come back from PyMySQL as datetime.timedelta, which has
+    # no .isoformat(); datetime.time (and date) objects do, so prefer that when available.
+    if isinstance(value, str):
+        return value
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    if isinstance(value, timedelta):
+        total_seconds = int(value.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return str(value)
+
+
 def _availability_row(row) -> dict:
     availability = dict(row)
-    for key in ("data", "hora_inicio", "hora_fim"):
+    if availability.get("data") is not None:
+        availability["data"] = availability["data"].isoformat()
+    for key in ("hora_inicio", "hora_fim"):
         if availability.get(key) is not None:
-            availability[key] = availability[key].isoformat()
+            availability[key] = _format_time_value(availability[key])
     availability["bloqueado"] = bool(availability["bloqueado"])
     return availability
 
@@ -1192,17 +1223,6 @@ def create_availability(
             "bloqueado": availability.bloqueado,
         },
     )
-    participant = db.execute(
-        text("""
-            SELECT so.cliente_id, s.prestador_id
-            FROM solicitacao so JOIN servico s ON s.id = so.servico_id
-            WHERE so.id = :id
-        """),
-        {"id": request_id},
-    ).mappings().one()
-    recipient_id = participant["prestador_id"] if role == "cliente" else participant["cliente_id"]
-    recipient_type = "prestador" if role == "cliente" else "cliente"
-    create_notification(db, recipient_id, recipient_type, "nova_mensagem", "Você recebeu uma nova mensagem.")
     db.commit()
     return get_availability(result.lastrowid, db)
 

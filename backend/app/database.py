@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
@@ -25,31 +26,41 @@ Base = declarative_base()
 def ensure_optional_schema():
     """Add columns introduced after the initial database script."""
     with engine.begin() as connection:
-        columns = connection.execute(text("SHOW COLUMNS FROM prestador LIKE 'foto'"))
-        if columns.first() is None:
-            connection.execute(text("ALTER TABLE prestador ADD COLUMN foto VARCHAR(255) NULL"))
-        columns = connection.execute(text("SHOW COLUMNS FROM avaliacao LIKE 'resposta_prestador'"))
-        if columns.first() is None:
-            connection.execute(text("ALTER TABLE avaliacao ADD COLUMN resposta_prestador TEXT NULL"))
-        payment_columns = {
-            "chave_pix": "VARCHAR(140) NULL",
-            "ultimos_4_digitos": "CHAR(4) NULL",
+        optional_columns = {
+            "prestador": {"foto": "TEXT NULL"},
+            "avaliacao": {"resposta_prestador": "TEXT NULL"},
+            "metodo_pagamento": {
+                "chave_pix": "VARCHAR(140) NULL",
+                "ultimos_4_digitos": "CHAR(4) NULL",
+            },
+            "metodo_recebimento": {
+                "chave_pix": "VARCHAR(140) NULL",
+                "ultimos_4_digitos": "CHAR(4) NULL",
+                "banco": "VARCHAR(100) NULL",
+                "agencia": "VARCHAR(20) NULL",
+                "conta": "VARCHAR(30) NULL",
+            },
         }
-        for name, definition in payment_columns.items():
-            columns = connection.execute(text(f"SHOW COLUMNS FROM metodo_pagamento LIKE '{name}'"))
-            if columns.first() is None:
-                connection.execute(text(f"ALTER TABLE metodo_pagamento ADD COLUMN {name} {definition}"))
-        receiving_columns = {
-            "chave_pix": "VARCHAR(140) NULL",
-            "ultimos_4_digitos": "CHAR(4) NULL",
-            "banco": "VARCHAR(100) NULL",
-            "agencia": "VARCHAR(20) NULL",
-            "conta": "VARCHAR(30) NULL",
-        }
-        for name, definition in receiving_columns.items():
-            columns = connection.execute(text(f"SHOW COLUMNS FROM metodo_recebimento LIKE '{name}'"))
-            if columns.first() is None:
-                connection.execute(text(f"ALTER TABLE metodo_recebimento ADD COLUMN {name} {definition}"))
+        for table, columns in optional_columns.items():
+            for name, definition in columns.items():
+                existing = connection.execute(
+                    text(f"SHOW COLUMNS FROM {table} LIKE :name"), {"name": name}
+                ).first()
+                if existing is not None:
+                    continue
+                try:
+                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {definition}"))
+                except ProgrammingError as error:
+                    if not error.orig.args or error.orig.args[0] != 1060:
+                        raise
+        # Corrige instalações antigas onde prestador.foto foi criada como VARCHAR(255)
+        # (pequeno demais para uma imagem em base64) antes desta função existir.
+        prestador_foto = connection.execute(
+            text("SHOW COLUMNS FROM prestador LIKE 'foto'")
+        ).mappings().first()
+        if prestador_foto is not None and prestador_foto["Type"].lower() != "text":
+            connection.execute(text("ALTER TABLE prestador MODIFY COLUMN foto TEXT NULL"))
+
         connection.execute(text("""
             CREATE TABLE IF NOT EXISTS notificacao (
                 id INT AUTO_INCREMENT PRIMARY KEY,
