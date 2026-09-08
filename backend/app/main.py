@@ -112,6 +112,10 @@ class RequestStatusUpdate(BaseModel):
     status: str
 
 
+class MessageCreate(BaseModel):
+    texto: str
+
+
 class AvailabilityCreate(BaseModel):
     data: date
     hora_inicio: time
@@ -167,6 +171,97 @@ def provider_metrics(
         "faturamento": float(result["revenue"] or 0),
         "servicos_realizados": int(result["completed_services"] or 0),
     }
+
+
+def _current_account(credentials: HTTPAuthorizationCredentials | None) -> tuple[int, str]:
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        return int(payload["sub"]), payload["role"]
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+
+def _check_message_participant(request_id: int, db: Session, credentials: HTTPAuthorizationCredentials | None):
+    account_id, role = _current_account(credentials)
+    request = db.execute(
+        text("""
+            SELECT so.id, so.cliente_id, s.prestador_id
+            FROM solicitacao so
+            JOIN servico s ON s.id = so.servico_id
+            WHERE so.id = :id
+        """),
+        {"id": request_id},
+    ).mappings().first()
+    if request is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+    allowed = (role == "cliente" and request["cliente_id"] == account_id) or (
+        role == "prestador" and request["prestador_id"] == account_id
+    )
+    if not allowed:
+        raise HTTPException(status_code=403, detail="You are not part of this request")
+    return account_id, role
+
+
+def _message_row(row) -> dict:
+    message = dict(row)
+    if message.get("data_hora") is not None:
+        message["data_hora"] = message["data_hora"].isoformat()
+    return message
+
+
+@app.post("/solicitacoes/{request_id}/mensagens")
+def create_message(
+    request_id: int,
+    message: MessageCreate,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    account_id, role = _check_message_participant(request_id, db, credentials)
+    text_message = message.texto.strip()
+    if not text_message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    result = db.execute(
+        text("""
+            INSERT INTO mensagem (solicitacao_id, remetente_id, remetente_tipo, texto)
+            VALUES (:solicitacao_id, :remetente_id, :remetente_tipo, :texto)
+        """),
+        {
+            "solicitacao_id": request_id,
+            "remetente_id": account_id,
+            "remetente_tipo": role,
+            "texto": text_message,
+        },
+    )
+    db.commit()
+    row = db.execute(
+        text("""
+            SELECT id, solicitacao_id, remetente_id, remetente_tipo, texto, data_hora
+            FROM mensagem WHERE id = :id
+        """),
+        {"id": result.lastrowid},
+    ).mappings().first()
+    return _message_row(row)
+
+
+@app.get("/solicitacoes/{request_id}/mensagens")
+def list_messages(
+    request_id: int,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    _check_message_participant(request_id, db, credentials)
+    rows = db.execute(
+        text("""
+            SELECT id, solicitacao_id, remetente_id, remetente_tipo, texto, data_hora
+            FROM mensagem
+            WHERE solicitacao_id = :solicitacao_id
+            ORDER BY data_hora, id
+        """),
+        {"solicitacao_id": request_id},
+    ).mappings().all()
+    return [_message_row(row) for row in rows]
 
 
 @app.get("/addresses/cep/{cep}")

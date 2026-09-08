@@ -4,6 +4,8 @@ let services = [];
 let visibleServices = [];
 let currentService = null;
 let selectedAvailability = null;
+let currentChatRequestId = null;
+let chatPollingTimer = null;
 let servicesRequest = null;
 let servicesRequestTimer = null;
 
@@ -412,7 +414,10 @@ radiusFilter.addEventListener("input", () => {
 });
 
 document.querySelectorAll("[data-close]").forEach((button) => {
-  button.addEventListener("click", () => { document.getElementById(button.dataset.close).hidden = true; });
+  button.addEventListener("click", () => {
+    document.getElementById(button.dataset.close).hidden = true;
+    if (button.dataset.close === "chatModal") window.clearInterval(chatPollingTimer);
+  });
 });
 document.querySelectorAll(".modal-backdrop").forEach((modal) => {
   modal.addEventListener("click", (event) => {
@@ -792,6 +797,7 @@ document.getElementById("hireBtn").addEventListener("click", async () => {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Não foi possível solicitar o serviço.");
+    currentChatRequestId = data.id;
     document.getElementById("serviceModal").hidden = true;
     showToast("Solicitação enviada! Acompanhe em Pedidos.");
     await loadClientRequests();
@@ -800,8 +806,15 @@ document.getElementById("hireBtn").addEventListener("click", async () => {
   }
 });
 document.getElementById("openChatBtn").addEventListener("click", () => {
+  if (!currentChatRequestId) {
+    showToast("Solicite o serviço primeiro para abrir um chat vinculado.");
+    return;
+  }
   document.getElementById("serviceModal").hidden = true;
   document.getElementById("chatModal").hidden = false;
+  loadMessages();
+  window.clearInterval(chatPollingTimer);
+  chatPollingTimer = window.setInterval(loadMessages, 5000);
 });
 
 // ============================================
@@ -811,15 +824,41 @@ const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatMessages = document.getElementById("chatMessages");
 
-chatForm.addEventListener("submit", (event) => {
+async function loadMessages() {
+  if (!currentChatRequestId) return;
+  try {
+    const response = await authFetch(`/solicitacoes/${currentChatRequestId}/mensagens`);
+    const messages = await response.json();
+    if (!response.ok) throw new Error(messages.detail || "Não foi possível carregar o chat.");
+    chatMessages.replaceChildren();
+    const currentUser = JSON.parse(localStorage.getItem("nearhand_user") || "{}");
+    messages.forEach((message) => {
+      const bubble = document.createElement("div");
+      bubble.className = message.remetente_id === currentUser.id ? "message me" : "message them";
+      bubble.textContent = message.texto;
+      chatMessages.appendChild(bubble);
+    });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = chatInput.value.trim();
-  if (!text) return;
-  const bubble = document.createElement("div");
-  bubble.className = "message me";
-  bubble.textContent = text;
-  chatMessages.appendChild(bubble);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  if (!text || !currentChatRequestId) return;
+  try {
+    const response = await authFetch(`/solicitacoes/${currentChatRequestId}/mensagens`, {
+      method: "POST",
+      body: JSON.stringify({ texto: text }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível enviar a mensagem.");
+    await loadMessages();
+  } catch (error) {
+    showToast(error.message);
+  }
   chatInput.value = "";
 });
 
@@ -855,6 +894,10 @@ async function loadClientRequests() {
     const response = await authFetch("/clientes/me/solicitacoes");
     const requests = await response.json();
     if (!response.ok) throw new Error(requests.detail || "Não foi possível carregar seus pedidos.");
+    if (currentService) {
+      const matchingRequest = requests.find((request) => request.servico_id === currentService.id && request.status !== "cancelado");
+      if (matchingRequest) currentChatRequestId = matchingRequest.id;
+    }
     CLIENT_EVENTS = requests
       .filter((request) => request.data_hora_agendada && request.status !== "cancelado")
       .map((request) => ({
@@ -945,11 +988,11 @@ async function loadProviderRequests() {
       item.dataset.requestId = request.id;
       const initials = request.cliente_nome.split(" ").map((part) => part[0]).slice(0, 2).join("");
       const actions = request.status === "solicitado"
-        ? '<button class="small-btn accept" data-request-status="confirmado">Aceitar</button><button class="small-btn propose" data-request-status="confirmado">Propor</button><button class="small-btn reject" data-request-status="cancelado">Recusar</button>'
+        ? '<button class="small-btn accept" data-request-status="confirmado">Aceitar</button><button class="small-btn propose" data-request-status="confirmado">Propor</button><button class="small-btn reject" data-request-status="cancelado">Recusar</button><button class="small-btn" data-chat-request>Chat</button>'
         : request.status === "confirmado"
-          ? '<button class="small-btn accept" data-request-status="em_andamento">Iniciar</button><button class="small-btn reject" data-request-status="cancelado">Cancelar</button>'
+          ? '<button class="small-btn accept" data-request-status="em_andamento">Iniciar</button><button class="small-btn reject" data-request-status="cancelado">Cancelar</button><button class="small-btn" data-chat-request>Chat</button>'
           : request.status === "em_andamento"
-            ? '<button class="small-btn accept" data-request-status="concluido">Concluir</button>'
+            ? '<button class="small-btn accept" data-request-status="concluido">Concluir</button><button class="small-btn" data-chat-request>Chat</button>'
             : "";
       item.innerHTML = `
         <div class="request-avatar">${initials}</div>
@@ -982,6 +1025,15 @@ async function loadProviderMetrics() {
 }
 
 requestList.addEventListener("click", async (event) => {
+  const chatButton = event.target.closest("[data-chat-request]");
+  if (chatButton) {
+    currentChatRequestId = Number(chatButton.closest(".request-item").dataset.requestId);
+    document.getElementById("chatModal").hidden = false;
+    loadMessages();
+    window.clearInterval(chatPollingTimer);
+    chatPollingTimer = window.setInterval(loadMessages, 5000);
+    return;
+  }
   const button = event.target.closest("[data-request-status]");
   if (!button) return;
   const item = button.closest(".request-item");
