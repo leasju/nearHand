@@ -596,6 +596,27 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
     if account_type == "prestador" and not account.cpf_cnpj.strip():
         raise HTTPException(status_code=400, detail="CPF or CNPJ is required")
 
+    if account_type == "cliente":
+        existing_client = db.execute(
+            text("SELECT id FROM cliente WHERE LOWER(email) = :email"),
+            {"email": email},
+        ).first()
+        if existing_client:
+            raise HTTPException(status_code=409, detail="This email already has a client account")
+    else:
+        existing_provider = db.execute(
+            text("SELECT id FROM prestador WHERE LOWER(email) = :email"),
+            {"email": email},
+        ).first()
+        if existing_provider:
+            raise HTTPException(status_code=409, detail="This email already has a provider account")
+        existing_document = db.execute(
+            text("SELECT id FROM prestador WHERE cpf_cnpj = :cpf_cnpj"),
+            {"cpf_cnpj": account.cpf_cnpj.strip()},
+        ).first()
+        if existing_document:
+            raise HTTPException(status_code=409, detail="This CPF/CNPJ already has a provider account")
+
     try:
         address_result = db.execute(
             text("""
@@ -647,7 +668,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Email, phone, or document already exists")
+        raise HTTPException(status_code=409, detail="The account data conflicts with an existing account")
 
     return {
         "message": "Account created successfully",
