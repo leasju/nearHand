@@ -356,6 +356,80 @@ def _current_account(credentials: HTTPAuthorizationCredentials | None) -> tuple[
         raise HTTPException(status_code=401, detail="Invalid authentication token")
 
 
+def create_notification(db: Session, user_id: int, user_type: str, notification_type: str, message: str):
+    db.execute(
+        text("""
+            INSERT INTO notificacao (usuario_id, usuario_tipo, tipo, mensagem)
+            VALUES (:usuario_id, :usuario_tipo, :tipo, :mensagem)
+        """),
+        {"usuario_id": user_id, "usuario_tipo": user_type, "tipo": notification_type, "mensagem": message[:255]},
+    )
+
+
+def notification_row(row) -> dict:
+    item = dict(row)
+    if item.get("criado_em") is not None:
+        item["criado_em"] = item["criado_em"].isoformat()
+    item["lida"] = bool(item["lida"])
+    return item
+
+
+@app.get("/notificacoes/me")
+def list_notifications(
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    user_id, user_type = _current_account(credentials)
+    rows = db.execute(
+        text("""
+            SELECT id, tipo, mensagem, lida, criado_em
+            FROM notificacao
+            WHERE usuario_id = :usuario_id AND usuario_tipo = :usuario_tipo
+            ORDER BY criado_em DESC, id DESC
+            LIMIT 50
+        """),
+        {"usuario_id": user_id, "usuario_tipo": user_type},
+    ).mappings().all()
+    return [notification_row(row) for row in rows]
+
+
+@app.patch("/notificacoes/{notification_id}/lida")
+def mark_notification_read(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    user_id, user_type = _current_account(credentials)
+    result = db.execute(
+        text("""
+            UPDATE notificacao SET lida = TRUE
+            WHERE id = :id AND usuario_id = :usuario_id AND usuario_tipo = :usuario_tipo
+        """),
+        {"id": notification_id, "usuario_id": user_id, "usuario_tipo": user_type},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"status": "read"}
+
+
+@app.patch("/notificacoes/marcar-todas-lidas")
+def mark_all_notifications_read(
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    user_id, user_type = _current_account(credentials)
+    db.execute(
+        text("""
+            UPDATE notificacao SET lida = TRUE
+            WHERE usuario_id = :usuario_id AND usuario_tipo = :usuario_tipo AND lida = FALSE
+        """),
+        {"usuario_id": user_id, "usuario_tipo": user_type},
+    )
+    db.commit()
+    return {"status": "read"}
+
+
 def _check_message_participant(request_id: int, db: Session, credentials: HTTPAuthorizationCredentials | None):
     account_id, role = _current_account(credentials)
     request = db.execute(
@@ -796,6 +870,10 @@ def create_request(
             "valor_proposto": request.valor_proposto if request.valor_proposto is not None else service["valor"],
         },
     )
+    recipient = db.execute(
+        text("SELECT prestador_id FROM servico WHERE id = :id"), {"id": request.servico_id}
+    ).scalar_one()
+    create_notification(db, recipient, "prestador", "nova_solicitacao", "Você recebeu uma nova solicitação de serviço.")
     db.commit()
     return _get_request(result.lastrowid, db, client_id=client_id)
 
@@ -901,6 +979,9 @@ def update_request_status(
         text("UPDATE solicitacao SET status = :status WHERE id = :id"),
         {"status": next_status, "id": request_id},
     )
+    recipient_id = request_row["cliente_id"] if role == "prestador" else request_row["prestador_id"]
+    recipient_type = "cliente" if role == "prestador" else "prestador"
+    create_notification(db, recipient_id, recipient_type, "status_solicitacao", f"Sua solicitação foi atualizada para: {next_status}.")
     db.commit()
     return _get_request(request_id, db)
 
@@ -964,6 +1045,15 @@ def create_evaluation(
                 "comentario": evaluation.comentario.strip() or None,
             },
         )
+        recipient = db.execute(
+            text("""
+                SELECT s.prestador_id
+                FROM solicitacao so JOIN servico s ON s.id = so.servico_id
+                WHERE so.id = :id
+            """),
+            {"id": evaluation.solicitacao_id},
+        ).scalar_one()
+        create_notification(db, recipient, "prestador", "nova_avaliacao", "Você recebeu uma nova avaliação.")
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -1006,6 +1096,12 @@ def reply_to_evaluation(
         """),
         {"resposta": text_reply, "id": evaluation_id, "prestador_id": provider_id},
     )
+    recipient = db.execute(
+        text("SELECT so.cliente_id FROM avaliacao a JOIN solicitacao so ON so.id = a.solicitacao_id WHERE a.id = :id"),
+        {"id": evaluation_id},
+    ).scalar()
+    if recipient is not None:
+        create_notification(db, recipient, "cliente", "resposta_avaliacao", "O prestador respondeu à sua avaliação.")
     db.commit()
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Evaluation not found")
@@ -1075,6 +1171,17 @@ def create_availability(
             "bloqueado": availability.bloqueado,
         },
     )
+    participant = db.execute(
+        text("""
+            SELECT so.cliente_id, s.prestador_id
+            FROM solicitacao so JOIN servico s ON s.id = so.servico_id
+            WHERE so.id = :id
+        """),
+        {"id": request_id},
+    ).mappings().one()
+    recipient_id = participant["prestador_id"] if role == "cliente" else participant["cliente_id"]
+    recipient_type = "prestador" if role == "cliente" else "cliente"
+    create_notification(db, recipient_id, recipient_type, "nova_mensagem", "Você recebeu uma nova mensagem.")
     db.commit()
     return get_availability(result.lastrowid, db)
 
@@ -1640,6 +1747,49 @@ def admin_me(admin=Depends(get_current_admin)):
     return admin
 
 
+@app.get("/admin/avaliacoes-denunciadas")
+def list_reported_evaluations(
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    rows = db.execute(
+        text(EVALUATION_SELECT + """
+            WHERE a.denunciada = TRUE
+            ORDER BY a.criado_em DESC
+        """),
+    ).mappings().all()
+    return [_evaluation_row(row) for row in rows]
+
+
+class ModerationAction(BaseModel):
+    acao: str
+
+
+@app.patch("/admin/avaliacoes/{evaluation_id}/moderar")
+def moderate_evaluation(
+    evaluation_id: int,
+    action: ModerationAction,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    if action.acao == "aprovar":
+        result = db.execute(
+            text("UPDATE avaliacao SET denunciada = FALSE WHERE id = :id"),
+            {"id": evaluation_id},
+        )
+        db.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Evaluation not found")
+        return {"status": "approved"}
+    if action.acao == "remover":
+        result = db.execute(text("DELETE FROM avaliacao WHERE id = :id"), {"id": evaluation_id})
+        db.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Evaluation not found")
+        return {"status": "removed"}
+    raise HTTPException(status_code=400, detail="Action must be aprovar or remover")
+
+
 # Health check endpoint for the database
 @app.get("/health/db")
 def check_db(db: Session = Depends(get_db)):
@@ -1783,6 +1933,11 @@ def delete_category(
 @app.get("/admin/categories", include_in_schema=False)
 def admin_categories_page():
     return RedirectResponse(url="/frontend/admin-categories.html")
+
+
+@app.get("/admin/avaliacoes", include_in_schema=False)
+def admin_evaluations_page():
+    return RedirectResponse(url="/frontend/admin-avaliacoes.html")
 
 
 @app.get("/admin/login", include_in_schema=False)

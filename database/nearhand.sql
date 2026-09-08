@@ -198,3 +198,17 @@ CREATE TABLE metodo_recebimento (
     conta VARCHAR(30),
     FOREIGN KEY (prestador_id) REFERENCES prestador(id)
 );
+
+-- ============================================
+-- NOTIFICACAO
+-- ============================================
+CREATE TABLE notificacao (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    usuario_tipo VARCHAR(10) NOT NULL CHECK (usuario_tipo IN ('cliente', 'prestador')),
+    tipo VARCHAR(40) NOT NULL,
+    mensagem VARCHAR(255) NOT NULL,
+    lida BOOLEAN NOT NULL DEFAULT FALSE,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notificacao_usuario (usuario_id, usuario_tipo, lida, criado_em)
+);

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Moderação de avaliações denunciadas da NearHand." />
+  <title>NearHand — Moderação</title>
+  <link rel="icon" type="image/png" href="img/icon_nearhand.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .moderation-page{width:min(900px,92vw);margin:36px auto 70px}.moderation-item{display:grid;gap:10px;padding:18px;border:1px solid var(--line);border-radius:14px;margin-top:12px}.moderation-meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px}.moderation-actions{display:flex;gap:8px}.moderation-actions .approve{color:var(--success)}.moderation-actions .remove{color:var(--danger)}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/admin/categories" aria-label="NearHand - admin"><img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" /></a>
+    <div class="top-actions"><a class="secondary-btn" href="/admin/categories">Categorias</a><button class="secondary-btn" id="adminLogoutBtn">Sair</button></div>
+  </header>
+  <main><div class="moderation-page">
+    <div class="page-title"><div><span class="eyebrow">ADMIN</span><h1>Avaliações denunciadas</h1></div></div>
+    <div class="panel-card"><p id="moderationMessage" class="field-help"></p><div id="reportedReviews"></div></div>
+  </div></main>
+  <script src="js/admin-reviews.js"></script>
+</body>
+</html>

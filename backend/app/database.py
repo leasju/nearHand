@@ -50,6 +50,18 @@ def ensure_optional_schema():
             columns = connection.execute(text(f"SHOW COLUMNS FROM metodo_recebimento LIKE '{name}'"))
             if columns.first() is None:
                 connection.execute(text(f"ALTER TABLE metodo_recebimento ADD COLUMN {name} {definition}"))
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS notificacao (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                usuario_id INT NOT NULL,
+                usuario_tipo VARCHAR(10) NOT NULL,
+                tipo VARCHAR(40) NOT NULL,
+                mensagem VARCHAR(255) NOT NULL,
+                lida BOOLEAN NOT NULL DEFAULT FALSE,
+                criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_notificacao_usuario (usuario_id, usuario_tipo, lida, criado_em)
+            )
+        """))
 
 # Open a database connection and provide a session
 def get_db():

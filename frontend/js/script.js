@@ -764,16 +764,58 @@ providerNavLinks.forEach((link) => {
 const notificationBtn = document.getElementById("notificationBtn");
 const notificationsPopover = document.getElementById("notificationsPopover");
 
+function notificationIcon(type) {
+  return { nova_mensagem: "💬", status_solicitacao: "✅", nova_solicitacao: "📥", nova_avaliacao: "⭐", resposta_avaliacao: "⭐" }[type] || "🔔";
+}
+
+async function loadNotifications() {
+  try {
+    const response = await authFetch("/notificacoes/me");
+    const notifications = await response.json();
+    if (!response.ok) throw new Error(notifications.detail || "Não foi possível carregar notificações.");
+    const list = document.getElementById("notificationList");
+    list.replaceChildren();
+    notifications.forEach((notification) => {
+      const item = document.createElement("div");
+      item.className = "notification-item";
+      item.dataset.notificationId = notification.id;
+      item.innerHTML = `<span>${notificationIcon(notification.tipo)}</span><div><strong>${notification.mensagem}</strong><small>${new Date(notification.criado_em).toLocaleString("pt-BR")}</small></div>`;
+      item.addEventListener("click", async () => {
+        if (!notification.lida) await authFetch(`/notificacoes/${notification.id}/lida`, { method: "PATCH" });
+        item.style.opacity = "0.6";
+        notification.lida = true;
+        updateNotificationBadge(notifications);
+      });
+      list.appendChild(item);
+    });
+    updateNotificationBadge(notifications);
+    if (!notifications.length) list.innerHTML = '<p class="empty-state">Nenhuma notificação.</p>';
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function updateNotificationBadge(notifications) {
+  const unread = notifications.filter((notification) => !notification.lida).length;
+  const badge = document.querySelector("#notificationBtn .badge");
+  if (unread) {
+    if (badge) badge.textContent = unread;
+    else notificationBtn.insertAdjacentHTML("beforeend", `<span class="badge">${unread}</span>`);
+  } else badge?.remove();
+}
+
 notificationBtn.addEventListener("click", (event) => {
   event.stopPropagation();
   notificationsPopover.hidden = !notificationsPopover.hidden;
+  if (!notificationsPopover.hidden) loadNotifications();
 });
 document.addEventListener("click", (event) => {
   if (!notificationsPopover.hidden && !notificationsPopover.contains(event.target) && event.target !== notificationBtn) {
     notificationsPopover.hidden = true;
   }
 });
-document.querySelector(".popover-head .text-btn").addEventListener("click", () => {
+document.querySelector(".popover-head .text-btn").addEventListener("click", async () => {
+  await authFetch("/notificacoes/marcar-todas-lidas", { method: "PATCH" });
   document.querySelector("#notificationBtn .badge")?.remove();
   notificationsPopover.hidden = true;
   showToast("Notificações marcadas como lidas.");
@@ -1904,6 +1946,7 @@ if (initialRole) {
   loadClientRequests();
   loadProviderRequests();
   loadProviderMetrics();
+  loadNotifications();
   loadPaymentMethods();
   loadReceivingMethods();
   loadProviderAvailability();
