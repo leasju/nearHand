@@ -964,6 +964,23 @@ async function loadProviderRequests() {
   }
 }
 
+async function loadProviderMetrics() {
+  if (currentSessionRole !== "prestador") return;
+  try {
+    const response = await authFetch("/prestadores/me/metrics");
+    const metrics = await response.json();
+    if (!response.ok) throw new Error(metrics.detail || "Não foi possível carregar as métricas.");
+    document.getElementById("metricRequests").textContent = metrics.solicitacoes;
+    document.getElementById("metricCompleted").textContent = `${metrics.servicos_realizados} realizados`;
+    document.getElementById("metricAcceptance").textContent = `${String(metrics.taxa_aceitacao).replace(".", ",")}%`;
+    document.getElementById("metricRating").textContent = String(metrics.nota_media.toFixed(1)).replace(".", ",");
+    document.getElementById("metricRevenue").textContent = `R$ ${formatPrice(metrics.faturamento)}`;
+    document.getElementById("metricPeriod").textContent = `${String(metrics.mes).padStart(2, "0")}/${metrics.ano}`;
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 requestList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-request-status]");
   if (!button) return;
@@ -1766,6 +1783,7 @@ if (initialRole) {
   loadProviderServices();
   loadClientRequests();
   loadProviderRequests();
+  loadProviderMetrics();
   loadProviderAvailability();
   loadProviderEvaluations();
   loadFavorites();

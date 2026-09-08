@@ -129,6 +129,46 @@ class EvaluationReply(BaseModel):
     resposta_prestador: str
 
 
+@app.get("/prestadores/me/metrics")
+def provider_metrics(
+    mes: int | None = Query(None, ge=1, le=12),
+    ano: int | None = Query(None, ge=2000, le=2100),
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    reference = datetime.now()
+    selected_month = mes or reference.month
+    selected_year = ano or reference.year
+    result = db.execute(
+        text("""
+            SELECT
+                COUNT(so.id) AS total_requests,
+                COALESCE(SUM(so.status IN ('confirmado', 'em_andamento', 'concluido')), 0) AS accepted_requests,
+                COALESCE(SUM(CASE WHEN so.status = 'concluido' THEN so.valor_proposto ELSE 0 END), 0) AS revenue,
+                COALESCE(SUM(so.status = 'concluido'), 0) AS completed_services,
+                COALESCE(AVG(CASE WHEN a.denunciada = FALSE THEN a.nota END), 0) AS average_rating
+            FROM solicitacao so
+            JOIN servico s ON s.id = so.servico_id
+            LEFT JOIN avaliacao a ON a.solicitacao_id = so.id
+            WHERE s.prestador_id = :provider_id
+              AND YEAR(so.criado_em) = :ano
+              AND MONTH(so.criado_em) = :mes
+        """),
+        {"provider_id": provider_id, "ano": selected_year, "mes": selected_month},
+    ).mappings().one()
+    total = int(result["total_requests"] or 0)
+    accepted = int(result["accepted_requests"] or 0)
+    return {
+        "mes": selected_month,
+        "ano": selected_year,
+        "solicitacoes": total,
+        "taxa_aceitacao": round((accepted / total) * 100, 1) if total else 0,
+        "nota_media": round(float(result["average_rating"] or 0), 1),
+        "faturamento": float(result["revenue"] or 0),
+        "servicos_realizados": int(result["completed_services"] or 0),
+    }
+
+
 @app.get("/addresses/cep/{cep}")
 def lookup_address_by_cep(cep: str):
     normalized_cep = re.sub(r"\D", "", cep)
