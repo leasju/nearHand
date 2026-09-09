@@ -77,6 +77,12 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("show"), 3200);
 }
 
+function escapeHtml(value) {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  return div.innerHTML;
+}
+
 async function readApiResponse(response) {
   const text = await response.text();
   try {
@@ -227,15 +233,54 @@ function renderCards() {
   resultCount.textContent = `${visibleServices.length} serviço${visibleServices.length === 1 ? "" : "s"} encontrado${visibleServices.length === 1 ? "" : "s"}`;
 }
 
-function renderFavorites() {
-  favoritesGrid.replaceChildren();
+let favoritesActiveCategory = "all";
+const favoritesFilters = document.getElementById("favoritesFilters");
+const favoritesCount = document.getElementById("favoritesCount");
+
+function renderFavoritesFilters() {
+  const counts = new Map();
   favoriteServices.forEach((service) => {
+    counts.set(service.category, (counts.get(service.category) || 0) + 1);
+  });
+  if (!counts.has(favoritesActiveCategory) && favoritesActiveCategory !== "all") favoritesActiveCategory = "all";
+  favoritesFilters.replaceChildren();
+  const allChip = document.createElement("button");
+  allChip.className = `chip${favoritesActiveCategory === "all" ? " active" : ""}`;
+  allChip.dataset.favoriteCategory = "all";
+  allChip.textContent = `Todos · ${favoriteServices.length}`;
+  favoritesFilters.appendChild(allChip);
+  [...counts.entries()].forEach(([category, count]) => {
+    const chip = document.createElement("button");
+    chip.className = `chip${favoritesActiveCategory === category ? " active" : ""}`;
+    chip.dataset.favoriteCategory = category;
+    chip.textContent = `${category} · ${count}`;
+    favoritesFilters.appendChild(chip);
+  });
+}
+
+function renderFavorites() {
+  renderFavoritesFilters();
+  favoritesCount.textContent = `${favoriteServices.length} salvo${favoriteServices.length === 1 ? "" : "s"}`;
+  const filtered = favoritesActiveCategory === "all"
+    ? favoriteServices
+    : favoriteServices.filter((service) => service.category === favoritesActiveCategory);
+  favoritesGrid.replaceChildren();
+  filtered.forEach((service) => {
     favoritesGrid.appendChild(serviceCard(service));
   });
   if (!favoriteServices.length) {
     favoritesGrid.innerHTML = "<p class=\"empty-state\">Você ainda não adicionou prestadores aos favoritos.</p>";
+  } else if (!filtered.length) {
+    favoritesGrid.innerHTML = "<p class=\"empty-state\">Nenhum favorito nessa categoria.</p>";
   }
 }
+
+favoritesFilters.addEventListener("click", (event) => {
+  const chip = event.target.closest(".chip");
+  if (!chip) return;
+  favoritesActiveCategory = chip.dataset.favoriteCategory;
+  renderFavorites();
+});
 
 async function loadFavorites() {
   if (currentSessionRole !== "cliente") return;
@@ -265,11 +310,40 @@ function showServiceDetails(service) {
   document.getElementById("modalRating").textContent = `⭐ ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
   document.getElementById("modalDistance").textContent = `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
   document.getElementById("modalPrice").textContent = `💳 R$ ${formatPrice(service.price)}${service.unit}`;
-  const firstPhoto = service.photos?.[0]?.url;
+  const photos = (service.photos || []).map((photo) => photo.url).filter(Boolean);
   const galleryMain = document.getElementById("galleryMain");
-  galleryMain.textContent = firstPhoto ? "" : serviceVisual(service).icon;
-  galleryMain.style.backgroundImage = firstPhoto ? `url("${firstPhoto}")` : "";
-  galleryMain.style.backgroundSize = firstPhoto ? "cover" : "";
+  function setMainPhoto(url) {
+    galleryMain.textContent = url ? "" : serviceVisual(service).icon;
+    galleryMain.style.backgroundImage = url ? `url("${url}")` : "";
+    galleryMain.style.backgroundSize = url ? "cover" : "";
+    galleryMain.style.backgroundPosition = "center";
+  }
+  setMainPhoto(photos[0]);
+  const galleryStrip = document.getElementById("galleryStrip");
+  galleryStrip.replaceChildren();
+  photos.forEach((url, index) => {
+    const thumb = document.createElement("button");
+    thumb.type = "button";
+    thumb.className = `gallery-thumb${index === 0 ? " active" : ""}`;
+    thumb.style.backgroundImage = `url("${url}")`;
+    thumb.addEventListener("click", () => {
+      setMainPhoto(url);
+      galleryStrip.querySelectorAll(".gallery-thumb").forEach((el) => el.classList.remove("active"));
+      thumb.classList.add("active");
+    });
+    galleryStrip.appendChild(thumb);
+  });
+
+  const providerInitials = (service.provider || "P")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+  document.getElementById("modalProviderAvatar").textContent = providerInitials || "P";
+  document.getElementById("modalProviderName").textContent = service.provider;
+  document.getElementById("modalProviderMeta").textContent = `${service.reviews} ${service.reviews === 1 ? "avaliação" : "avaliações"} recebidas`;
+
   loadServiceAvailability(service.prestador_id);
   loadServiceReviews(service.prestador_id);
   document.getElementById("serviceModal").hidden = false;
@@ -280,22 +354,43 @@ function renderStars(rating) {
 }
 
 async function loadServiceReviews(providerId) {
-  const container = document.querySelector(".reviews-block");
-  if (!container) return;
+  const list = document.getElementById("reviewsList");
+  const summary = document.getElementById("reviewsSummary");
+  if (!list || !summary) return;
   try {
     const response = await fetch(`/prestadores/${providerId}/avaliacoes`);
     const reviews = await response.json();
     if (!response.ok) throw new Error(reviews.detail || "Não foi possível carregar as avaliações.");
-    container.querySelectorAll(".review-inline").forEach((review) => review.remove());
+
+    list.replaceChildren();
     if (!reviews.length) {
-      container.insertAdjacentHTML("beforeend", '<p class="empty-state review-inline">Ainda não há avaliações.</p>');
+      summary.hidden = true;
+      list.innerHTML = '<p class="empty-state review-inline">Ainda não há avaliações.</p>';
       return;
     }
+
+    const average = reviews.reduce((sum, review) => sum + review.nota, 0) / reviews.length;
+    document.getElementById("reviewsBigNum").textContent = average.toFixed(1).replace(".", ",");
+    document.getElementById("reviewsStars").textContent = renderStars(average);
+    document.getElementById("reviewsTotal").textContent = `${reviews.length} ${reviews.length === 1 ? "avaliação" : "avaliações"}`;
+
+    const bars = document.getElementById("reviewsBars");
+    bars.replaceChildren();
+    for (let star = 5; star >= 1; star -= 1) {
+      const count = reviews.filter((review) => Math.round(review.nota) === star).length;
+      const pct = Math.round((count / reviews.length) * 100);
+      const row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML = `<span>${star}★</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span>${pct}%</span>`;
+      bars.appendChild(row);
+    }
+    summary.hidden = false;
+
     reviews.slice(0, 3).forEach((review) => {
       const item = document.createElement("div");
       item.className = "review-inline";
       item.innerHTML = `<strong>${renderStars(review.nota)}</strong><p>${review.comentario || "Sem comentário."}</p><small>${review.cliente_nome}${review.resposta_prestador ? ` · Resposta: ${review.resposta_prestador}` : ""}</small>`;
-      container.appendChild(item);
+      list.appendChild(item);
     });
   } catch (error) {
     showToast(error.message);
@@ -625,6 +720,19 @@ function updateStoredUser(partial) {
   document.querySelector("#profileBtn .profile-copy strong").textContent = updated.nome || "Minha conta";
   document.querySelector("#profileBtn .profile-copy small").textContent = updated.email || "";
 
+  const settingsAvatar = document.getElementById("settingsAvatar");
+  const settingsAvatarInitials = document.getElementById("settingsAvatarInitials");
+  if (settingsAvatar && settingsAvatarInitials) {
+    settingsAvatar.hidden = !updated.foto;
+    settingsAvatar.src = updated.foto || "";
+    settingsAvatarInitials.textContent = initials || "NH";
+    settingsAvatarInitials.hidden = Boolean(updated.foto);
+  }
+  const settingsSidebarName = document.getElementById("settingsSidebarName");
+  const settingsSidebarEmail = document.getElementById("settingsSidebarEmail");
+  if (settingsSidebarName) settingsSidebarName.textContent = updated.nome || "Minha conta";
+  if (settingsSidebarEmail) settingsSidebarEmail.textContent = updated.email || "";
+
   const providerHeroName = document.getElementById("providerHeroName");
   if (providerHeroName) {
     providerHeroName.textContent = updated.nome ? updated.nome.split(" ")[0] : "Prestador";
@@ -878,6 +986,9 @@ document.getElementById("openChatBtn").addEventListener("click", () => {
   window.clearInterval(chatPollingTimer);
   chatPollingTimer = window.setInterval(loadMessages, 5000);
 });
+document.getElementById("openChatBtnInline").addEventListener("click", () => {
+  document.getElementById("openChatBtn").click();
+});
 
 // ============================================
 // Chat (mensagens locais, sem backend ainda)
@@ -894,10 +1005,21 @@ async function loadMessages() {
     if (!response.ok) throw new Error(messages.detail || "Não foi possível carregar o chat.");
     chatMessages.replaceChildren();
     const currentUser = JSON.parse(localStorage.getItem("nearhand_user") || "{}");
+    let lastDateLabel = null;
     messages.forEach((message) => {
+      const sentAt = new Date(message.data_hora);
+      const dateLabel = sentAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+      if (dateLabel !== lastDateLabel) {
+        lastDateLabel = dateLabel;
+        const divider = document.createElement("div");
+        divider.className = "chat-date";
+        divider.innerHTML = `<span>${dateLabel}</span>`;
+        chatMessages.appendChild(divider);
+      }
       const bubble = document.createElement("div");
       bubble.className = message.remetente_id === currentUser.id ? "message me" : "message them";
-      bubble.textContent = message.texto;
+      const timeLabel = sentAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      bubble.innerHTML = `${escapeHtml(message.texto)}<span class="message-time">${timeLabel}</span>`;
       chatMessages.appendChild(bubble);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -948,10 +1070,75 @@ function requestStatusClass(status) {
   return status === "cancelado" ? "cancelled" : "pending";
 }
 
+let CLIENT_REQUESTS = [];
+let historyFilter = "todos";
+const historyList = document.getElementById("historyList");
+
+function requestInitials(name) {
+  return (name || "P")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+}
+
+function historyTabMatches(status, filter) {
+  if (filter === "todos") return true;
+  if (filter === "andamento") return ["solicitado", "confirmado", "em_andamento"].includes(status);
+  return status === filter;
+}
+
+function renderHistoryList() {
+  if (!historyList) return;
+  document.getElementById("historyCountTodos").textContent = CLIENT_REQUESTS.length;
+  document.getElementById("historyCountAndamento").textContent = CLIENT_REQUESTS.filter((r) => historyTabMatches(r.status, "andamento")).length;
+  document.getElementById("historyCountConcluido").textContent = CLIENT_REQUESTS.filter((r) => r.status === "concluido").length;
+  document.getElementById("historyCountCancelado").textContent = CLIENT_REQUESTS.filter((r) => r.status === "cancelado").length;
+
+  const filtered = CLIENT_REQUESTS.filter((request) => historyTabMatches(request.status, historyFilter));
+  historyList.replaceChildren();
+  if (!filtered.length) {
+    historyList.innerHTML = '<p class="empty-state">Nenhum pedido nesta categoria.</p>';
+    return;
+  }
+  filtered.forEach((request) => {
+    const item = document.createElement("article");
+    item.className = "history-item";
+    item.dataset.requestId = request.id;
+    const actionBtn = request.status === "concluido"
+      ? '<button class="text-btn" data-request-action="evaluate">Avaliar</button>'
+      : ["solicitado", "confirmado"].includes(request.status)
+        ? '<button class="text-btn" data-request-action="cancel">Cancelar</button>'
+        : "";
+    item.innerHTML = `
+      <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
+      <div class="history-content">
+        <div class="history-title">${request.servico_titulo}</div>
+        <div class="history-provider">${request.prestador_nome} • ${formatRequestDate(request.data_hora_agendada)}</div>
+        <div class="history-meta">
+          <span class="status ${requestStatusClass(request.status)}">${requestStatusLabel(request.status)}</span>
+          <span class="history-price">R$ ${formatPrice(request.valor_proposto || 0)}</span>
+        </div>
+      </div>
+      <div class="history-item-actions">${actionBtn}</div>
+    `;
+    historyList.appendChild(item);
+  });
+}
+
+document.getElementById("historyTabs").addEventListener("click", (event) => {
+  const tab = event.target.closest(".history-tab");
+  if (!tab) return;
+  document.querySelectorAll(".history-tab").forEach((el) => el.classList.remove("active"));
+  tab.classList.add("active");
+  historyFilter = tab.dataset.historyFilter;
+  renderHistoryList();
+});
+
 async function loadClientRequests() {
   if (currentSessionRole !== "cliente") return;
-  const body = document.querySelector(".table-card tbody");
-  if (!body) return;
+  if (!historyList) return;
   try {
     const response = await authFetch("/clientes/me/solicitacoes");
     const requests = await response.json();
@@ -967,33 +1154,17 @@ async function loadClientRequests() {
         label: `${request.servico_titulo} — ${formatRequestDate(request.data_hora_agendada)} • ${request.prestador_nome}`,
       }));
     renderClientCalendar();
-    body.replaceChildren();
-    if (!requests.length) {
-      body.innerHTML = '<tr><td colspan="6">Você ainda não possui solicitações.</td></tr>';
-      return;
-    }
-    requests.forEach((request) => {
-      const row = document.createElement("tr");
-      row.dataset.requestId = request.id;
-      row.innerHTML = `
-        <td>${request.servico_titulo}</td>
-        <td>${request.prestador_nome}</td>
-        <td>${formatRequestDate(request.data_hora_agendada)}</td>
-        <td>R$ ${formatPrice(request.valor_proposto || 0)}</td>
-        <td><span class="status ${requestStatusClass(request.status)}">${requestStatusLabel(request.status)}</span></td>
-        <td>${request.status === "concluido" ? '<button class="text-btn" data-request-action="evaluate">Avaliar</button>' : ["solicitado", "confirmado"].includes(request.status) ? '<button class="text-btn" data-request-action="cancel">Cancelar</button>' : ""}</td>
-      `;
-      body.appendChild(row);
-    });
+    CLIENT_REQUESTS = requests;
+    renderHistoryList();
   } catch (error) {
     showToast(error.message);
   }
 }
 
-document.querySelector(".table-card tbody").addEventListener("click", async (event) => {
+historyList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-request-action]");
   if (!button) return;
-  const row = button.closest("tr");
+  const item = button.closest(".history-item");
   try {
     if (button.dataset.requestAction === "evaluate") {
       const nota = Number(window.prompt("Dê uma nota de 1 a 5:"));
@@ -1001,7 +1172,7 @@ document.querySelector(".table-card tbody").addEventListener("click", async (eve
       const comentario = window.prompt("Escreva um comentário:") || "";
       const evaluationResponse = await authFetch("/avaliacoes", {
         method: "POST",
-        body: JSON.stringify({ solicitacao_id: Number(row.dataset.requestId), nota, comentario }),
+        body: JSON.stringify({ solicitacao_id: Number(item.dataset.requestId), nota, comentario }),
       });
       const evaluation = await evaluationResponse.json();
       if (!evaluationResponse.ok) throw new Error(evaluation.detail || "Não foi possível salvar a avaliação.");
@@ -1009,7 +1180,7 @@ document.querySelector(".table-card tbody").addEventListener("click", async (eve
       showToast("Avaliação enviada.");
       return;
     }
-    const response = await authFetch(`/solicitacoes/${row.dataset.requestId}/status`, {
+    const response = await authFetch(`/solicitacoes/${item.dataset.requestId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: "cancelado" }),
     });
@@ -1473,6 +1644,16 @@ document.getElementById("settingsLogoutBtn").addEventListener("click", () => {
   if (confirm("Sair da sua conta?")) logout();
 });
 
+document.querySelectorAll(".settings-menu-item").forEach((item) => {
+  item.addEventListener("click", () => {
+    const target = document.getElementById(item.dataset.settingsAnchor);
+    if (!target) return;
+    document.querySelectorAll(".settings-menu-item").forEach((menuItem) => menuItem.classList.remove("active"));
+    item.classList.add("active");
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
 function setSettingsRoleVisibility(role) {
   const isProvider = role === "prestador";
   clientProfileForm.hidden = isProvider;
@@ -1480,6 +1661,8 @@ function setSettingsRoleVisibility(role) {
   document.getElementById("clientPreferencesCard").hidden = isProvider;
   document.getElementById("clientPaymentCard").hidden = isProvider;
   document.getElementById("providerPaymentCard").hidden = !isProvider;
+  const settingsMenuPreferencias = document.getElementById("settingsMenuPreferencias");
+  if (settingsMenuPreferencias) settingsMenuPreferencias.hidden = isProvider;
 
   document.getElementById("accountRoleSummary").textContent =
     `Você está logado como ${isProvider ? "Prestador" : "Cliente"}.`;

@@ -137,18 +137,20 @@
 
       <section class="generic-view section-view" data-view="pedidos" hidden>
         <div class="page-title"><div><span class="eyebrow">PEDIDOS</span><h1>Histórico de contratações</h1></div></div>
-        <div class="table-card">
-          <table><thead><tr><th>Serviço</th><th>Prestador</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            <tr><td>Eletricista residencial</td><td>Marcos Elétrica</td><td>08/09/2026</td><td>R$ 120</td><td><span class="status confirmed">Confirmado</span></td><td><button class="text-btn">Ver detalhes</button></td></tr>
-            <tr><td>Limpeza completa</td><td>Brilho Certo</td><td>11/09/2026</td><td>R$ 160</td><td><span class="status pending">Solicitado</span></td><td><button class="text-btn">Abrir chat</button></td></tr>
-            <tr><td>Montagem de estante</td><td>Resolve Móveis</td><td>28/08/2026</td><td>R$ 90</td><td><span class="status done">Concluído</span></td><td><button class="text-btn">Avaliar</button></td></tr>
-          </tbody></table>
+        <div class="history-tabs" id="historyTabs" role="tablist">
+          <button class="history-tab active" data-history-filter="todos">Todos <span class="history-tab-count" id="historyCountTodos">0</span></button>
+          <button class="history-tab" data-history-filter="andamento">Em andamento <span class="history-tab-count" id="historyCountAndamento">0</span></button>
+          <button class="history-tab" data-history-filter="concluido">Concluídos <span class="history-tab-count" id="historyCountConcluido">0</span></button>
+          <button class="history-tab" data-history-filter="cancelado">Cancelados <span class="history-tab-count" id="historyCountCancelado">0</span></button>
         </div>
+        <div class="history-list" id="historyList"></div>
       </section>
 
       <section class="generic-view section-view" data-view="favoritos" hidden>
-        <div class="page-title"><div><span class="eyebrow">FAVORITOS</span><h1>Seus prestadores preferidos</h1></div></div>
+        <div class="favorites-header"><div><span class="eyebrow">FAVORITOS</span><h1>Seus prestadores preferidos</h1><p id="favoritesCount">0 salvos</p></div></div>
+        <div class="favorites-filters" id="favoritesFilters">
+          <button class="chip active" data-favorite-category="all">Todos</button>
+        </div>
         <div id="favoritesGrid" class="service-grid"></div>
       </section>
     </section>
@@ -237,8 +239,24 @@
           <div><button class="text-btn" id="settingsBackBtn">← Voltar</button><h1>Configurações</h1></div>
         </div>
 
-        <div class="settings-grid">
-          <div class="panel-card">
+        <div class="settings-layout">
+          <aside class="settings-sidebar">
+            <div class="settings-sidebar-header">
+              <span class="avatar"><img id="settingsAvatar" alt="Foto de perfil" hidden /><span id="settingsAvatarInitials">NH</span></span>
+              <strong id="settingsSidebarName">Minha conta</strong>
+              <small id="settingsSidebarEmail"></small>
+            </div>
+            <nav class="settings-menu">
+              <button class="settings-menu-item active" data-settings-anchor="settingsPanelPerfil">👤 Meus dados</button>
+              <button class="settings-menu-item" data-settings-anchor="clientPreferencesCard" id="settingsMenuPreferencias">✨ Preferências</button>
+              <button class="settings-menu-item" data-settings-anchor="settingsPanelPagamento">💳 Pagamento</button>
+              <button class="settings-menu-item" data-settings-anchor="settingsPanelContas">🔀 Contas vinculadas</button>
+              <button class="settings-menu-item" data-settings-anchor="settingsPanelSessao">🚪 Sair</button>
+            </nav>
+          </aside>
+
+          <div class="settings-content">
+          <div class="panel-card" id="settingsPanelPerfil">
             <div class="panel-head"><div><span class="eyebrow">PERFIL</span><h2>Editar perfil</h2></div></div>
             <form id="clientProfileForm" class="ad-form settings-form">
               <label>Nome completo *<input id="cpName" required /></label>
@@ -307,6 +325,7 @@
             <button class="secondary-btn settings-standalone-btn" id="savePreferencesBtn">Salvar preferências</button>
           </div>
 
+          <div id="settingsPanelPagamento">
           <div class="panel-card" id="clientPaymentCard">
             <div class="panel-head"><div><span class="eyebrow">PAGAMENTO</span><h2>Método de pagamento</h2></div></div>
             <form id="paymentForm" class="ad-form settings-form">
@@ -343,17 +362,19 @@
             </form>
             <button class="secondary-btn settings-standalone-btn" id="goToAdsBtn">Gerenciar meus anúncios</button>
           </div>
+          </div>
 
-          <div class="panel-card">
+          <div class="panel-card" id="settingsPanelContas">
             <div class="panel-head"><div><span class="eyebrow">CONTAS</span><h2>Contas vinculadas</h2></div></div>
             <p id="accountRoleSummary" class="field-help"></p>
             <button class="secondary-btn full" id="switchAccountBtn"></button>
           </div>
 
-          <div class="panel-card">
+          <div class="panel-card" id="settingsPanelSessao">
             <div class="panel-head"><div><span class="eyebrow">SESSÃO</span><h2>Sair</h2></div></div>
             <p class="field-help">Encerrar sua sessão atual neste dispositivo.</p>
             <button class="secondary-btn full" id="settingsLogoutBtn">Sair da conta</button>
+          </div>
           </div>
         </div>
       </div>
@@ -365,15 +386,30 @@
       <button class="modal-close" data-close="serviceModal" aria-label="Fechar">×</button>
       <div class="gallery" id="modalGallery">
         <div class="gallery-main" id="galleryMain"></div>
-        <div class="gallery-strip"><button class="gallery-thumb">Foto 1</button><button class="gallery-thumb">Foto 2</button><button class="gallery-thumb">+ galeria</button></div>
+        <div class="gallery-strip" id="galleryStrip"></div>
       </div>
       <div class="service-detail">
         <div class="detail-head"><div><span class="service-pill" id="modalCategory"></span><h2 id="serviceTitle">Serviço</h2><p id="modalProvider"></p></div><button class="favorite-btn large" id="modalFavorite">♡</button></div>
         <div class="detail-metrics"><span id="modalRating">⭐ 4,9</span><span id="modalDistance">📍 2,3 km</span><span id="modalPrice">💳 R$ 120/h</span></div>
         <p class="detail-description">Atendimento residencial com orçamento transparente, agenda organizada e confirmação pelo chat.</p>
+
+        <div class="provider-block" id="modalProviderBlock">
+          <span class="provider-avatar-lg" id="modalProviderAvatar">P</span>
+          <div class="provider-block-info"><strong id="modalProviderName"></strong><small id="modalProviderMeta"></small></div>
+          <button class="secondary-btn" id="openChatBtnInline">💬 Conversar</button>
+        </div>
+
         <div class="availability-box"><div><strong>Disponibilidade</strong><small>Selecione uma data</small></div><div class="date-options"><button class="date-option active"><small>SEG</small><strong>08</strong></button><button class="date-option"><small>TER</small><strong>09</strong></button><button class="date-option"><small>QUA</small><strong>10</strong></button><button class="date-option"><small>QUI</small><strong>11</strong></button></div><div class="time-options"><button>09:00</button><button>11:30</button><button>14:00</button><button>17:30</button></div></div>
         <div class="detail-actions"><button class="secondary-btn" id="openChatBtn">💬 Conversar</button><button class="primary-btn" id="hireBtn">Solicitar serviço</button></div>
-        <div class="reviews-block"><div class="panel-head"><h3>Avaliações</h3><button class="text-btn">Ver todas</button></div><div class="review-inline"><strong>★★★★★</strong><p>“Atendimento impecável, muito profissional.”</p><small>Mariana • há 3 dias</small></div></div>
+
+        <div class="reviews-block">
+          <div class="panel-head"><h3>Avaliações</h3></div>
+          <div class="reviews-summary" id="reviewsSummary" hidden>
+            <div class="reviews-score"><div class="big-num" id="reviewsBigNum">0,0</div><div class="stars" id="reviewsStars">☆☆☆☆☆</div><div class="total" id="reviewsTotal">0 avaliações</div></div>
+            <div class="reviews-bars" id="reviewsBars"></div>
+          </div>
+          <div id="reviewsList"></div>
+        </div>
       </div>
     </div>
   </div>
