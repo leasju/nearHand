@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import json
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request as UrlRequest, urlopen
 
 import jwt
@@ -573,6 +574,59 @@ def _address_params(payload: AddressFields) -> dict:
     }
 
 
+def _nominatim_search(query: str) -> tuple[float, float] | None:
+    params = urlencode({"q": query, "format": "json", "limit": 1, "countrycodes": "br"})
+    request = UrlRequest(
+        f"https://nominatim.openstreetmap.org/search?{params}",
+        headers={"Accept": "application/json", "User-Agent": "NearHand/1.0"},
+    )
+    try:
+        with urlopen(request, timeout=5) as response:
+            results = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+        return None
+
+    if not results:
+        return None
+    try:
+        return float(results[0]["lat"]), float(results[0]["lon"])
+    except (KeyError, ValueError, TypeError):
+        return None
+
+
+def _geocode_address(payload: AddressFields) -> tuple[float, float]:
+    """Resolve an address to (lat, lng) via OpenStreetMap Nominatim.
+
+    Nominatim's freeform search often fails to match when both a house number
+    and a bairro (neighborhood) are combined, so this tries a few queries from
+    most to least specific and keeps the first hit. Falls back to (0, 0) if
+    every attempt fails, so registration/profile updates never break because
+    of an unreachable or rate-limited geocoding service.
+    """
+    rua = payload.rua.strip()
+    numero = payload.numero.strip()
+    bairro = payload.bairro.strip()
+    cidade = payload.cidade.strip()
+    estado = payload.estado.strip()
+
+    candidates = [
+        ", ".join(part for part in [rua, numero, cidade, estado, "Brasil"] if part),
+        ", ".join(part for part in [rua, bairro, cidade, estado, "Brasil"] if part),
+        ", ".join(part for part in [rua, cidade, estado, "Brasil"] if part),
+        ", ".join(part for part in [cidade, estado, "Brasil"] if part),
+    ]
+    seen = set()
+    for query in candidates:
+        if not query or query in seen:
+            continue
+        seen.add(query)
+        result = _nominatim_search(query)
+        if result is not None:
+            return result
+
+    return 0.0, 0.0
+
+
 def _digits_only(value: str) -> str:
     return re.sub(r"\D", "", value)
 
@@ -631,15 +685,17 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
         if existing_document:
             raise HTTPException(status_code=409, detail="This CPF/CNPJ already has a provider account")
 
+    latitude, longitude = _geocode_address(account)
+
     try:
         address_result = db.execute(
             text("""
                 INSERT INTO endereco
                     (cep, rua, numero, complemento, bairro, cidade, estado, latitude, longitude)
                 VALUES
-                    (:cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, 0, 0)
+                    (:cep, :rua, :numero, :complemento, :bairro, :cidade, :estado, :latitude, :longitude)
             """),
-            _address_params(account),
+            {**_address_params(account), "latitude": latitude, "longitude": longitude},
         )
         address_id = address_result.lastrowid
         password_hash = hash_password(account.senha)
@@ -1661,6 +1717,7 @@ def update_client_profile(
         raise HTTPException(status_code=400, detail="Name, email, and address are required")
 
     preferencias = ",".join(p.strip() for p in payload.preferencias if p.strip()) or None
+    latitude, longitude = _geocode_address(payload)
 
     try:
         db.execute(
@@ -1685,10 +1742,11 @@ def update_client_profile(
                 JOIN cliente ON cliente.endereco_id = endereco.id
                 SET endereco.cep = :cep, endereco.rua = :rua, endereco.numero = :numero,
                     endereco.complemento = :complemento, endereco.bairro = :bairro,
-                    endereco.cidade = :cidade, endereco.estado = :estado
+                    endereco.cidade = :cidade, endereco.estado = :estado,
+                    endereco.latitude = :latitude, endereco.longitude = :longitude
                 WHERE cliente.id = :id
             """),
-            {**_address_params(payload), "id": client_id},
+            {**_address_params(payload), "latitude": latitude, "longitude": longitude, "id": client_id},
         )
         db.commit()
     except IntegrityError:
@@ -1735,6 +1793,8 @@ def update_provider_profile(
     if not name or not email or not address or not cpf_cnpj:
         raise HTTPException(status_code=400, detail="Name, email, address, and CPF/CNPJ are required")
 
+    latitude, longitude = _geocode_address(payload)
+
     try:
         db.execute(
             text("""
@@ -1758,10 +1818,11 @@ def update_provider_profile(
                 JOIN prestador ON prestador.endereco_id = endereco.id
                 SET endereco.cep = :cep, endereco.rua = :rua, endereco.numero = :numero,
                     endereco.complemento = :complemento, endereco.bairro = :bairro,
-                    endereco.cidade = :cidade, endereco.estado = :estado
+                    endereco.cidade = :cidade, endereco.estado = :estado,
+                    endereco.latitude = :latitude, endereco.longitude = :longitude
                 WHERE prestador.id = :id
             """),
-            {**_address_params(payload), "id": provider_id},
+            {**_address_params(payload), "latitude": latitude, "longitude": longitude, "id": provider_id},
         )
         db.commit()
     except IntegrityError:
