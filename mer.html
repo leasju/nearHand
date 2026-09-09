@@ -25,15 +25,19 @@ mermaid.initialize({
   },
 });
 const { svg } = await mermaid.render('erd-svg', `erDiagram
+  CLIENTE ||--|| ENDERECO : mora_em
+  PRESTADOR ||--|| ENDERECO : mora_em
   CLIENTE ||--o{ SOLICITACAO : faz
   CLIENTE ||--o{ FAVORITO : possui
   CLIENTE ||--o{ METODO_PAGAMENTO : cadastra
   CLIENTE ||--o{ MENSAGEM : envia
+  CLIENTE ||--o{ NOTIFICACAO : recebe
   PRESTADOR ||--o{ SERVICO : oferece
   PRESTADOR ||--o{ DISPONIBILIDADE : define
   PRESTADOR ||--o{ METODO_RECEBIMENTO : cadastra
   PRESTADOR ||--o{ FAVORITO : e_favoritado
   PRESTADOR ||--o{ MENSAGEM : envia
+  PRESTADOR ||--o{ NOTIFICACAO : recebe
   CATEGORIA ||--o{ SERVICO : classifica
   SERVICO ||--o{ FOTO_SERVICO : possui
   SERVICO ||--o{ SOLICITACAO : e_alvo_de
@@ -45,19 +49,33 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     uuid id PK
     string nome_completo
     string foto
-    string endereco
+    uuid endereco_id FK
     string telefone
     string email
     string senha_hash
+    string preferencias
   }
   PRESTADOR {
     uuid id PK
     string nome_empresa
-    string endereco
+    string foto
+    uuid endereco_id FK
     string telefone
     string email
     string cpf_cnpj
     string senha_hash
+  }
+  ENDERECO {
+    uuid id PK
+    string cep
+    string rua
+    string numero
+    string complemento
+    string bairro
+    string cidade
+    string estado
+    decimal latitude
+    decimal longitude
   }
   ADMIN {
     uuid id PK
@@ -108,6 +126,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     uuid solicitacao_id FK
     int nota
     string comentario
+    string resposta_prestador
     boolean denunciada
   }
   MENSAGEM {
@@ -127,11 +146,26 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     uuid id PK
     uuid cliente_id FK
     string tipo
+    string chave_pix
+    string ultimos_4_digitos
   }
   METODO_RECEBIMENTO {
     uuid id PK
     uuid prestador_id FK
     string tipo
+    string chave_pix
+    string ultimos_4_digitos
+    string banco
+    string agencia
+    string conta
+  }
+  NOTIFICACAO {
+    uuid id PK
+    uuid usuario_id
+    string usuario_tipo
+    string tipo
+    string mensagem
+    boolean lida
   }
 `);
 document.getElementById('erd').innerHTML = svg;
