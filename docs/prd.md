@@ -12,20 +12,20 @@ Usuários
 - Login/cadastro de cliente (e-mail, senha, ou OAuth)
   - Cadastro
     - Nome completo*
-    - Foto*
-    - Endereço*
+    - Foto* (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
+    - Endereço* (CEP, rua, número, complemento, bairro, cidade, estado)
     - Telefone
     - Email*
-    - Preferências de serviços
   - Login
     - Email ou Telefone
     - Senha
 - Recuperação de senha
-- Cadastro deve capturar e salvar a **localização padrão** do cliente (endereço) — evita pedir geolocalização toda vez
+- Preferências de serviços **não** fazem parte do cadastro — são definidas só depois, em Configurações
+- Cadastro deve capturar e salvar a **localização padrão** do cliente (endereço), geocodificada automaticamente para latitude/longitude — evita pedir geolocalização toda vez
 - Edição de perfil
   - Nome completo*
-  - Foto*
-  - Endereço*
+  - Foto* (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
+  - Endereço* (CEP, rua, número, complemento, bairro, cidade, estado — regeocodificado a cada alteração)
   - Telefone
   - Email*
 - Configurações
@@ -70,7 +70,7 @@ Usuários
 - Acesso à galeria estendida de fotos, se o prestador tiver adicionado além das do carrossel
 - Seção de avaliações de outros clientes (com comentários, não só nota)
 - Calendário com os dias/horários de disponibilidade do prestador (calendário do cliente)
-- Fluxo de contratação a definir: botão fecha o serviço direto, ou abre uma **solicitação de orçamento/agendamento** que o prestador confirma depois pelo chat (status: solicitado → confirmado → concluído)
+- Fluxo de contratação: botão "Solicitar serviço" abre uma **solicitação de orçamento/agendamento**, que o prestador aceita, recusa ou negocia pelo chat (status: solicitado → confirmado → em andamento → concluído, com cancelado a qualquer ponto antes de concluído)
 
 ## 6. Pós-contratação
 
@@ -86,7 +86,8 @@ Usuários
 - Login/cadastro do prestador (e-mail, senha, ou OAuth)
   - Cadastro
     - Nome completo da empresa/do prestador*
-    - Endereço*
+    - Foto* (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
+    - Endereço* (CEP, rua, número, complemento, bairro, cidade, estado)
     - Telefone
     - Email*
     - CPF ou CNPJ*
@@ -94,10 +95,11 @@ Usuários
     - Email ou CPF ou CNPJ
     - Senha
 - Recuperação de senha
-- Cadastro deve capturar e salvar a **localização padrão** do prestador (endereço) — evita pedir geolocalização toda vez
+- Cadastro deve capturar e salvar a **localização padrão** do prestador (endereço), geocodificada automaticamente para latitude/longitude — evita pedir geolocalização toda vez, e é a base do raio de atendimento dos anúncios
 - Edição de perfil
   - Nome completo da empresa/do prestador*
-  - Endereço*
+  - Foto* (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
+  - Endereço* (CEP, rua, número, complemento, bairro, cidade, estado — regeocodificado a cada alteração)
   - Telefone
   - Email*
   - CPF ou CNPJ*
@@ -116,13 +118,13 @@ Usuários
 
 - Criar anúncio de serviço
   - Título do serviço
-  - Categoria/tipo de serviço
+  - Categoria/tipo de serviço (escolhida entre as já cadastradas, ou o próprio prestador pode criar uma categoria nova na hora)
   - Descrição detalhada
-  - Fotos do carrossel: até 10 fotos, sendo 2 obrigatórias para publicar o anúncio
+  - Fotos do carrossel: até 10 fotos, sendo 2 obrigatórias para publicar o anúncio (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
   - Galeria estendida (opcional): prestador pode adicionar fotos extras além das do carrossel, agrupadas à parte; cliente acessa essa galeria só se quiser ver mais na tela expandida do serviço
   - Valor (fixo por serviço ou por hora)
   - Raio/área de atendimento a partir da localização cadastrada
-- Editar anúncio existente
+- Editar anúncio existente (mesmo formulário de criação, pré-preenchido)
 - Pausar anúncio temporariamente (sem excluir)
 - Remover anúncio
 - Múltiplos anúncios/serviços por prestador (catálogo próprio dentro do perfil)
@@ -169,3 +171,19 @@ Usuários
 - Nova avaliação recebida
 - Lembrete de compromisso agendado
 - Confirmação ou cancelamento de serviço pelo cliente
+
+# Funcionalidades — Admin
+
+## 1. Autenticação
+
+- Login administrativo (email e senha), separado do login de cliente/prestador
+
+## 2. Gestão de categorias
+
+- Criar, editar e remover categorias de serviço usadas em todo o site
+- Categorias também podem ser criadas por um prestador direto na hora de publicar um anúncio (ver Prestador, item 2)
+
+## 3. Moderação de avaliações
+
+- Ver a fila de avaliações denunciadas por prestadores
+- Aprovar a denúncia (avaliação volta a ficar visível) ou remover a avaliação definitivamente
