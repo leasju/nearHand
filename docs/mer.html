@@ -40,6 +40,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
   PRESTADOR ||--o{ NOTIFICACAO : recebe
   CATEGORIA ||--o{ SERVICO : classifica
   SERVICO ||--o{ FOTO_SERVICO : possui
+  SERVICO ||--o{ HORARIO_SEMANAL : define
   SERVICO ||--o{ SOLICITACAO : e_alvo_de
   SOLICITACAO ||--o| AVALIACAO : gera
   SOLICITACAO ||--o{ MENSAGEM : contem
@@ -112,6 +113,13 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     time hora_inicio
     time hora_fim
     boolean bloqueado
+  }
+  HORARIO_SEMANAL {
+    uuid id PK
+    uuid servico_id FK
+    int dia_semana
+    time hora_inicio
+    time hora_fim
   }
   SOLICITACAO {
     uuid id PK

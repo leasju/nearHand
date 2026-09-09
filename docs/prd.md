@@ -66,13 +66,19 @@ Usuários
 ## 5. Tela expandida do serviço
 
 - Informações aprofundadas do serviço e do prestador
-- Chat com o prestador
+- Botão "Conversar" abre o chat com o prestador sobre aquele serviço (ver item 6, Chat)
 - Acesso à galeria estendida de fotos, se o prestador tiver adicionado além das do carrossel
 - Seção de avaliações de outros clientes (com comentários, não só nota)
-- Calendário com os dias/horários de disponibilidade do prestador (calendário do cliente)
+- Calendário com as datas/horários em que aquele anúncio específico está disponível — calculado a partir do horário semanal fixo que o prestador definiu para aquele anúncio (ver Prestador, item 3), descontando datas que o prestador bloqueou
 - Fluxo de contratação: botão "Solicitar serviço" abre uma **solicitação de orçamento/agendamento**, que o prestador aceita, recusa ou negocia pelo chat (status: solicitado → confirmado → em andamento → concluído, com cancelado a qualquer ponto antes de concluído)
 
-## 6. Pós-contratação
+## 6. Chat
+
+- Aba própria "Chat" na navbar, com lista de todas as conversas do cliente (uma por solicitação) e o painel da conversa selecionada
+- Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
+- Também acessível pelo botão "Conversar" dentro da tela do serviço, abrindo direto na conversa daquele pedido
+
+## 7. Pós-contratação
 
 - Histórico de serviços contratados
 - Avaliar o prestador depois do serviço concluído
@@ -131,11 +137,11 @@ Usuários
 
 ## 3. Agenda e disponibilidade
 
-- Definir horários disponíveis para atendimento
-- Bloquear datas/horários indisponíveis (folga, férias, agenda cheia)
+- **Horário semanal fixo por anúncio**: cada anúncio tem seu próprio padrão de dias da semana + horário de início/fim (ex: "Segunda e Quarta, 9h–12h" só para esse anúncio) — é a partir dele que o sistema calcula as próximas datas disponíveis pro cliente ver e agendar
+- **Bloqueio de datas por cima do padrão semanal**: prestador pode bloquear uma data específica (folga, férias, feriado) — vale pra todos os anúncios dele, mesmo os que caíam dentro do horário semanal
 - Definir tempo médio de duração por tipo de serviço (ajuda a evitar sobreposição de agenda)
 - **Calendário do prestador**: mostra os dias/horários em que ele tem serviços marcados; permite desmarcar um serviço já agendado
-- **Calendário do cliente**: mostra, na tela do serviço, os dias em que aquele prestador está disponível para agendamento
+- **Calendário do cliente**: mostra, na tela do serviço, as próximas datas em que aquele anúncio específico está disponível para agendamento
 
 ## 4. Gestão de solicitações e pedidos
 
@@ -147,8 +153,9 @@ Usuários
 
 ## 5. Chat com clientes
 
+- Aba própria "Chat" na navbar, com lista de todas as conversas recebidas (uma por solicitação) e o painel da conversa selecionada
+- Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
 - Conversar com o cliente antes, durante e depois da contratação
-- Notificação de novas mensagens recebidas
 - Enviar orçamento/proposta de valor diretamente pelo chat
 
 ## 6. Avaliações e reputação
