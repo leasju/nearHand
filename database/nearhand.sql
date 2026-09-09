@@ -118,6 +118,18 @@ CREATE TABLE disponibilidade (
 );
 
 -- ============================================
+-- HORARIO_SEMANAL (disponibilidade fixa recorrente, por anúncio)
+-- ============================================
+CREATE TABLE horario_semanal (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    servico_id INT NOT NULL,
+    dia_semana TINYINT NOT NULL CHECK (dia_semana BETWEEN 0 AND 6), -- 0 = domingo ... 6 = sábado
+    hora_inicio TIME NOT NULL,
+    hora_fim TIME NOT NULL,
+    FOREIGN KEY (servico_id) REFERENCES servico(id) ON DELETE CASCADE
+);
+
+-- ============================================
 -- SOLICITACAO (pedido de orçamento/agendamento)
 -- ============================================
 CREATE TABLE solicitacao (

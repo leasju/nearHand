@@ -82,6 +82,17 @@ def ensure_optional_schema():
             )
         """))
 
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS horario_semanal (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                servico_id INT NOT NULL,
+                dia_semana TINYINT NOT NULL,
+                hora_inicio TIME NOT NULL,
+                hora_fim TIME NOT NULL,
+                FOREIGN KEY (servico_id) REFERENCES servico(id) ON DELETE CASCADE
+            )
+        """))
+
 # Open a database connection and provide a session
 def get_db():
     db = SessionLocal()

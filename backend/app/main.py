@@ -95,6 +95,16 @@ class ServiceUpdate(BaseModel):
     fotos: list[str] | None = None
 
 
+class WeeklyScheduleItem(BaseModel):
+    dia_semana: int
+    hora_inicio: time
+    hora_fim: time
+
+
+class WeeklyScheduleUpdate(BaseModel):
+    horarios: list[WeeklyScheduleItem]
+
+
 class ServiceStatusUpdate(BaseModel):
     status: str
 
@@ -1565,6 +1575,103 @@ def _check_service_owner(service_id: int, provider_id: int, db: Session):
     ).first()
     if row is None:
         raise HTTPException(status_code=404, detail="Service not found")
+
+
+def _weekly_schedule_row(row) -> dict:
+    schedule = dict(row)
+    for key in ("hora_inicio", "hora_fim"):
+        schedule[key] = _format_time_value(schedule[key])
+    return schedule
+
+
+@app.get("/services/{service_id}/horarios")
+def list_weekly_schedule(service_id: int, db: Session = Depends(get_db)):
+    rows = db.execute(
+        text("""
+            SELECT id, servico_id, dia_semana, hora_inicio, hora_fim
+            FROM horario_semanal
+            WHERE servico_id = :service_id
+            ORDER BY dia_semana, hora_inicio
+        """),
+        {"service_id": service_id},
+    ).mappings().all()
+    return [_weekly_schedule_row(row) for row in rows]
+
+
+@app.put("/services/{service_id}/horarios")
+def set_weekly_schedule(
+    service_id: int,
+    payload: WeeklyScheduleUpdate,
+    db: Session = Depends(get_db),
+    provider_id: int = Depends(get_current_provider_id),
+):
+    _check_service_owner(service_id, provider_id, db)
+    for item in payload.horarios:
+        if not 0 <= item.dia_semana <= 6:
+            raise HTTPException(status_code=400, detail="dia_semana must be between 0 and 6")
+        if item.hora_fim <= item.hora_inicio:
+            raise HTTPException(status_code=400, detail="End time must be after start time")
+
+    db.execute(text("DELETE FROM horario_semanal WHERE servico_id = :service_id"), {"service_id": service_id})
+    if payload.horarios:
+        db.execute(
+            text("""
+                INSERT INTO horario_semanal (servico_id, dia_semana, hora_inicio, hora_fim)
+                VALUES (:servico_id, :dia_semana, :hora_inicio, :hora_fim)
+            """),
+            [
+                {
+                    "servico_id": service_id,
+                    "dia_semana": item.dia_semana,
+                    "hora_inicio": item.hora_inicio,
+                    "hora_fim": item.hora_fim,
+                }
+                for item in payload.horarios
+            ],
+        )
+    db.commit()
+    return list_weekly_schedule(service_id, db)
+
+
+@app.get("/services/{service_id}/disponibilidade")
+def get_service_availability(service_id: int, db: Session = Depends(get_db)):
+    service = db.execute(
+        text("SELECT prestador_id FROM servico WHERE id = :id"), {"id": service_id}
+    ).mappings().first()
+    if service is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    weekly = db.execute(
+        text("SELECT dia_semana, hora_inicio, hora_fim FROM horario_semanal WHERE servico_id = :id"),
+        {"id": service_id},
+    ).mappings().all()
+    if not weekly:
+        return []
+
+    blocked_dates = {
+        row["data"]
+        for row in db.execute(
+            text("SELECT data FROM disponibilidade WHERE prestador_id = :prestador_id AND bloqueado = TRUE"),
+            {"prestador_id": service["prestador_id"]},
+        ).mappings().all()
+    }
+
+    today = date.today()
+    slots = []
+    for offset in range(28):
+        day = today + timedelta(days=offset)
+        if day in blocked_dates:
+            continue
+        weekday = (day.weekday() + 1) % 7  # Python: segunda=0..domingo=6 -> domingo=0..sábado=6
+        for row in weekly:
+            if row["dia_semana"] == weekday:
+                slots.append({
+                    "data": day.isoformat(),
+                    "hora_inicio": _format_time_value(row["hora_inicio"]),
+                    "hora_fim": _format_time_value(row["hora_fim"]),
+                    "bloqueado": False,
+                })
+    return slots
 
 
 @app.put("/services/{service_id}")

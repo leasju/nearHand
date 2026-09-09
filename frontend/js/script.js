@@ -345,7 +345,7 @@ function showServiceDetails(service) {
   document.getElementById("modalProviderName").textContent = service.provider;
   document.getElementById("modalProviderMeta").textContent = `${service.reviews} ${service.reviews === 1 ? "avaliação" : "avaliações"} recebidas`;
 
-  loadServiceAvailability(service.prestador_id);
+  loadServiceAvailability(service.id);
   loadServiceReviews(service.prestador_id);
   document.getElementById("serviceModal").hidden = false;
 }
@@ -443,9 +443,9 @@ function renderServiceAvailability(slots) {
   renderTimes(dates[0]);
 }
 
-async function loadServiceAvailability(providerId) {
+async function loadServiceAvailability(serviceId) {
   try {
-    const response = await fetch(`/prestadores/${providerId}/disponibilidade`);
+    const response = await fetch(`/services/${serviceId}/disponibilidade`);
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.detail || "Não foi possível carregar os horários.");
     renderServiceAvailability(data);
@@ -915,11 +915,14 @@ function notificationIcon(type) {
   return { nova_mensagem: "💬", status_solicitacao: "✅", nova_solicitacao: "📥", nova_avaliacao: "⭐", resposta_avaliacao: "⭐" }[type] || "🔔";
 }
 
+let NOTIFICATIONS = [];
+
 async function loadNotifications() {
   try {
     const response = await authFetch("/notificacoes/me");
     const notifications = await response.json();
     if (!response.ok) throw new Error(notifications.detail || "Não foi possível carregar notificações.");
+    NOTIFICATIONS = notifications;
     const list = document.getElementById("notificationList");
     list.replaceChildren();
     notifications.forEach((notification) => {
@@ -949,6 +952,25 @@ function updateNotificationBadge(notifications) {
     if (badge) badge.textContent = unread;
     else notificationBtn.insertAdjacentHTML("beforeend", `<span class="badge">${unread}</span>`);
   } else badge?.remove();
+
+  const chatUnread = notifications.filter((notification) => !notification.lida && notification.tipo === "nova_mensagem").length;
+  document.querySelectorAll(".chat-nav-link").forEach((link) => {
+    const chatBadge = link.querySelector(".badge");
+    if (chatUnread) {
+      if (chatBadge) chatBadge.textContent = chatUnread;
+      else link.insertAdjacentHTML("beforeend", `<span class="badge">${chatUnread}</span>`);
+    } else chatBadge?.remove();
+  });
+}
+
+async function markChatNotificationsRead() {
+  const unreadMessages = NOTIFICATIONS.filter((notification) => !notification.lida && notification.tipo === "nova_mensagem");
+  if (!unreadMessages.length) return;
+  await Promise.all(unreadMessages.map((notification) => {
+    notification.lida = true;
+    return authFetch(`/notificacoes/${notification.id}/lida`, { method: "PATCH" });
+  }));
+  updateNotificationBadge(NOTIFICATIONS);
 }
 
 notificationBtn.addEventListener("click", (event) => {
@@ -1069,6 +1091,7 @@ function openChatView() {
   showAppView("chat");
   markChatNavActive();
   loadChatConversations();
+  markChatNotificationsRead();
 }
 
 async function openChatConversation(requestId) {
@@ -1076,6 +1099,7 @@ async function openChatConversation(requestId) {
   showAppView("chat");
   markChatNavActive();
   await loadChatConversations();
+  markChatNotificationsRead();
   const conversation = CHAT_CONVERSATIONS.find((item) => item.id === requestId);
   if (conversation) {
     const other = chatOtherParty(conversation);
@@ -1452,6 +1476,52 @@ const newAdEyebrow = document.getElementById("newAdEyebrow");
 const newAdTitleEl = document.getElementById("newAdTitle");
 const newAdSubmitBtn = document.getElementById("newAdSubmitBtn");
 
+// ============================================
+// Disponibilidade semanal do anúncio
+// ============================================
+const WEEKDAY_LABELS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const adWeeklySchedule = document.getElementById("adWeeklySchedule");
+
+function renderWeeklyScheduleForm() {
+  adWeeklySchedule.replaceChildren();
+  WEEKDAY_LABELS.forEach((label, dia) => {
+    const row = document.createElement("div");
+    row.className = "weekly-schedule-row";
+    row.dataset.dia = dia;
+    row.innerHTML = `
+      <label class="day-toggle"><input type="checkbox" data-day-toggle /> ${label}</label>
+      <input type="time" data-day-start value="09:00" />
+      <input type="time" data-day-end value="18:00" />
+    `;
+    row.querySelector("[data-day-toggle]").addEventListener("change", (event) => {
+      row.classList.toggle("enabled", event.target.checked);
+    });
+    adWeeklySchedule.appendChild(row);
+  });
+}
+
+function getWeeklyScheduleValues() {
+  return [...adWeeklySchedule.querySelectorAll(".weekly-schedule-row.enabled")].map((row) => ({
+    dia_semana: Number(row.dataset.dia),
+    hora_inicio: row.querySelector("[data-day-start]").value,
+    hora_fim: row.querySelector("[data-day-end]").value,
+  })).filter((item) => item.hora_inicio && item.hora_fim);
+}
+
+function setWeeklyScheduleValues(schedule) {
+  adWeeklySchedule.querySelectorAll(".weekly-schedule-row").forEach((row) => {
+    const dia = Number(row.dataset.dia);
+    const match = schedule.find((item) => item.dia_semana === dia);
+    const checkbox = row.querySelector("[data-day-toggle]");
+    checkbox.checked = Boolean(match);
+    row.classList.toggle("enabled", Boolean(match));
+    row.querySelector("[data-day-start]").value = match ? match.hora_inicio.slice(0, 5) : "09:00";
+    row.querySelector("[data-day-end]").value = match ? match.hora_fim.slice(0, 5) : "18:00";
+  });
+}
+
+renderWeeklyScheduleForm();
+
 function setAdModalMode(mode) {
   const isEdit = mode === "edit";
   newAdEyebrow.textContent = isEdit ? "EDITAR ANÚNCIO" : "NOVO ANÚNCIO";
@@ -1465,6 +1535,7 @@ document.getElementById("newAdBtn").addEventListener("click", () => {
   newAdForm.reset();
   adPhotos = [];
   renderAdPhotosGrid();
+  renderWeeklyScheduleForm();
   newAdModal.hidden = false;
 });
 
@@ -1485,6 +1556,11 @@ async function openAdEditModal(serviceId) {
     adRadiusLabel.textContent = `${service.raio_atendimento_km} km`;
     adPhotos = (service.photos || []).map((photo) => photo.url);
     renderAdPhotosGrid();
+
+    const scheduleResponse = await authFetch(`/services/${serviceId}/horarios`);
+    const schedule = await readApiResponse(scheduleResponse);
+    setWeeklyScheduleValues(scheduleResponse.ok ? schedule : []);
+
     newAdModal.hidden = false;
   } catch (error) {
     showToast(error.message);
@@ -1656,11 +1732,22 @@ newAdForm.addEventListener("submit", async (event) => {
     });
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o anúncio.");
+
+    const scheduleResponse = await authFetch(`/services/${data.id}/horarios`, {
+      method: "PUT",
+      body: JSON.stringify({ horarios: getWeeklyScheduleValues() }),
+    });
+    if (!scheduleResponse.ok) {
+      const scheduleError = await readApiResponse(scheduleResponse);
+      throw new Error(scheduleError.detail || "Anúncio salvo, mas não foi possível salvar a disponibilidade semanal.");
+    }
+
     newAdModal.hidden = true;
     newAdForm.reset();
     adPhotos = [];
     editingServiceId = null;
     renderAdPhotosGrid();
+    renderWeeklyScheduleForm();
     await loadProviderServices();
     showToast(isEdit ? "Anúncio atualizado." : "Anúncio publicado.");
   } catch (error) {
@@ -2297,6 +2384,7 @@ if (initialRole) {
   loadProviderRequests();
   loadProviderMetrics();
   loadNotifications();
+  window.setInterval(loadNotifications, 20000);
   loadPaymentMethods();
   loadReceivingMethods();
   loadProviderAvailability();

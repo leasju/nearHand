@@ -23,7 +23,7 @@
       <button class="nav-link active" data-section="explorar">Explorar</button>
       <button class="nav-link" data-section="agenda">Agenda</button>
       <button class="nav-link" data-section="pedidos">Pedidos</button>
-      <button class="nav-link" data-app-view="chat">Chat</button>
+      <button class="nav-link chat-nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-section="favoritos">Favoritos</button>
     </nav>
 
@@ -31,7 +31,7 @@
       <button class="nav-link active" data-provider-section="painel">Painel</button>
       <button class="nav-link" data-provider-section="agenda">Agenda</button>
       <button class="nav-link" data-provider-section="anuncios">Meus anúncios</button>
-      <button class="nav-link" data-app-view="chat">Chat</button>
+      <button class="nav-link chat-nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-provider-section="avaliacoes">Avaliações</button>
     </nav>
 
@@ -458,6 +458,8 @@
           </div>
           <input id="adPhotoFile" type="file" accept="image/*" multiple hidden />
         </div>
+        <label>Disponibilidade semanal <span class="hint">dias fixos e horários deste anúncio</span></label>
+        <div class="weekly-schedule" id="adWeeklySchedule"></div>
         <button class="primary-btn full" id="newAdSubmitBtn">Publicar anúncio</button>
       </form>
     </div>
