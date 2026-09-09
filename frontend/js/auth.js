@@ -130,12 +130,16 @@ const roleCopy = {
     description: "Entre para buscar serviços próximos, favoritar prestadores e acompanhar seus agendamentos.",
     name: "Nome completo",
     placeholder: "Seu nome completo",
+    loginLabel: "Email ou telefone",
+    loginPlaceholder: "Digite seu email ou telefone",
   },
   prestador: {
     title: "Conta de prestador",
     description: "Entre para publicar seus serviços, organizar a agenda e receber solicitações.",
     name: "Nome da empresa ou do prestador",
     placeholder: "Nome que seus clientes verão",
+    loginLabel: "Email, CPF ou CNPJ",
+    loginPlaceholder: "Digite seu email, CPF ou CNPJ",
   },
 };
 
@@ -152,6 +156,7 @@ function setMode(mode) {
 
 function setRole(role) {
   currentRole = role;
+  localStorage.setItem("nearhand_last_role", role);
   const copy = roleCopy[role];
   roleButtons.forEach((button) => {
     const active = button.dataset.role === role;
@@ -165,6 +170,8 @@ function setRole(role) {
     ? "Foto da empresa *"
     : "Foto de perfil *";
   registerNameInput.placeholder = copy.placeholder;
+  document.getElementById("loginIdentityLabel").textContent = copy.loginLabel;
+  document.getElementById("loginIdentity").placeholder = copy.loginPlaceholder;
   documentGroup.hidden = role !== "prestador";
   preferencesFutureHint.hidden = role !== "cliente";
   registerNameInput.name = role === "cliente" ? "nome_completo" : "nome_empresa";
@@ -209,7 +216,13 @@ loginForm.addEventListener("submit", (event) => {
   })
     .then(async (response) => {
       const data = await readApiResponse(response);
-      if (!response.ok) throw new Error(data.detail || "Não foi possível entrar.");
+      if (!response.ok) {
+        const roleName = currentRole === "prestador" ? "Prestador" : "Cliente";
+        const message = response.status === 401
+          ? `Credenciais inválidas para o tipo "${roleName}". Se você tem conta do outro tipo, troque a aba acima antes de entrar.`
+          : (data.detail || "Não foi possível entrar.");
+        throw new Error(message);
+      }
       localStorage.setItem("nearhand_access_token", data.access_token);
       localStorage.setItem("nearhand_user", JSON.stringify(data.user));
       localStorage.setItem("nearhand_user_type", data.tipo);
@@ -276,7 +289,15 @@ registerForm.addEventListener("submit", (event) => {
 const urlParams = new URLSearchParams(window.location.search);
 const urlRole = urlParams.get("tipo");
 const urlMode = urlParams.get("modo");
-if (urlRole === "cliente" || urlRole === "prestador") currentRole = urlRole;
+const lastRole = localStorage.getItem("nearhand_last_role");
+
+if (urlRole === "cliente" || urlRole === "prestador") {
+  currentRole = urlRole;
+} else if (lastRole === "cliente" || lastRole === "prestador") {
+  // Lembra o último tipo de conta usado neste dispositivo, pra quem já se
+  // cadastrou como prestador não cair sempre na aba "Cliente" ao voltar.
+  currentRole = lastRole;
+}
 if (urlMode === "login" || urlMode === "cadastro") currentMode = urlMode;
 
 setRole(currentRole);

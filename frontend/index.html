@@ -156,7 +156,7 @@
     <section id="providerView" class="app-view" hidden>
       <section class="provider-section" data-provider-view="painel">
         <section class="provider-hero">
-          <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, Marcos 👋</h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
+          <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, <span id="providerHeroName">Prestador</span> 👋</h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
         </section>
 
         <section class="metric-grid">
@@ -271,6 +271,16 @@
             </form>
             <form id="providerProfileForm" class="ad-form settings-form" hidden>
               <label>Nome da empresa/prestador *<input id="ppName" required /></label>
+              <label>Foto da empresa *
+                <div class="photo-dropzone" id="ppPhotoDropzone">
+                  <img class="photo-thumb" id="ppPhotoPreview" alt="Pré-visualização da foto" hidden />
+                  <div class="photo-dropzone-empty" id="ppPhotoEmpty">
+                    <span>📷</span>
+                    <small>Arraste uma foto ou clique para enviar</small>
+                  </div>
+                  <input id="ppPhotoFile" type="file" accept="image/*" hidden />
+                </div>
+              </label>
               <label>Endereço padrão *
                 <div class="address-grid">
                   <input id="ppRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />

@@ -41,7 +41,7 @@ def initialize_database_schema():
 
 @app.get("/", include_in_schema=False)
 def home():
-    return RedirectResponse(url="/admin/login")
+    return RedirectResponse(url="/auth")
 
 
 @app.get("/app", include_in_schema=False)
@@ -573,7 +573,7 @@ def _address_params(payload: AddressFields) -> dict:
     }
 
 
-def _normalize_phone(value: str) -> str:
+def _digits_only(value: str) -> str:
     return re.sub(r"\D", "", value)
 
 
@@ -622,8 +622,11 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
         if existing_provider:
             raise HTTPException(status_code=409, detail="This email already has a provider account")
         existing_document = db.execute(
-            text("SELECT id FROM prestador WHERE cpf_cnpj = :cpf_cnpj"),
-            {"cpf_cnpj": account.cpf_cnpj.strip()},
+            text("""
+                SELECT id FROM prestador
+                WHERE REPLACE(REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', ''), '/', '') = :cpf_cnpj
+            """),
+            {"cpf_cnpj": _digits_only(account.cpf_cnpj)},
         ).first()
         if existing_document:
             raise HTTPException(status_code=409, detail="This CPF/CNPJ already has a provider account")
@@ -653,7 +656,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
                     "nome": name,
                     "foto": account.foto.strip() or None,
                     "endereco_id": address_id,
-                    "telefone": _normalize_phone(account.telefone) or None,
+                    "telefone": _digits_only(account.telefone) or None,
                     "email": email,
                     "senha_hash": password_hash,
                     "preferencias": preferencias,
@@ -670,9 +673,9 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
                     "nome": name,
                     "foto": account.foto.strip() or None,
                     "endereco_id": address_id,
-                    "telefone": _normalize_phone(account.telefone) or None,
+                    "telefone": _digits_only(account.telefone) or None,
                     "email": email,
-                    "cpf_cnpj": account.cpf_cnpj.strip(),
+                    "cpf_cnpj": _digits_only(account.cpf_cnpj),
                     "senha_hash": password_hash,
                 },
             )
@@ -704,7 +707,7 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
                 WHERE LOWER(email) = :identifier
                    OR REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '-', ''), '(', ''), ')', '') = :phone
             """),
-            {"identifier": identifier, "phone": _normalize_phone(account.identificador)},
+            {"identifier": identifier, "phone": _digits_only(account.identificador)},
         ).mappings().first()
     elif account_type == "prestador":
         user = db.execute(
@@ -712,9 +715,9 @@ def login_account(account: AccountLogin, db: Session = Depends(get_db)):
                 SELECT id, nome_empresa AS nome, email, foto, senha_hash
                 FROM prestador
                 WHERE LOWER(email) = :identifier
-                   OR LOWER(cpf_cnpj) = :identifier
+                   OR REPLACE(REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', ''), '/', '') = :document
             """),
-            {"identifier": identifier},
+            {"identifier": identifier, "document": _digits_only(account.identificador)},
         ).mappings().first()
     else:
         raise HTTPException(status_code=400, detail="Invalid account type")
@@ -1411,6 +1414,9 @@ def create_service(
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Invalid service data")
+    except DataError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
 
     return get_service(service_id, db)
 
@@ -1550,6 +1556,9 @@ def update_service(
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Invalid service data")
+    except DataError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
     return get_service(service_id, db)
 
 
@@ -1664,7 +1673,7 @@ def update_client_profile(
             {
                 "nome": name,
                 "email": email,
-                "telefone": payload.telefone.strip() or None,
+                "telefone": _digits_only(payload.telefone) or None,
                 "foto": payload.foto.strip() or None,
                 "preferencias": preferencias,
                 "id": client_id,
@@ -1721,7 +1730,7 @@ def update_provider_profile(
     name = payload.nome.strip()
     email = payload.email.strip().lower()
     address = payload.rua.strip()
-    cpf_cnpj = payload.cpf_cnpj.strip()
+    cpf_cnpj = _digits_only(payload.cpf_cnpj)
 
     if not name or not email or not address or not cpf_cnpj:
         raise HTTPException(status_code=400, detail="Name, email, address, and CPF/CNPJ are required")
@@ -1737,7 +1746,7 @@ def update_provider_profile(
             {
                 "nome": name,
                 "email": email,
-                "telefone": payload.telefone.strip() or None,
+                "telefone": _digits_only(payload.telefone) or None,
                 "cpf_cnpj": cpf_cnpj,
                 "foto": payload.foto.strip() or None,
                 "id": provider_id,

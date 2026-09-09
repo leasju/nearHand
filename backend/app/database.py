@@ -53,13 +53,20 @@ def ensure_optional_schema():
                 except ProgrammingError as error:
                     if not error.orig.args or error.orig.args[0] != 1060:
                         raise
-        # Corrige instalações antigas onde prestador.foto foi criada como VARCHAR(255)
-        # (pequeno demais para uma imagem em base64) antes desta função existir.
-        prestador_foto = connection.execute(
-            text("SHOW COLUMNS FROM prestador LIKE 'foto'")
-        ).mappings().first()
-        if prestador_foto is not None and prestador_foto["Type"].lower() != "text":
-            connection.execute(text("ALTER TABLE prestador MODIFY COLUMN foto TEXT NULL"))
+        # Corrige instalações antigas onde colunas de foto/imagem em base64 foram criadas
+        # como VARCHAR(255) ou TEXT (limite de 64KB, pequeno demais para fotos reais
+        # redimensionadas, especialmente as do carrossel de serviço em 480px).
+        base64_photo_columns = [
+            ("prestador", "foto", "MEDIUMTEXT NULL"),
+            ("cliente", "foto", "MEDIUMTEXT NULL"),
+            ("foto_servico", "url", "MEDIUMTEXT NOT NULL"),
+        ]
+        for table, column, definition in base64_photo_columns:
+            current = connection.execute(
+                text(f"SHOW COLUMNS FROM {table} LIKE :name"), {"name": column}
+            ).mappings().first()
+            if current is not None and current["Type"].lower() != "mediumtext":
+                connection.execute(text(f"ALTER TABLE {table} MODIFY COLUMN {column} {definition}"))
 
         connection.execute(text("""
             CREATE TABLE IF NOT EXISTS notificacao (

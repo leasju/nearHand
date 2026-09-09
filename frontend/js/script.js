@@ -624,6 +624,11 @@ function updateStoredUser(partial) {
   }
   document.querySelector("#profileBtn .profile-copy strong").textContent = updated.nome || "Minha conta";
   document.querySelector("#profileBtn .profile-copy small").textContent = updated.email || "";
+
+  const providerHeroName = document.getElementById("providerHeroName");
+  if (providerHeroName) {
+    providerHeroName.textContent = updated.nome ? updated.nome.split(" ")[0] : "Prestador";
+  }
 }
 
 function initSession() {
@@ -644,7 +649,22 @@ function initSession() {
 
   updateStoredUser(user);
   currentSessionRole = localStorage.getItem("nearhand_user_type") || "cliente";
+  refreshSessionProfile();
   return currentSessionRole;
+}
+
+// Busca o perfil atual no servidor pra corrigir nome/foto desatualizados que
+// possam ter ficado guardados no navegador (ex.: sessão antiga em cache).
+async function refreshSessionProfile() {
+  try {
+    const path = currentSessionRole === "prestador" ? "/prestadores/me" : "/clientes/me";
+    const response = await authFetch(path);
+    if (!response.ok) return;
+    const profile = await response.json();
+    updateStoredUser({ nome: profile.nome, email: profile.email, foto: profile.foto });
+  } catch {
+    // sem internet ou sessão expirada: mantém o que já está em cache
+  }
 }
 
 function logout() {
@@ -1515,6 +1535,13 @@ const cpPhotoPicker = setupPhotoDropzone({
   emptyId: "cpPhotoEmpty",
 });
 
+const ppPhotoPicker = setupPhotoDropzone({
+  dropzoneId: "ppPhotoDropzone",
+  fileId: "ppPhotoFile",
+  previewId: "ppPhotoPreview",
+  emptyId: "ppPhotoEmpty",
+});
+
 let settingsCategories = [];
 
 async function loadSettingsCategories() {
@@ -1552,6 +1579,7 @@ async function loadSettingsProfile() {
 
     if (currentSessionRole === "prestador") {
       document.getElementById("ppName").value = settingsProfile.nome || "";
+      ppPhotoPicker.setValue(settingsProfile.foto || "");
       fillAddressFields("pp", settingsProfile);
       document.getElementById("ppPhone").value = settingsProfile.telefone || "";
       document.getElementById("ppEmail").value = settingsProfile.email || "";
@@ -1610,6 +1638,7 @@ providerProfileForm.addEventListener("submit", async (event) => {
     email: document.getElementById("ppEmail").value,
     telefone: document.getElementById("ppPhone").value,
     cpf_cnpj: document.getElementById("ppDocument").value,
+    foto: ppPhotoPicker.getValue(),
     ...readAddressFields("pp"),
   };
   try {
@@ -1617,7 +1646,7 @@ providerProfileForm.addEventListener("submit", async (event) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o perfil.");
     settingsProfile = data;
-    updateStoredUser({ nome: data.nome, email: data.email });
+    updateStoredUser({ nome: data.nome, email: data.email, foto: data.foto });
     showToast("Perfil atualizado.");
   } catch (error) {
     showToast(error.message);
