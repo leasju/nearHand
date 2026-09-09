@@ -23,6 +23,7 @@
       <button class="nav-link active" data-section="explorar">Explorar</button>
       <button class="nav-link" data-section="agenda">Agenda</button>
       <button class="nav-link" data-section="pedidos">Pedidos</button>
+      <button class="nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-section="favoritos">Favoritos</button>
     </nav>
 
@@ -30,6 +31,7 @@
       <button class="nav-link active" data-provider-section="painel">Painel</button>
       <button class="nav-link" data-provider-section="agenda">Agenda</button>
       <button class="nav-link" data-provider-section="anuncios">Meus anúncios</button>
+      <button class="nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-provider-section="avaliacoes">Avaliações</button>
     </nav>
 
@@ -379,6 +381,27 @@
         </div>
       </div>
     </section>
+
+    <section id="chatView" class="app-view" hidden>
+      <div class="chat-page">
+        <aside class="chat-sidebar">
+          <div class="chat-sidebar-header"><h2>Mensagens</h2></div>
+          <div class="chat-list" id="chatConversationList"></div>
+        </aside>
+        <div class="chat-main">
+          <div class="chat-conversation-header" id="chatConversationHeader" hidden>
+            <span class="avatar" id="chatHeaderAvatar"></span>
+            <div class="chat-header-info"><strong id="chatHeaderName"></strong><small id="chatHeaderMeta"></small></div>
+          </div>
+          <p class="empty-state chat-empty-state" id="chatEmptyState">Selecione uma conversa para começar.</p>
+          <div class="chat-messages" id="chatMessages" hidden></div>
+          <form class="chat-input-area" id="chatForm" hidden>
+            <input id="chatInput" class="chat-input-field" placeholder="Escreva uma mensagem..." autocomplete="off" />
+            <button class="chat-send" type="submit" aria-label="Enviar">➤</button>
+          </form>
+        </div>
+      </div>
+    </section>
   </main>
 
   <div class="modal-backdrop" id="serviceModal" hidden>
@@ -411,16 +434,6 @@
           <div id="reviewsList"></div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="modal-backdrop" id="chatModal" hidden>
-    <div class="modal chat-modal" role="dialog" aria-modal="true">
-      <button class="modal-close" data-close="chatModal">×</button>
-      <div class="chat-head"><span class="avatar">ME</span><div><strong>Marcos Elétrica</strong><small><i class="online-dot"></i> online agora</small></div></div>
-      <div class="chat-messages" id="chatMessages"><div class="message them">Olá! Posso te ajudar com o serviço?</div><div class="message me">Oi! Preciso trocar duas tomadas e revisar o disjuntor.</div><div class="message them">Perfeito. Posso te enviar um orçamento pelo chat.</div></div>
-      <div class="chat-proposal"><span>💳</span><div><strong>Proposta: R$ 140</strong><small>Visita + materiais básicos inclusos</small></div><button class="small-btn accept">Aceitar</button></div>
-      <form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Digite uma mensagem..." autocomplete="off" /><button class="primary-btn">Enviar</button></form>
     </div>
   </div>
 

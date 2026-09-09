@@ -200,12 +200,13 @@ function serviceCard(service) {
   const isFavorite = favorites.has(service.prestador_id);
   const visual = serviceVisual(service);
   const distance = service.distance == null ? "Distância indisponível" : `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
+  const photoUrl = service.photos?.[0]?.url;
   const card = document.createElement("article");
   card.className = "service-card";
   card.dataset.id = service.id;
   card.innerHTML = `
-    <div class="service-image ${visual.style}">
-      <span aria-hidden="true">${visual.icon}</span>
+    <div class="service-image ${visual.style}"${photoUrl ? ` style="background-image:url('${photoUrl}');background-size:cover;background-position:center"` : ""}>
+      <span aria-hidden="true"${photoUrl ? " hidden" : ""}>${visual.icon}</span>
       <button class="favorite-btn ${isFavorite ? "active" : ""}" data-action="favorite" aria-label="${isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}">
         ${isFavorite ? "♥" : "♡"}
       </button>
@@ -511,7 +512,6 @@ radiusFilter.addEventListener("input", () => {
 document.querySelectorAll("[data-close]").forEach((button) => {
   button.addEventListener("click", () => {
     document.getElementById(button.dataset.close).hidden = true;
-    if (button.dataset.close === "chatModal") window.clearInterval(chatPollingTimer);
   });
 });
 document.querySelectorAll(".modal-backdrop").forEach((modal) => {
@@ -573,8 +573,25 @@ const DEFAULT_MAP_CENTER = { lat: -22.9099, lng: -47.0626 }; // Campinas, SP (fa
 let proximityMap = null;
 let youMarker = null;
 let radarCircles = [];
-let mapCenter = null;
+let mapCenter = DEFAULT_MAP_CENTER;
 const serviceMarkers = new Map();
+
+function refineMapCenter() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      mapCenter = { lat: position.coords.latitude, lng: position.coords.longitude };
+      if (proximityMap) {
+        proximityMap.setView([mapCenter.lat, mapCenter.lng], 13);
+        youMarker.setLatLng([mapCenter.lat, mapCenter.lng]);
+        updateProximityMap();
+      }
+      queueServicesLoad();
+    },
+    () => {},
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
 
 // Corrige os ícones padrão do Leaflet ao carregar via CDN.
 delete L.Icon.Default.prototype._getIconUrl;
@@ -665,22 +682,7 @@ function openProximityMap() {
     proximityMap.invalidateSize();
     return;
   }
-  if (!navigator.geolocation) {
-    showToast("Geolocalização não suportada neste navegador. Mostrando Campinas, SP.");
-    initProximityMap(DEFAULT_MAP_CENTER);
-    return;
-  }
-  showToast("Buscando sua localização...");
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      initProximityMap({ lat: position.coords.latitude, lng: position.coords.longitude });
-    },
-    () => {
-      showToast("Não foi possível acessar sua localização. Mostrando Campinas, SP.");
-      initProximityMap(DEFAULT_MAP_CENTER);
-    },
-    { enableHighAccuracy: true, timeout: 8000 }
-  );
+  initProximityMap(mapCenter);
 }
 
 document.getElementById("mapSidebar").addEventListener("click", (event) => {
@@ -826,6 +828,7 @@ async function switchAccountRole(targetRole) {
 const clienteView = document.getElementById("clienteView");
 const providerView = document.getElementById("providerView");
 const settingsView = document.getElementById("settingsView");
+const chatView = document.getElementById("chatView");
 const topRoleButtons = document.querySelectorAll(".top-actions .role-switch .role-btn");
 
 const mainNav = document.querySelector(".main-nav:not(.provider-nav)");
@@ -835,8 +838,10 @@ function showAppView(view) {
   clienteView.hidden = view !== "cliente";
   providerView.hidden = view !== "prestador";
   settingsView.hidden = view !== "settings";
-  mainNav.hidden = view !== "cliente";
-  providerNav.hidden = view !== "prestador";
+  chatView.hidden = view !== "chat";
+  const role = view === "chat" ? currentSessionRole : view;
+  mainNav.hidden = role !== "cliente" || view === "settings";
+  providerNav.hidden = role !== "prestador" || view === "settings";
 }
 
 function setActiveRole(role) {
@@ -868,7 +873,14 @@ function setActiveSection(section) {
 }
 
 navLinks.forEach((link) => {
-  link.addEventListener("click", () => setActiveSection(link.dataset.section));
+  link.addEventListener("click", () => {
+    if (link.dataset.appView === "chat") {
+      openChatView();
+      return;
+    }
+    showAppView("cliente");
+    setActiveSection(link.dataset.section);
+  });
 });
 
 // ============================================
@@ -883,7 +895,14 @@ function setActiveProviderSection(section) {
 }
 
 providerNavLinks.forEach((link) => {
-  link.addEventListener("click", () => setActiveProviderSection(link.dataset.providerSection));
+  link.addEventListener("click", () => {
+    if (link.dataset.appView === "chat") {
+      openChatView();
+      return;
+    }
+    showAppView("prestador");
+    setActiveProviderSection(link.dataset.providerSection);
+  });
 });
 
 // ============================================
@@ -981,21 +1000,97 @@ document.getElementById("openChatBtn").addEventListener("click", () => {
     return;
   }
   document.getElementById("serviceModal").hidden = true;
-  document.getElementById("chatModal").hidden = false;
-  loadMessages();
-  window.clearInterval(chatPollingTimer);
-  chatPollingTimer = window.setInterval(loadMessages, 5000);
+  openChatConversation(currentChatRequestId);
 });
 document.getElementById("openChatBtnInline").addEventListener("click", () => {
   document.getElementById("openChatBtn").click();
 });
 
 // ============================================
-// Chat (mensagens locais, sem backend ainda)
+// Chat
 // ============================================
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatMessages = document.getElementById("chatMessages");
+const chatEmptyState = document.getElementById("chatEmptyState");
+const chatConversationHeader = document.getElementById("chatConversationHeader");
+const chatConversationList = document.getElementById("chatConversationList");
+let CHAT_CONVERSATIONS = [];
+
+function chatOtherParty(conversation) {
+  return currentSessionRole === "prestador"
+    ? { name: conversation.cliente_nome, meta: conversation.servico_titulo }
+    : { name: conversation.prestador_nome, meta: conversation.servico_titulo };
+}
+
+function renderChatConversationList() {
+  chatConversationList.replaceChildren();
+  if (!CHAT_CONVERSATIONS.length) {
+    chatConversationList.innerHTML = '<p class="empty-state">Nenhuma conversa ainda. Solicite um serviço para começar a conversar.</p>';
+    return;
+  }
+  CHAT_CONVERSATIONS.forEach((conversation) => {
+    const other = chatOtherParty(conversation);
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `chat-list-item${conversation.id === currentChatRequestId ? " active" : ""}`;
+    item.dataset.requestId = conversation.id;
+    item.innerHTML = `
+      <span class="avatar">${requestInitials(other.name)}</span>
+      <span class="chat-preview">
+        <span class="chat-preview-top"><span class="chat-preview-name">${other.name}</span></span>
+        <span class="chat-preview-sub">${other.meta} • ${requestStatusLabel(conversation.status)}</span>
+      </span>
+    `;
+    item.addEventListener("click", () => openChatConversation(conversation.id));
+    chatConversationList.appendChild(item);
+  });
+}
+
+async function loadChatConversations() {
+  try {
+    const path = currentSessionRole === "prestador" ? "/prestadores/me/solicitacoes" : "/clientes/me/solicitacoes";
+    const response = await authFetch(path);
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Não foi possível carregar as conversas.");
+    CHAT_CONVERSATIONS = data;
+    renderChatConversationList();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function markChatNavActive() {
+  const links = currentSessionRole === "prestador" ? providerNavLinks : navLinks;
+  links.forEach((item) => item.classList.toggle("active", item.dataset.appView === "chat"));
+}
+
+function openChatView() {
+  showAppView("chat");
+  markChatNavActive();
+  loadChatConversations();
+}
+
+async function openChatConversation(requestId) {
+  currentChatRequestId = requestId;
+  showAppView("chat");
+  markChatNavActive();
+  await loadChatConversations();
+  const conversation = CHAT_CONVERSATIONS.find((item) => item.id === requestId);
+  if (conversation) {
+    const other = chatOtherParty(conversation);
+    document.getElementById("chatHeaderAvatar").textContent = requestInitials(other.name);
+    document.getElementById("chatHeaderName").textContent = other.name;
+    document.getElementById("chatHeaderMeta").textContent = other.meta;
+  }
+  chatConversationHeader.hidden = false;
+  chatEmptyState.hidden = true;
+  chatMessages.hidden = false;
+  chatForm.hidden = false;
+  loadMessages();
+  window.clearInterval(chatPollingTimer);
+  chatPollingTimer = window.setInterval(loadMessages, 5000);
+}
 
 async function loadMessages() {
   if (!currentChatRequestId) return;
@@ -1022,6 +1117,9 @@ async function loadMessages() {
       bubble.innerHTML = `${escapeHtml(message.texto)}<span class="message-time">${timeLabel}</span>`;
       chatMessages.appendChild(bubble);
     });
+    if (!messages.length) {
+      chatMessages.innerHTML = '<p class="empty-state">Nenhuma mensagem ainda. Diga oi!</p>';
+    }
     chatMessages.scrollTop = chatMessages.scrollHeight;
   } catch (error) {
     showToast(error.message);
@@ -1260,11 +1358,7 @@ async function loadProviderMetrics() {
 requestList.addEventListener("click", async (event) => {
   const chatButton = event.target.closest("[data-chat-request]");
   if (chatButton) {
-    currentChatRequestId = Number(chatButton.closest(".request-item").dataset.requestId);
-    document.getElementById("chatModal").hidden = false;
-    loadMessages();
-    window.clearInterval(chatPollingTimer);
-    chatPollingTimer = window.setInterval(loadMessages, 5000);
+    openChatConversation(Number(chatButton.closest(".request-item").dataset.requestId));
     return;
   }
   const button = event.target.closest("[data-request-status]");
@@ -2197,6 +2291,7 @@ if (initialRole) {
   setActiveSection("explorar");
   setActiveProviderSection("painel");
   loadCategories().then(loadServices);
+  refineMapCenter();
   loadProviderServices();
   loadClientRequests();
   loadProviderRequests();
