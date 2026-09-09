@@ -1182,11 +1182,49 @@ document.getElementById("addCategoryBtn").addEventListener("click", async () => 
   }
 });
 
+let editingServiceId = null;
+const newAdEyebrow = document.getElementById("newAdEyebrow");
+const newAdTitleEl = document.getElementById("newAdTitle");
+const newAdSubmitBtn = document.getElementById("newAdSubmitBtn");
+
+function setAdModalMode(mode) {
+  const isEdit = mode === "edit";
+  newAdEyebrow.textContent = isEdit ? "EDITAR ANÚNCIO" : "NOVO ANÚNCIO";
+  newAdTitleEl.textContent = isEdit ? "Editar serviço" : "Publicar serviço";
+  newAdSubmitBtn.textContent = isEdit ? "Salvar alterações" : "Publicar anúncio";
+}
+
 document.getElementById("newAdBtn").addEventListener("click", () => {
+  editingServiceId = null;
+  setAdModalMode("create");
+  newAdForm.reset();
   adPhotos = [];
   renderAdPhotosGrid();
   newAdModal.hidden = false;
 });
+
+async function openAdEditModal(serviceId) {
+  try {
+    const response = await authFetch(`/services/${serviceId}`);
+    const service = await readApiResponse(response);
+    if (!response.ok) throw new Error(service.detail || "Não foi possível carregar o anúncio.");
+
+    editingServiceId = serviceId;
+    setAdModalMode("edit");
+    document.getElementById("adTitle").value = service.title || "";
+    document.getElementById("adDescription").value = service.description || "";
+    document.getElementById("adCategory").value = String(service.categoria_id);
+    document.getElementById("adPrice").value = service.price;
+    document.getElementById("adPriceType").value = service.price_type;
+    adRadius.value = service.raio_atendimento_km;
+    adRadiusLabel.textContent = `${service.raio_atendimento_km} km`;
+    adPhotos = (service.photos || []).map((photo) => photo.url);
+    renderAdPhotosGrid();
+    newAdModal.hidden = false;
+  } catch (error) {
+    showToast(error.message);
+  }
+}
 
 // ============================================
 // Fotos do anúncio: arrastar ou clicar para enviar arquivos
@@ -1274,7 +1312,9 @@ adList.addEventListener("click", (event) => {
   const serviceId = item.dataset.serviceId;
   const status = item.querySelector(".status");
 
-  if (button.classList.contains("ad-pause")) {
+  if (button.classList.contains("ad-edit")) {
+    openAdEditModal(serviceId);
+  } else if (button.classList.contains("ad-pause")) {
     const isPaused = status.textContent.trim() === "Pausado";
     authFetch(`/services/${serviceId}/status`, {
       method: "PATCH",
@@ -1312,6 +1352,7 @@ async function loadProviderServices() {
         <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
         <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"} • Raio de ${service.raio_atendimento_km} km</small></div>
         <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
+        <button class="icon-btn ad-edit" title="Editar">✏️</button>
         <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}>⏸</button>
         <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}>🗑</button>
       `;
@@ -1334,9 +1375,10 @@ newAdForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  const isEdit = editingServiceId !== null;
   try {
-    const response = await authFetch("/services", {
-      method: "POST",
+    const response = await authFetch(isEdit ? `/services/${editingServiceId}` : "/services", {
+      method: isEdit ? "PUT" : "POST",
       body: JSON.stringify({
         titulo: title,
         descricao: document.getElementById("adDescription").value,
@@ -1348,13 +1390,14 @@ newAdForm.addEventListener("submit", async (event) => {
       }),
     });
     const data = await readApiResponse(response);
-    if (!response.ok) throw new Error(data.detail || "Não foi possível publicar o anúncio.");
+    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o anúncio.");
     newAdModal.hidden = true;
     newAdForm.reset();
     adPhotos = [];
+    editingServiceId = null;
     renderAdPhotosGrid();
     await loadProviderServices();
-    showToast("Anúncio publicado.");
+    showToast(isEdit ? "Anúncio atualizado." : "Anúncio publicado.");
   } catch (error) {
     showToast(error.message);
   }

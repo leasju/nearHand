@@ -28,6 +28,7 @@ def ensure_optional_schema():
     with engine.begin() as connection:
         optional_columns = {
             "prestador": {"foto": "TEXT NULL"},
+            "cliente": {"preferencias": "VARCHAR(255) NULL"},
             "avaliacao": {"resposta_prestador": "TEXT NULL"},
             "metodo_pagamento": {
                 "chave_pix": "VARCHAR(140) NULL",

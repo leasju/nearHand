@@ -391,7 +391,7 @@
   <div class="modal-backdrop" id="newAdModal" hidden>
     <div class="modal form-modal" role="dialog" aria-modal="true">
       <button class="modal-close" data-close="newAdModal">×</button>
-      <span class="eyebrow">NOVO ANÚNCIO</span><h2>Publicar serviço</h2>
+      <span class="eyebrow" id="newAdEyebrow">NOVO ANÚNCIO</span><h2 id="newAdTitle">Publicar serviço</h2>
       <form id="newAdForm" class="ad-form">
         <label>Título<input required id="adTitle" placeholder="Ex.: Instalação elétrica residencial" /></label>
         <label>Categoria
@@ -409,7 +409,7 @@
           </div>
           <input id="adPhotoFile" type="file" accept="image/*" multiple hidden />
         </div>
-        <button class="primary-btn full">Publicar anúncio</button>
+        <button class="primary-btn full" id="newAdSubmitBtn">Publicar anúncio</button>
       </form>
     </div>
   </div>
