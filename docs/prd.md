@@ -7,8 +7,12 @@ Usuários
 
 ## Identidade visual
 
-- Linguagem de UI inspirada na Apple: fonte prioriza a stack do sistema (-apple-system/SF Pro, com Inter como fallback em quem não é Apple), sombras suaves e em camadas (baixa opacidade, bem difusas em vez de saturadas), cantos arredondados consistentes e transições com curva "spring" (cubic-bezier) e leve efeito de pressionar (scale) nos botões
-- Tela de login/cadastro tem o painel lateral e o fundo em tom roxo escuro (gradiente flat, sem blobs), com o card do formulário claro por cima para manter o texto legível. Marca no painel lateral é um badge (ícone dentro de um quadrado arredondado branco) + o nome "NearHand" ao lado, maior que o resto do texto. Lista de benefícios sem cartão/fundo, só ícone + texto separados por linha fina (hairline). Campos de formulário e botão principal em formato pílula (totalmente arredondados)
+- Linguagem de UI clara e neutra (estilo "SaaS dashboard"): fundo em lilás bem claro e chapado (sem gradiente), cards brancos com cantos arredondados (~18px) e sombra suave e difusa, texto em tom escuro quase-preto (#221D33) sobre fundo claro em todas as telas — inclusive a de login/cadastro, que **não** usa mais painel escuro
+- Botões **não** são em formato pílula: cantos moderadamente arredondados (9–11px) em botões primário/secundário/ghost; pílula (100% arredondado) fica reservada pra badges, chips e tags
+- Estado ativo da navegação (abas do topo, abas do admin) é um preenchimento sólido roxo-escuro com texto branco, não só um fundo claro/tint
+- Hero/banners de destaque (Explorar do cliente, Painel do prestador) são cards brancos simples com borda e sombra leve — não usam mais gradiente roxo cheio
+- Cards de anúncio (catálogo, favoritos) usam uma cor chapada de fundo no thumbnail (sem gradiente diagonal) e o botão de favoritar é um círculo translúcido escuro sobre a imagem
+- Fonte prioriza a stack do sistema (-apple-system/SF Pro, com Inter como fallback em quem não é Apple)
 - Modais do site (detalhe do serviço, criar/editar anúncio, criar/editar conta no admin) são dimensionados para desktop — bem mais largos que o padrão mobile-first, para não parecer app de celular dentro do navegador
 
 # Funcionalidades — Cliente
