@@ -219,7 +219,7 @@
 
       <section class="generic-view provider-section" data-provider-view="anuncios" hidden>
         <div class="panel-card">
-          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><button class="primary-btn" id="newAdBtn">+ Criar anúncio</button></div>
+          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><div style="display:flex;gap:8px"><button class="secondary-btn" id="removeSelectedAdsBtn" hidden>🗑 Remover selecionados</button><button class="primary-btn" id="newAdBtn">+ Criar anúncio</button></div></div>
           <div class="ad-list" id="adList">
             <article class="ad-item"><div class="ad-thumb electric">⚡</div><div><strong>Eletricista residencial</strong><small>R$ 120/h • Raio de 10 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
             <article class="ad-item"><div class="ad-thumb electric">💡</div><div><strong>Instalação de luminárias</strong><small>A partir de R$ 90 • Raio de 8 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
@@ -456,6 +456,7 @@
         </label>
         <label>Descrição<textarea id="adDescription" rows="4" placeholder="Descreva o serviço e diferenciais..."></textarea></label>
         <div class="form-row"><label>Valor<input required id="adPrice" type="number" min="0" placeholder="120" /></label><label>Tipo<select id="adPriceType"><option value="por_hora">por hora</option><option value="fixo">por serviço</option></select></label></div>
+        <label class="checkbox-row"><input type="checkbox" id="adNegotiable" /> Valor disposto a ser negociado</label>
         <label>Raio de atendimento <strong id="adRadiusLabel">10 km</strong><input id="adRadius" type="range" min="1" max="30" value="10" /></label>
         <label>Fotos do carrossel <span class="hint">mín. 2 para publicar</span></label>
         <div class="ad-photos-dropzone" id="adPhotosDropzone">

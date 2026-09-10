@@ -85,6 +85,7 @@ CREATE TABLE servico (
     descricao TEXT,
     valor DECIMAL(10, 2) NOT NULL,
     tipo_valor VARCHAR(10) NOT NULL CHECK (tipo_valor IN ('fixo', 'por_hora')),
+    negociavel BOOLEAN NOT NULL DEFAULT FALSE,
     raio_atendimento_km INT NOT NULL DEFAULT 5,
     status VARCHAR(15) NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'pausado', 'removido')),
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

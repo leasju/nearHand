@@ -81,6 +81,7 @@ class ServiceCreate(BaseModel):
     categoria_id: int
     valor: float
     tipo_valor: str
+    negociavel: bool = False
     raio_atendimento_km: int = 5
     fotos: list[str]
 
@@ -91,6 +92,7 @@ class ServiceUpdate(BaseModel):
     categoria_id: int
     valor: float
     tipo_valor: str
+    negociavel: bool = False
     raio_atendimento_km: int = 5
     fotos: list[str] | None = None
 
@@ -905,7 +907,7 @@ def list_my_favorites(
         JOIN favorito fav ON fav.prestador_id = s.prestador_id
                          AND fav.cliente_id = :cliente_id
         WHERE s.status = 'ativo'
-        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
                  c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
         ORDER BY p.nome_empresa, s.titulo
     """)
@@ -1369,6 +1371,7 @@ SERVICE_SELECT = """
         s.descricao AS description,
         s.valor AS price,
         s.tipo_valor AS price_type,
+        s.negociavel,
         s.status,
         s.raio_atendimento_km,
         c.id AS categoria_id,
@@ -1424,6 +1427,7 @@ def _decode_service_row(row) -> dict:
         photos = json.loads(photos)
     service["photos"] = [photo for photo in photos if photo and photo.get("url")]
     service["price"] = float(service["price"])
+    service["negociavel"] = bool(service["negociavel"])
     service["rating"] = float(service["rating"])
     service["reviews"] = int(service["reviews"])
     service["distance"] = float(service["distance"]) if service["distance"] is not None else None
@@ -1455,9 +1459,9 @@ def create_service(
         result = db.execute(
             text("""
                 INSERT INTO servico
-                    (prestador_id, categoria_id, titulo, descricao, valor, tipo_valor, raio_atendimento_km)
+                    (prestador_id, categoria_id, titulo, descricao, valor, tipo_valor, negociavel, raio_atendimento_km)
                 VALUES
-                    (:prestador_id, :categoria_id, :titulo, :descricao, :valor, :tipo_valor, :raio)
+                    (:prestador_id, :categoria_id, :titulo, :descricao, :valor, :tipo_valor, :negociavel, :raio)
             """),
             {
                 "prestador_id": provider_id,
@@ -1466,6 +1470,7 @@ def create_service(
                 "descricao": service.descricao.strip() or None,
                 "valor": service.valor,
                 "tipo_valor": service.tipo_valor,
+                "negociavel": service.negociavel,
                 "raio": service.raio_atendimento_km,
             },
         )
@@ -1524,7 +1529,7 @@ def list_services(
           AND (:preco_max IS NULL OR s.valor <= :preco_max)
           AND (:avaliacao_min <= COALESCE(r.rating, 0))
           AND (:busca IS NULL OR s.titulo LIKE :busca OR s.descricao LIKE :busca OR p.nome_empresa LIKE :busca)
-        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
                  c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
         HAVING (:raio_km IS NULL OR {distance} <= :raio_km)
         ORDER BY {order_by}
@@ -1546,7 +1551,7 @@ def list_my_services(
 ):
     query = text(SERVICE_SELECT.format(distance_expression="0") + """
         WHERE s.prestador_id = :provider_id
-        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
                  c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
         ORDER BY s.criado_em DESC
     """)
@@ -1560,7 +1565,7 @@ def list_my_services(
 def get_service(service_id: int, db: Session = Depends(get_db)):
     query = text(SERVICE_SELECT.format(distance_expression="0") + """
         WHERE s.id = :service_id
-        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.status, s.raio_atendimento_km,
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
                  c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
     """)
     row = db.execute(query, {"service_id": service_id, "lat": 0, "lng": 0}).mappings().first()
@@ -1692,7 +1697,7 @@ def update_service(
             text("""
                 UPDATE servico
                 SET categoria_id = :categoria_id, titulo = :titulo, descricao = :descricao,
-                    valor = :valor, tipo_valor = :tipo_valor, raio_atendimento_km = :raio
+                    valor = :valor, tipo_valor = :tipo_valor, negociavel = :negociavel, raio_atendimento_km = :raio
                 WHERE id = :id AND prestador_id = :prestador_id
             """),
             {
@@ -1701,6 +1706,7 @@ def update_service(
                 "descricao": service.descricao.strip() or None,
                 "valor": service.valor,
                 "tipo_valor": service.tipo_valor,
+                "negociavel": service.negociavel,
                 "raio": service.raio_atendimento_km,
                 "id": service_id,
                 "prestador_id": provider_id,

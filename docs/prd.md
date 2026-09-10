@@ -128,11 +128,12 @@ Usuários
   - Descrição detalhada
   - Fotos do carrossel: até 10 fotos, sendo 2 obrigatórias para publicar o anúncio (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
   - Galeria estendida (opcional): prestador pode adicionar fotos extras além das do carrossel, agrupadas à parte; cliente acessa essa galeria só se quiser ver mais na tela expandida do serviço
-  - Valor (fixo por serviço ou por hora)
+  - Valor (fixo por serviço ou por hora), com opção de marcar como **negociável** — fica visível pro cliente ao lado do valor, tanto no card do catálogo quanto na tela expandida do serviço
   - Raio/área de atendimento a partir da localização cadastrada
 - Editar anúncio existente (mesmo formulário de criação, pré-preenchido)
 - Pausar anúncio temporariamente (sem excluir)
 - Remover anúncio
+- Seleção múltipla de anúncios (checkbox em cada um) com opção de remover todos os selecionados de uma vez
 - Múltiplos anúncios/serviços por prestador (catálogo próprio dentro do perfil)
 
 ## 3. Agenda e disponibilidade
@@ -150,6 +151,7 @@ Usuários
 - Acompanhar status do pedido (solicitado → confirmado → em andamento → concluído)
 - Cancelar um serviço já confirmado (com justificativa)
 - Histórico de serviços prestados (concluídos e cancelados)
+- Aba própria "Clientes atendidos" na navbar: lista todo serviço já concluído com nome do cliente, telefone e email, pra facilitar contato posterior
 
 ## 5. Chat com clientes
 
@@ -187,6 +189,8 @@ Usuários
 
 ## 2. Gestão de categorias
 
+- Ver todas as categorias cadastradas
+- Buscar categoria por nome
 - Criar, editar e remover categorias de serviço usadas em todo o site
 - Categorias também podem ser criadas por um prestador direto na hora de publicar um anúncio (ver Prestador, item 2)
 

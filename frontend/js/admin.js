@@ -40,7 +40,9 @@ if (categoryForm) {
   const nameInput = document.getElementById("categoryNameInput");
   const message = document.getElementById("adminMessage");
   const list = document.getElementById("categoryList");
+  const searchInput = document.getElementById("categorySearchInput");
   const token = localStorage.getItem("nearhand_admin_token");
+  let allCategories = [];
 
   function headers() {
     return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -55,13 +57,18 @@ if (categoryForm) {
     return false;
   }
 
-  async function loadCategories() {
-    const response = await fetch("/categories", { headers: headers() });
-    if (handleUnauthorized(response)) return;
-    const categories = await response.json();
+  function renderCategoryList() {
+    const term = searchInput.value.trim().toLowerCase();
+    const categories = term
+      ? allCategories.filter((category) => category.nome.toLowerCase().includes(term))
+      : allCategories;
     list.replaceChildren();
-    if (!categories.length) {
+    if (!allCategories.length) {
       list.innerHTML = '<p class="field-help">Nenhuma categoria cadastrada ainda.</p>';
+      return;
+    }
+    if (!categories.length) {
+      list.innerHTML = '<p class="field-help">Nenhuma categoria encontrada para essa busca.</p>';
       return;
     }
     categories.forEach((category) => {
@@ -86,6 +93,15 @@ if (categoryForm) {
       list.appendChild(row);
     });
   }
+
+  async function loadCategories() {
+    const response = await fetch("/categories", { headers: headers() });
+    if (handleUnauthorized(response)) return;
+    allCategories = await response.json();
+    renderCategoryList();
+  }
+
+  searchInput.addEventListener("input", renderCategoryList);
 
   async function updateCategory(id, nome) {
     const response = await fetch(`/categories/${id}`, {

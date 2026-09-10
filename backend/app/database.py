@@ -29,6 +29,7 @@ def ensure_optional_schema():
         optional_columns = {
             "prestador": {"foto": "TEXT NULL"},
             "cliente": {"preferencias": "VARCHAR(255) NULL"},
+            "servico": {"negociavel": "BOOLEAN NOT NULL DEFAULT FALSE"},
             "avaliacao": {"resposta_prestador": "TEXT NULL"},
             "metodo_pagamento": {
                 "chave_pix": "VARCHAR(140) NULL",

@@ -220,7 +220,7 @@ function serviceCard(service) {
       <p class="provider-name">${service.provider}</p>
       <div class="rating-row">
         <span class="rating">⭐ <strong>${service.rating.toFixed(1).replace(".", ",")}</strong> (${service.reviews})</span>
-        <span class="price">a partir de <strong>R$ ${formatPrice(service.price)}</strong>${service.unit}</span>
+        <span class="price">a partir de <strong>R$ ${formatPrice(service.price)}</strong>${service.unit}${service.negociavel ? ' <span class="negotiable-badge">negociável</span>' : ""}</span>
       </div>
       <button class="primary-btn service-action" data-action="details">Ver serviço</button>
     </div>
@@ -310,7 +310,7 @@ function showServiceDetails(service) {
   document.getElementById("modalProvider").textContent = service.provider;
   document.getElementById("modalRating").textContent = `⭐ ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
   document.getElementById("modalDistance").textContent = `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
-  document.getElementById("modalPrice").textContent = `💳 R$ ${formatPrice(service.price)}${service.unit}`;
+  document.getElementById("modalPrice").textContent = `💳 R$ ${formatPrice(service.price)}${service.unit}${service.negociavel ? " (negociável)" : ""}`;
   document.getElementById("modalDescription").textContent = service.description || "Sem descrição.";
   const photos = (service.photos || []).map((photo) => photo.url).filter(Boolean);
   const galleryMain = document.getElementById("galleryMain");
@@ -1605,6 +1605,7 @@ async function openAdEditModal(serviceId) {
     document.getElementById("adCategory").value = String(service.categoria_id);
     document.getElementById("adPrice").value = service.price;
     document.getElementById("adPriceType").value = service.price_type;
+    document.getElementById("adNegotiable").checked = Boolean(service.negociavel);
     adRadius.value = service.raio_atendimento_km;
     adRadiusLabel.textContent = `${service.raio_atendimento_km} km`;
     adPhotos = (service.photos || []).map((photo) => photo.url);
@@ -1731,6 +1732,40 @@ adList.addEventListener("click", (event) => {
   }
 });
 
+const removeSelectedAdsBtn = document.getElementById("removeSelectedAdsBtn");
+
+function getSelectedAdIds() {
+  return [...adList.querySelectorAll(".ad-item")]
+    .filter((item) => item.querySelector(".ad-select").checked)
+    .map((item) => item.dataset.serviceId);
+}
+
+function updateBulkRemoveButton() {
+  const count = getSelectedAdIds().length;
+  removeSelectedAdsBtn.hidden = count === 0;
+  removeSelectedAdsBtn.textContent = `🗑 Remover selecionados (${count})`;
+}
+
+adList.addEventListener("change", (event) => {
+  if (event.target.classList.contains("ad-select")) updateBulkRemoveButton();
+});
+
+removeSelectedAdsBtn.addEventListener("click", async () => {
+  const ids = getSelectedAdIds();
+  if (!ids.length) return;
+  if (!confirm(`Remover ${ids.length} anúncio${ids.length === 1 ? "" : "s"} selecionado${ids.length === 1 ? "" : "s"}?`)) return;
+  try {
+    const results = await Promise.all(
+      ids.map((id) => authFetch(`/services/${id}`, { method: "DELETE" }))
+    );
+    const failed = results.filter((response) => !response.ok).length;
+    await loadProviderServices();
+    showToast(failed ? `${ids.length - failed} anúncio(s) removido(s), ${failed} falharam.` : "Anúncios removidos.");
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
 async function loadProviderServices() {
   if (currentSessionRole !== "prestador") return;
   try {
@@ -1743,8 +1778,9 @@ async function loadProviderServices() {
       item.className = "ad-item";
       item.dataset.serviceId = service.id;
       item.innerHTML = `
+        <input type="checkbox" class="ad-select" title="Selecionar anúncio" />
         <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
-        <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"} • Raio de ${service.raio_atendimento_km} km</small></div>
+        <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
         <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
         <button class="icon-btn ad-edit" title="Editar">✏️</button>
         <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}>⏸</button>
@@ -1752,6 +1788,7 @@ async function loadProviderServices() {
       `;
       adList.appendChild(item);
     });
+    updateBulkRemoveButton();
   } catch (error) {
     showToast(error.message);
   }
@@ -1785,6 +1822,7 @@ newAdForm.addEventListener("submit", async (event) => {
         categoria_id: Number(document.getElementById("adCategory").value),
         valor: Number(price),
         tipo_valor: priceType,
+        negociavel: document.getElementById("adNegotiable").checked,
         raio_atendimento_km: Number(radius),
         fotos: adPhotos,
       }),
