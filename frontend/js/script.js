@@ -1523,9 +1523,22 @@ function renderWeeklyScheduleForm() {
       <label class="day-toggle"><input type="checkbox" data-day-toggle /> ${label}</label>
       <input type="time" data-day-start value="09:00" />
       <input type="time" data-day-end value="18:00" />
+      <button type="button" class="small-btn" data-apply-all title="Usar esse horário em todos os dias">Aplicar a todos</button>
     `;
     row.querySelector("[data-day-toggle]").addEventListener("change", (event) => {
       row.classList.toggle("enabled", event.target.checked);
+    });
+    row.querySelector("[data-apply-all]").addEventListener("click", () => {
+      const start = row.querySelector("[data-day-start]").value;
+      const end = row.querySelector("[data-day-end]").value;
+      adWeeklySchedule.querySelectorAll(".weekly-schedule-row").forEach((otherRow) => {
+        if (otherRow === row) return;
+        otherRow.querySelector("[data-day-start]").value = start;
+        otherRow.querySelector("[data-day-end]").value = end;
+        otherRow.querySelector("[data-day-toggle]").checked = true;
+        otherRow.classList.add("enabled");
+      });
+      showToast("Horário aplicado a todos os dias.");
     });
     adWeeklySchedule.appendChild(row);
   });
