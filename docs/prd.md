@@ -83,6 +83,7 @@ Usuários
 - **Agrupado por prestador**: se o cliente tem mais de uma conversa com o mesmo prestador (anúncios diferentes), elas ficam juntas sob um único cabeçalho com o nome dele, em vez de repetir o nome várias vezes na lista
 - Quando o grupo tem mais de uma conversa, ele começa recolhido (só o cabeçalho com o nome e a contagem aparecem) com um botão para expandir/recolher e ver as conversas individuais — evita lista longa quando há muitos pedidos com a mesma pessoa. Grupo com só uma conversa aparece sempre expandido, sem botão. O grupo da conversa aberta no momento fica sempre expandido automaticamente
 - Barra de busca no topo da lista de conversas, filtra por nome do prestador ou título do anúncio
+- Logo abaixo da barra de busca, uma legenda fixa com bolinhas coloridas explicando o status de cada conversa (pendente, em andamento, concluído, cancelado) — a mesma bolinha colorida aparece ao lado de cada conversa na lista
 - Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
 - Também acessível pelo botão "Consultar" dentro da tela do serviço, abrindo direto na conversa daquele anúncio
@@ -90,8 +91,8 @@ Usuários
 ## 7. Pós-contratação
 
 - Histórico de serviços contratados
-- Avaliar o prestador depois do serviço concluído
-- Favoritar prestadores (lista de "meus preferidos")
+- Aba própria "Avaliações" na navbar: lista os serviços que o cliente já contratou (qualquer status exceto cancelado), com botão "Avaliar" habilitado apenas nos que já foram concluídos
+- Favoritar um **anúncio específico** (não o prestador inteiro) — favoritar um serviço de um prestador não afeta os outros anúncios dele
 - Notificações (prestador respondeu no chat, confirmou o serviço, etc.)
 
 # Funcionalidades — Prestador de Serviço
@@ -160,7 +161,8 @@ Usuários
 - Acompanhar status do pedido (solicitado → confirmado → em andamento → concluído)
 - Cancelar um serviço já confirmado (com justificativa)
 - Histórico de serviços prestados (concluídos e cancelados)
-- Aba própria "Clientes atendidos" na navbar: lista todo serviço já concluído com nome do cliente, telefone e email, pra facilitar contato posterior
+- Aba própria "Clientes atendidos" na navbar: lista cada cliente já atendido (nome, telefone e email, pra facilitar contato posterior). Se o mesmo cliente já contratou mais de um serviço, o nome aparece só 1 vez com a lista "Serviços prestados a essa pessoa:" abaixo, em vez de repetir o card por serviço
+- **Ordem da navbar do prestador**: Painel, Agenda, Meus anúncios, Chat, Avaliações, Clientes atendidos
 
 ## 5. Chat com clientes
 
@@ -168,6 +170,7 @@ Usuários
 - **Agrupado por cliente**: se o prestador tem mais de uma conversa com o mesmo cliente (serviços diferentes), elas ficam juntas sob um único cabeçalho com o nome dele, em vez de repetir o nome várias vezes na lista
 - Quando o grupo tem mais de uma conversa, ele começa recolhido com um botão para expandir/recolher (mesmo comportamento do lado do cliente)
 - Barra de busca no topo da lista de conversas, filtra por nome do cliente ou título do anúncio
+- Legenda fixa abaixo da busca com bolinha colorida por status da conversa (pendente/em andamento/concluído/cancelado), mesma bolinha ao lado de cada item da lista
 - Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
 - Conversar com o cliente antes, durante e depois da contratação
@@ -199,7 +202,8 @@ Usuários
 ## 1. Autenticação e navegação
 
 - Login administrativo (email e senha), separado do login de cliente/prestador
-- Navbar em estilo tab group (pill/segmented) para alternar entre Categorias, Anúncios, Contas e Avaliações, com aba ativa destacada; botão "Sair" ao lado da navbar
+- Navbar em estilo tab group (pill/segmented) para alternar entre Início, Categorias, Anúncios, Contas e Avaliações, com aba ativa destacada; botão "Sair" ao lado da navbar
+- **Página inicial (Início)**: banner de boas-vindas com o nome do admin, seguido de um grid 2x2 de cards clicáveis para Categorias, Anúncios, Contas e Avaliações, cada um mostrando uma contagem rápida (quantas categorias/anúncios/contas cadastradas, quantas avaliações denunciadas pendentes). É a página para onde o login redireciona
 
 ## 2. Gestão de categorias
 

@@ -24,6 +24,7 @@
       <button class="nav-link" data-section="agenda">Agenda</button>
       <button class="nav-link" data-section="pedidos">Pedidos</button>
       <button class="nav-link chat-nav-link" data-app-view="chat">Chat</button>
+      <button class="nav-link" data-section="avaliacoes">Avaliações</button>
       <button class="nav-link" data-section="favoritos">Favoritos</button>
     </nav>
 
@@ -31,9 +32,9 @@
       <button class="nav-link active" data-provider-section="painel">Painel</button>
       <button class="nav-link" data-provider-section="agenda">Agenda</button>
       <button class="nav-link" data-provider-section="anuncios">Meus anúncios</button>
-      <button class="nav-link" data-provider-section="clientes">Clientes atendidos</button>
       <button class="nav-link chat-nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-provider-section="avaliacoes">Avaliações</button>
+      <button class="nav-link" data-provider-section="clientes">Clientes atendidos</button>
     </nav>
 
     <div class="top-actions">
@@ -44,7 +45,7 @@
         <button class="role-btn active" data-role="cliente" id="roleBtnCliente">Cliente</button>
         <button class="role-btn" data-role="prestador" id="roleBtnPrestador">Prestador</button>
       </div>
-      <button class="icon-btn" id="topbarLogoutBtn" aria-label="Sair da conta" title="Sair">🚪</button>
+      <button class="secondary-btn" id="topbarLogoutBtn" aria-label="Sair da conta" title="Sair">Sair</button>
       <button class="profile-chip" id="profileBtn">
         <span class="avatar"><img id="profileAvatar" alt="Foto de perfil" hidden /><span id="profileInitials">JL</span></span>
         <span class="profile-copy"><strong>Julia</strong><small>Campinas, SP</small></span>
@@ -148,6 +149,11 @@
           <button class="history-tab" data-history-filter="cancelado">Cancelados <span class="history-tab-count" id="historyCountCancelado">0</span></button>
         </div>
         <div class="history-list" id="historyList"></div>
+      </section>
+
+      <section class="generic-view section-view" data-view="avaliacoes" hidden>
+        <div class="page-title"><div><span class="eyebrow">AVALIAÇÕES</span><h1>Avalie os serviços contratados</h1></div></div>
+        <div class="history-list" id="clientReviewsList"></div>
       </section>
 
       <section class="generic-view section-view" data-view="favoritos" hidden>
@@ -396,6 +402,12 @@
         <aside class="chat-sidebar">
           <div class="chat-sidebar-header"><h2>Mensagens</h2></div>
           <div class="chat-search"><span>🔎</span><input id="chatSearchInput" type="search" placeholder="Buscar por nome ou anúncio..." aria-label="Buscar conversa" /></div>
+          <div class="chat-status-legend">
+            <span><i class="chat-status-dot pending"></i>Pendente</span>
+            <span><i class="chat-status-dot confirmed"></i>Em andamento</span>
+            <span><i class="chat-status-dot done"></i>Concluído</span>
+            <span><i class="chat-status-dot cancelled"></i>Cancelado</span>
+          </div>
           <div class="chat-list" id="chatConversationList"></div>
         </aside>
         <div class="chat-main">

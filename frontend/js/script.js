@@ -197,7 +197,7 @@ async function loadCategories() {
 }
 
 function serviceCard(service) {
-  const isFavorite = favorites.has(service.prestador_id);
+  const isFavorite = favorites.has(service.id);
   const visual = serviceVisual(service);
   const distance = service.distance == null ? "Distância indisponível" : `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
   const photoUrl = service.photos?.[0]?.url;
@@ -291,7 +291,7 @@ async function loadFavorites() {
     if (!response.ok) throw new Error(data.detail || "Não foi possível carregar os favoritos.");
     favoriteServices = data;
     favorites.clear();
-    favoriteServices.forEach((service) => favorites.add(service.prestador_id));
+    favoriteServices.forEach((service) => favorites.add(service.id));
     renderCards();
     renderFavorites();
   } catch (error) {
@@ -472,21 +472,21 @@ function handleCardAction(event) {
 }
 
 async function updateFavorite(service) {
-  const isFavorite = favorites.has(service.prestador_id);
+  const isFavorite = favorites.has(service.id);
   try {
     const response = isFavorite
-      ? await authFetch(`/favoritos/${service.prestador_id}`, { method: "DELETE" })
+      ? await authFetch(`/favoritos/${service.id}`, { method: "DELETE" })
       : await authFetch("/favoritos", {
         method: "POST",
-        body: JSON.stringify({ prestador_id: service.prestador_id }),
+        body: JSON.stringify({ servico_id: service.id }),
       });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Não foi possível atualizar o favorito.");
     if (isFavorite) {
-      favorites.delete(service.prestador_id);
-      favoriteServices = favoriteServices.filter((item) => item.prestador_id !== service.prestador_id);
+      favorites.delete(service.id);
+      favoriteServices = favoriteServices.filter((item) => item.id !== service.id);
     } else {
-      favorites.add(service.prestador_id);
+      favorites.add(service.id);
       favoriteServices.push(service);
     }
     renderCards();
@@ -1196,6 +1196,7 @@ function renderChatConversationList() {
       item.className = `chat-list-item mini${conversation.id === currentChatRequestId ? " active" : ""}`;
       item.dataset.requestId = conversation.id;
       item.innerHTML = `
+        <i class="chat-status-dot ${requestStatusClass(conversation.status)}" title="${requestStatusLabel(conversation.status)}"></i>
         <span class="chat-preview">
           <span class="chat-preview-top"><span class="chat-preview-name">${conversation.servico_titulo}</span></span>
           <span class="chat-preview-sub">${requestStatusLabel(conversation.status)}</span>
@@ -1409,6 +1410,25 @@ async function loadClientRequests() {
     renderClientCalendar();
     CLIENT_REQUESTS = requests;
     renderHistoryList();
+    renderClientReviews();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function promptAndSubmitReview(requestId) {
+  try {
+    const nota = Number(window.prompt("Dê uma nota de 1 a 5:"));
+    if (!Number.isInteger(nota) || nota < 1 || nota > 5) return;
+    const comentario = window.prompt("Escreva um comentário:") || "";
+    const evaluationResponse = await authFetch("/avaliacoes", {
+      method: "POST",
+      body: JSON.stringify({ solicitacao_id: requestId, nota, comentario }),
+    });
+    const evaluation = await evaluationResponse.json();
+    if (!evaluationResponse.ok) throw new Error(evaluation.detail || "Não foi possível salvar a avaliação.");
+    await loadClientRequests();
+    showToast("Avaliação enviada.");
   } catch (error) {
     showToast(error.message);
   }
@@ -1418,21 +1438,11 @@ historyList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-request-action]");
   if (!button) return;
   const item = button.closest(".history-item");
+  if (button.dataset.requestAction === "evaluate") {
+    await promptAndSubmitReview(Number(item.dataset.requestId));
+    return;
+  }
   try {
-    if (button.dataset.requestAction === "evaluate") {
-      const nota = Number(window.prompt("Dê uma nota de 1 a 5:"));
-      if (!Number.isInteger(nota) || nota < 1 || nota > 5) return;
-      const comentario = window.prompt("Escreva um comentário:") || "";
-      const evaluationResponse = await authFetch("/avaliacoes", {
-        method: "POST",
-        body: JSON.stringify({ solicitacao_id: Number(item.dataset.requestId), nota, comentario }),
-      });
-      const evaluation = await evaluationResponse.json();
-      if (!evaluationResponse.ok) throw new Error(evaluation.detail || "Não foi possível salvar a avaliação.");
-      await loadClientRequests();
-      showToast("Avaliação enviada.");
-      return;
-    }
     const response = await authFetch(`/solicitacoes/${item.dataset.requestId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: "cancelado" }),
@@ -1443,6 +1453,46 @@ historyList.addEventListener("click", async (event) => {
   } catch (error) {
     showToast(error.message);
   }
+});
+
+// ============================================
+// Aba "Avaliações" do cliente: serviços contratados, avaliar os concluídos
+// ============================================
+const clientReviewsList = document.getElementById("clientReviewsList");
+
+function renderClientReviews() {
+  if (!clientReviewsList) return;
+  const contracted = CLIENT_REQUESTS.filter((request) => request.status !== "cancelado");
+  clientReviewsList.replaceChildren();
+  if (!contracted.length) {
+    clientReviewsList.innerHTML = '<p class="empty-state">Nenhum serviço contratado ainda.</p>';
+    return;
+  }
+  contracted.forEach((request) => {
+    const item = document.createElement("article");
+    item.className = "history-item";
+    item.dataset.requestId = request.id;
+    const actionBtn = request.status === "concluido"
+      ? '<button class="text-btn" data-review-action="evaluate">⭐ Avaliar</button>'
+      : '<span class="field-help">Disponível após a conclusão</span>';
+    item.innerHTML = `
+      <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
+      <div class="history-content">
+        <div class="history-title">${request.servico_titulo}</div>
+        <div class="history-provider">${request.prestador_nome} • ${formatRequestDate(request.data_hora_agendada)}</div>
+        <div class="history-meta"><span class="status ${requestStatusClass(request.status)}">${requestStatusLabel(request.status)}</span></div>
+      </div>
+      <div class="history-item-actions">${actionBtn}</div>
+    `;
+    clientReviewsList.appendChild(item);
+  });
+}
+
+clientReviewsList?.addEventListener("click", async (event) => {
+  const button = event.target.closest('[data-review-action="evaluate"]');
+  if (!button) return;
+  const item = button.closest(".history-item");
+  await promptAndSubmitReview(Number(item.dataset.requestId));
 });
 
 // ============================================
@@ -1461,16 +1511,32 @@ function renderProviderClients() {
     providerClientsList.innerHTML = '<p class="empty-state">Nenhum serviço concluído ainda.</p>';
     return;
   }
+
+  const groups = new Map();
   completed.forEach((request) => {
+    if (!groups.has(request.cliente_id)) groups.set(request.cliente_id, []);
+    groups.get(request.cliente_id).push(request);
+  });
+
+  groups.forEach((requests) => {
+    const [first] = requests.sort((a, b) => new Date(b.data_hora_agendada) - new Date(a.data_hora_agendada));
+    const contact = [first.cliente_telefone, first.cliente_email].filter(Boolean).join(" • ");
     const item = document.createElement("article");
     item.className = "history-item";
-    const contact = [request.cliente_telefone, request.cliente_email].filter(Boolean).join(" • ");
+    const body = requests.length > 1
+      ? `
+        <div class="client-served-label">Serviços prestados a essa pessoa:</div>
+        <ul class="client-served-list">
+          ${requests.map((request) => `<li>${request.servico_titulo} • ${formatRequestDate(request.data_hora_agendada)}</li>`).join("")}
+        </ul>
+      `
+      : `<div class="history-provider">${first.servico_titulo} • ${formatRequestDate(first.data_hora_agendada)}</div>`;
     item.innerHTML = `
-      <div class="history-thumb">${requestInitials(request.cliente_nome)}</div>
+      <div class="history-thumb">${requestInitials(first.cliente_nome)}</div>
       <div class="history-content">
-        <div class="history-title">${request.cliente_nome}</div>
-        <div class="history-provider">${request.servico_titulo} • ${formatRequestDate(request.data_hora_agendada)}</div>
+        <div class="history-title">${first.cliente_nome}</div>
         <div class="history-meta"><span class="history-price">${contact || "Sem contato cadastrado"}</span></div>
+        ${body}
       </div>
     `;
     providerClientsList.appendChild(item);

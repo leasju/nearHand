@@ -112,7 +112,7 @@ class ServiceStatusUpdate(BaseModel):
 
 
 class FavoriteCreate(BaseModel):
-    prestador_id: int
+    servico_id: int
 
 
 class RequestCreate(BaseModel):
@@ -857,49 +857,47 @@ def add_favorite(
     db: Session = Depends(get_db),
     client_id: int = Depends(get_current_client_id),
 ):
-    provider_id = favorite.prestador_id
-
-    provider_exists = db.execute(
-        text("SELECT id FROM prestador WHERE id = :id"),
-        {"id": provider_id},
-    ).first()
-    if provider_exists is None:
-        raise HTTPException(status_code=404, detail="Provider not found")
+    service = db.execute(
+        text("SELECT id, prestador_id FROM servico WHERE id = :id"),
+        {"id": favorite.servico_id},
+    ).mappings().first()
+    if service is None:
+        raise HTTPException(status_code=404, detail="Service not found")
 
     try:
         db.execute(
             text("""
-                INSERT INTO favorito (cliente_id, prestador_id)
-                VALUES (:cliente_id, :prestador_id)
+                INSERT INTO favorito (cliente_id, prestador_id, servico_id)
+                VALUES (:cliente_id, :prestador_id, :servico_id)
                 ON DUPLICATE KEY UPDATE id = id
             """),
-            {"cliente_id": client_id, "prestador_id": provider_id},
+            {"cliente_id": client_id, "prestador_id": service["prestador_id"], "servico_id": favorite.servico_id},
         )
         db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Could not save favorite")
 
-    return {"status": "favorited", "prestador_id": provider_id}
+    return {"status": "favorited", "servico_id": favorite.servico_id}
 
 
-@app.delete("/favoritos/{provider_id}")
+@app.delete("/favoritos/{service_id}")
 def remove_favorite(
-    provider_id: int,
+    service_id: int,
     db: Session = Depends(get_db),
     client_id: int = Depends(get_current_client_id),
 ):
     result = db.execute(
         text("""
             DELETE FROM favorito
-            WHERE cliente_id = :cliente_id AND prestador_id = :prestador_id
+            WHERE cliente_id = :cliente_id AND servico_id = :servico_id
         """),
-        {"cliente_id": client_id, "prestador_id": provider_id},
+        {"cliente_id": client_id, "servico_id": service_id},
     )
     db.commit()
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Favorite not found")
-    return {"status": "unfavorited", "prestador_id": provider_id}
+    return {"status": "unfavorited", "servico_id": service_id}
 
 
 @app.get("/clientes/me/favoritos")
@@ -908,7 +906,7 @@ def list_my_favorites(
     client_id: int = Depends(get_current_client_id),
 ):
     query = text(SERVICE_SELECT.format(distance_expression="NULL") + """
-        JOIN favorito fav ON fav.prestador_id = s.prestador_id
+        JOIN favorito fav ON fav.servico_id = s.id
                          AND fav.cliente_id = :cliente_id
         WHERE s.status = 'ativo'
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
@@ -2432,6 +2430,11 @@ def delete_category(
         raise HTTPException(status_code=404, detail="Category not found")
 
     return {"status": "deleted"}
+
+
+@app.get("/admin/home", include_in_schema=False)
+def admin_home_page():
+    return RedirectResponse(url="/frontend/admin-home.html")
 
 
 @app.get("/admin/categories", include_in_schema=False)

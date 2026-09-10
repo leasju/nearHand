@@ -94,6 +94,71 @@ def ensure_optional_schema():
             )
         """))
 
+        # Favorito era por prestador inteiro (favoritar 1 anúncio "contaminava" todos os
+        # anúncios daquele prestador). Migra pra favoritar o anúncio (servico_id) específico.
+        # Cada passo é checado individualmente (DDL do MySQL faz commit implícito, então uma
+        # falha no meio do caminho não desfaz os passos já aplicados numa tentativa anterior).
+        favorito_servico_col = connection.execute(
+            text("SHOW COLUMNS FROM favorito LIKE 'servico_id'")
+        ).first()
+        if favorito_servico_col is None:
+            connection.execute(text("ALTER TABLE favorito ADD COLUMN servico_id INT NULL"))
+
+        # Favoritos antigos não sabem a qual anúncio específico se referiam - descartados.
+        connection.execute(text("DELETE FROM favorito WHERE servico_id IS NULL"))
+
+        # O índice único antigo (cliente_id, prestador_id) também sustenta a FK de
+        # cliente_id - precisa soltar a FK antes de conseguir derrubar o índice.
+        old_fk_names = connection.execute(text("""
+            SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'favorito'
+              AND COLUMN_NAME = 'cliente_id' AND REFERENCED_TABLE_NAME = 'cliente'
+        """)).scalars().all()
+        for fk_name in old_fk_names:
+            connection.execute(text(f"ALTER TABLE favorito DROP FOREIGN KEY {fk_name}"))
+
+        old_unique_index = connection.execute(text(
+            "SHOW INDEX FROM favorito WHERE Key_name = 'cliente_id'"
+        )).first()
+        if old_unique_index is not None:
+            connection.execute(text("ALTER TABLE favorito DROP INDEX cliente_id"))
+
+        favorito_servico_col = connection.execute(
+            text("SHOW COLUMNS FROM favorito LIKE 'servico_id'")
+        ).mappings().first()
+        if favorito_servico_col is not None and favorito_servico_col["Null"] == "YES":
+            connection.execute(text("ALTER TABLE favorito MODIFY COLUMN servico_id INT NOT NULL"))
+
+        new_unique_index = connection.execute(text(
+            "SHOW INDEX FROM favorito WHERE Key_name = 'uniq_favorito_cliente_servico'"
+        )).first()
+        if new_unique_index is None:
+            connection.execute(text(
+                "ALTER TABLE favorito ADD UNIQUE KEY uniq_favorito_cliente_servico (cliente_id, servico_id)"
+            ))
+
+        servico_fk = connection.execute(text("""
+            SELECT 1 FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'favorito'
+              AND COLUMN_NAME = 'servico_id' AND REFERENCED_TABLE_NAME = 'servico'
+        """)).first()
+        if servico_fk is None:
+            connection.execute(text(
+                "ALTER TABLE favorito ADD CONSTRAINT fk_favorito_servico "
+                "FOREIGN KEY (servico_id) REFERENCES servico(id) ON DELETE CASCADE"
+            ))
+
+        cliente_fk = connection.execute(text("""
+            SELECT 1 FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'favorito'
+              AND COLUMN_NAME = 'cliente_id' AND REFERENCED_TABLE_NAME = 'cliente'
+        """)).first()
+        if cliente_fk is None:
+            connection.execute(text(
+                "ALTER TABLE favorito ADD CONSTRAINT fk_favorito_cliente "
+                "FOREIGN KEY (cliente_id) REFERENCES cliente(id)"
+            ))
+
         # Índices para acelerar a busca de serviços (filtro por status/categoria e os
         # joins de avaliação/fotos que rodam em toda consulta do catálogo do cliente).
         helpful_indexes = [

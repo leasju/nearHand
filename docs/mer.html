@@ -42,6 +42,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
   SERVICO ||--o{ FOTO_SERVICO : possui
   SERVICO ||--o{ HORARIO_SEMANAL : define
   SERVICO ||--o{ SOLICITACAO : e_alvo_de
+  SERVICO ||--o{ FAVORITO : e_favoritado
   SOLICITACAO ||--o| AVALIACAO : gera
   SOLICITACAO ||--o{ MENSAGEM : contem
   ADMIN ||--o{ AVALIACAO : modera
@@ -149,6 +150,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
   FAVORITO {
     uuid id PK
     uuid cliente_id FK
+    uuid servico_id FK
     uuid prestador_id FK
   }
   METODO_PAGAMENTO {

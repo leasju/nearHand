@@ -24,7 +24,7 @@ if (adminLoginForm) {
         return;
       }
       localStorage.setItem("nearhand_admin_token", result.access_token);
-      window.location.href = "/admin/categories";
+      window.location.href = "/admin/home";
     } finally {
       submitButton.disabled = false;
     }

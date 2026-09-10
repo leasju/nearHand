@@ -180,9 +180,11 @@ CREATE TABLE favorito (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_id INT NOT NULL,
     prestador_id INT NOT NULL,
+    servico_id INT NOT NULL,
     FOREIGN KEY (cliente_id) REFERENCES cliente(id),
     FOREIGN KEY (prestador_id) REFERENCES prestador(id),
-    UNIQUE (cliente_id, prestador_id)
+    FOREIGN KEY (servico_id) REFERENCES servico(id) ON DELETE CASCADE,
+    UNIQUE (cliente_id, servico_id)
 );
 
 -- ============================================
