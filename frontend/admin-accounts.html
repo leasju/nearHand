@@ -16,7 +16,8 @@
     .admin-filters{display:flex;gap:8px;margin-bottom:10px}
     .admin-filters input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink)}
     .admin-filters select{border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink)}
-    .admin-account-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;margin-top:8px}
+    .admin-account-row{display:grid;grid-template-columns:auto auto 1fr auto auto auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;margin-top:8px}
+    .admin-select{width:18px;height:18px;accent-color:var(--purple-dark)}
     .account-type-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:800}
     .account-type-badge.cliente{background:var(--mint);color:var(--purple-dark)}
     .account-type-badge.prestador{background:var(--tint);color:var(--purple-dark)}
@@ -29,9 +30,12 @@
       <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
     </a>
     <div class="top-actions">
-      <a class="secondary-btn" href="/admin/categories">Categorias</a>
-      <a class="secondary-btn" href="/admin/anuncios">Anúncios</a>
-      <a class="secondary-btn" href="/admin/avaliacoes">Avaliações denunciadas</a>
+      <nav class="admin-tabs" aria-label="Navegação admin">
+        <a class="admin-tab" href="/admin/categories">Categorias</a>
+        <a class="admin-tab" href="/admin/anuncios">Anúncios</a>
+        <a class="admin-tab active" href="/admin/contas">Contas</a>
+        <a class="admin-tab" href="/admin/avaliacoes">Avaliações</a>
+      </nav>
       <button class="secondary-btn" id="adminLogoutBtn">Sair</button>
     </div>
   </header>
@@ -44,7 +48,7 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-head"><div><h2>Todas as contas cadastradas</h2></div></div>
+        <div class="panel-head"><div><h2>Todas as contas cadastradas</h2></div><button class="secondary-btn" id="removeSelectedAccountsBtn" hidden>🗑 Remover selecionadas</button></div>
         <div class="admin-filters">
           <input id="adminAccountSearch" placeholder="Buscar por nome ou email..." aria-label="Buscar conta" />
           <select id="adminAccountTypeFilter" aria-label="Filtrar por tipo">

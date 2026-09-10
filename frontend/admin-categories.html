@@ -24,9 +24,12 @@
       <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
     </a>
     <div class="top-actions">
-      <a class="secondary-btn" href="/admin/anuncios">Anúncios</a>
-      <a class="secondary-btn" href="/admin/contas">Contas</a>
-      <a class="secondary-btn" href="/admin/avaliacoes">Avaliações denunciadas</a>
+      <nav class="admin-tabs" aria-label="Navegação admin">
+        <a class="admin-tab active" href="/admin/categories">Categorias</a>
+        <a class="admin-tab" href="/admin/anuncios">Anúncios</a>
+        <a class="admin-tab" href="/admin/contas">Contas</a>
+        <a class="admin-tab" href="/admin/avaliacoes">Avaliações</a>
+      </nav>
       <button class="secondary-btn" id="adminLogoutBtn">Sair</button>
     </div>
   </header>
@@ -47,7 +50,7 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-head"><div><h2>Categorias cadastradas</h2></div></div>
+        <div class="panel-head"><div><h2>Categorias cadastradas</h2></div><button class="secondary-btn" id="removeSelectedCategoriesBtn" hidden>🗑 Remover selecionadas</button></div>
         <input id="categorySearchInput" placeholder="Buscar categoria..." aria-label="Buscar categoria" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink);margin-bottom:10px" />
         <div id="categoryList"></div>
       </div>

@@ -48,6 +48,7 @@ function renderAccountList() {
     row.dataset.id = account.id;
     row.dataset.tipo = account.tipo;
     row.innerHTML = `
+      <input type="checkbox" class="admin-select" data-select title="Selecionar" />
       <span class="account-type-badge ${account.tipo}">${account.tipo === "cliente" ? "Cliente" : "Prestador"}</span>
       <div>
         <strong>${account.nome}</strong>
@@ -59,7 +60,39 @@ function renderAccountList() {
     `;
     list.appendChild(row);
   });
+  updateBulkRemoveButton();
 }
+
+const removeSelectedAccountsBtn = document.getElementById("removeSelectedAccountsBtn");
+
+function getSelectedAccounts() {
+  return [...list.querySelectorAll(".admin-account-row")]
+    .filter((row) => row.querySelector("[data-select]").checked)
+    .map((row) => ({ id: row.dataset.id, tipo: row.dataset.tipo }));
+}
+
+function updateBulkRemoveButton() {
+  const count = getSelectedAccounts().length;
+  removeSelectedAccountsBtn.hidden = count === 0;
+  removeSelectedAccountsBtn.textContent = `🗑 Remover selecionadas (${count})`;
+}
+
+list.addEventListener("change", (event) => {
+  if (event.target.matches("[data-select]")) updateBulkRemoveButton();
+});
+
+removeSelectedAccountsBtn.addEventListener("click", async () => {
+  const selected = getSelectedAccounts();
+  if (!selected.length) return;
+  if (!confirm(`Remover ${selected.length} conta(s) selecionada(s)?`)) return;
+  const results = await Promise.all(
+    selected.map(({ id, tipo }) => fetch(`/admin/accounts/${tipo}/${id}`, { method: "DELETE", headers: headers() }))
+  );
+  if (results.some((r) => r.status === 401)) { handleUnauthorized(results.find((r) => r.status === 401)); return; }
+  const failed = results.filter((r) => !r.ok).length;
+  showToast(failed ? `${selected.length - failed} removida(s), ${failed} falharam (conta com dados vinculados).` : "Contas removidas.");
+  await loadAccounts();
+});
 
 async function loadAccounts() {
   const response = await fetch("/admin/accounts", { headers: headers() });

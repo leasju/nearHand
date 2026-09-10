@@ -2130,14 +2130,31 @@ def admin_delete_service(
     db: Session = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
-    try:
-        result = db.execute(text("DELETE FROM servico WHERE id = :id"), {"id": service_id})
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Não é possível remover: esse anúncio tem pedidos vinculados")
-    if result.rowcount == 0:
+    existing = db.execute(text("SELECT id FROM servico WHERE id = :id"), {"id": service_id}).first()
+    if existing is None:
         raise HTTPException(status_code=404, detail="Service not found")
+    # Admin pode apagar o anúncio mesmo com pedidos vinculados: limpa em cascata
+    # mensagens e avaliações das solicitações desse serviço, depois as solicitações,
+    # depois o serviço em si (fotos e horários já têm ON DELETE CASCADE no schema).
+    db.execute(
+        text("""
+            DELETE m FROM mensagem m
+            JOIN solicitacao so ON so.id = m.solicitacao_id
+            WHERE so.servico_id = :id
+        """),
+        {"id": service_id},
+    )
+    db.execute(
+        text("""
+            DELETE a FROM avaliacao a
+            JOIN solicitacao so ON so.id = a.solicitacao_id
+            WHERE so.servico_id = :id
+        """),
+        {"id": service_id},
+    )
+    db.execute(text("DELETE FROM solicitacao WHERE servico_id = :id"), {"id": service_id})
+    db.execute(text("DELETE FROM servico WHERE id = :id"), {"id": service_id})
+    db.commit()
     return {"status": "deleted"}
 
 

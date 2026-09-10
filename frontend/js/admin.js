@@ -74,6 +74,14 @@ if (categoryForm) {
     categories.forEach((category) => {
       const row = document.createElement("div");
       row.className = "category-row";
+      row.dataset.id = category.id;
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "admin-select";
+      checkbox.dataset.select = "";
+      checkbox.style.flex = "0 0 auto";
+      checkbox.addEventListener("change", updateBulkRemoveButton);
 
       const input = document.createElement("input");
       input.value = category.nome;
@@ -89,10 +97,36 @@ if (categoryForm) {
       deleteButton.textContent = "Excluir";
       deleteButton.addEventListener("click", () => deleteCategory(category.id));
 
-      row.append(input, saveButton, deleteButton);
+      row.append(checkbox, input, saveButton, deleteButton);
       list.appendChild(row);
     });
+    updateBulkRemoveButton();
   }
+
+  const removeSelectedCategoriesBtn = document.getElementById("removeSelectedCategoriesBtn");
+
+  function getSelectedCategoryIds() {
+    return [...list.querySelectorAll(".category-row")]
+      .filter((row) => row.querySelector("[data-select]").checked)
+      .map((row) => row.dataset.id);
+  }
+
+  function updateBulkRemoveButton() {
+    const count = getSelectedCategoryIds().length;
+    removeSelectedCategoriesBtn.hidden = count === 0;
+    removeSelectedCategoriesBtn.textContent = `🗑 Remover selecionadas (${count})`;
+  }
+
+  removeSelectedCategoriesBtn.addEventListener("click", async () => {
+    const ids = getSelectedCategoryIds();
+    if (!ids.length) return;
+    if (!confirm(`Remover ${ids.length} categoria(s) selecionada(s)?`)) return;
+    const results = await Promise.all(ids.map((id) => fetch(`/categories/${id}`, { method: "DELETE", headers: headers() })));
+    if (results.some((r) => r.status === 401)) { handleUnauthorized(results.find((r) => r.status === 401)); return; }
+    const failed = results.filter((r) => !r.ok).length;
+    message.textContent = failed ? `${ids.length - failed} removida(s), ${failed} falharam (categoria em uso por algum anúncio).` : "Categorias removidas.";
+    await loadCategories();
+  });
 
   async function loadCategories() {
     const response = await fetch("/categories", { headers: headers() });

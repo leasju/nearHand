@@ -50,6 +50,7 @@ function renderServiceList() {
     row.dataset.id = service.id;
     const photoUrl = service.photos?.[0]?.url || "";
     row.innerHTML = `
+      <input type="checkbox" class="admin-select" data-select title="Selecionar" />
       <div class="admin-service-thumb" style="background-image:url('${photoUrl}')"></div>
       <div>
         <strong>${service.title}</strong>
@@ -61,7 +62,37 @@ function renderServiceList() {
     `;
     list.appendChild(row);
   });
+  updateBulkRemoveButton();
 }
+
+const removeSelectedServicesBtn = document.getElementById("removeSelectedServicesBtn");
+
+function getSelectedServiceIds() {
+  return [...list.querySelectorAll(".admin-service-row")]
+    .filter((row) => row.querySelector("[data-select]").checked)
+    .map((row) => row.dataset.id);
+}
+
+function updateBulkRemoveButton() {
+  const count = getSelectedServiceIds().length;
+  removeSelectedServicesBtn.hidden = count === 0;
+  removeSelectedServicesBtn.textContent = `🗑 Remover selecionados (${count})`;
+}
+
+list.addEventListener("change", (event) => {
+  if (event.target.matches("[data-select]")) updateBulkRemoveButton();
+});
+
+removeSelectedServicesBtn.addEventListener("click", async () => {
+  const ids = getSelectedServiceIds();
+  if (!ids.length) return;
+  if (!confirm(`Remover ${ids.length} anúncio(s) selecionado(s)? Isso também remove pedidos, mensagens e avaliações vinculados.`)) return;
+  const results = await Promise.all(ids.map((id) => fetch(`/admin/services/${id}`, { method: "DELETE", headers: headers() })));
+  if (results.some((r) => r.status === 401)) { handleUnauthorized(results.find((r) => r.status === 401)); return; }
+  const failed = results.filter((r) => !r.ok).length;
+  showToast(failed ? `${ids.length - failed} removido(s), ${failed} falharam.` : "Anúncios removidos.");
+  await loadServices();
+});
 
 async function loadCategories() {
   const response = await fetch("/categories", { headers: headers() });

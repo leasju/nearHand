@@ -14,7 +14,8 @@
     .admin-page{width:min(960px,92vw);margin:36px auto 70px}
     .admin-page .panel-card + .panel-card{margin-top:16px}
     .admin-nav{display:flex;gap:8px;margin-bottom:16px}
-    .admin-service-row{display:grid;grid-template-columns:56px 1fr auto auto auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;margin-top:8px}
+    .admin-service-row{display:grid;grid-template-columns:auto 56px 1fr auto auto auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;margin-top:8px}
+    .admin-select{width:18px;height:18px;accent-color:var(--purple-dark)}
     .admin-service-thumb{width:56px;height:56px;border-radius:12px;background-size:cover;background-position:center;background-color:var(--tint)}
     #adminMessage{min-height:22px;color:var(--purple-dark);font-weight:600}
     #adminServiceSearch{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink);margin-bottom:10px}
@@ -26,9 +27,12 @@
       <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
     </a>
     <div class="top-actions">
-      <a class="secondary-btn" href="/admin/categories">Categorias</a>
-      <a class="secondary-btn" href="/admin/contas">Contas</a>
-      <a class="secondary-btn" href="/admin/avaliacoes">Avaliações denunciadas</a>
+      <nav class="admin-tabs" aria-label="Navegação admin">
+        <a class="admin-tab" href="/admin/categories">Categorias</a>
+        <a class="admin-tab active" href="/admin/anuncios">Anúncios</a>
+        <a class="admin-tab" href="/admin/contas">Contas</a>
+        <a class="admin-tab" href="/admin/avaliacoes">Avaliações</a>
+      </nav>
       <button class="secondary-btn" id="adminLogoutBtn">Sair</button>
     </div>
   </header>
@@ -40,7 +44,7 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-head"><div><h2>Todos os anúncios cadastrados</h2></div></div>
+        <div class="panel-head"><div><h2>Todos os anúncios cadastrados</h2></div><button class="secondary-btn" id="removeSelectedServicesBtn" hidden>🗑 Remover selecionados</button></div>
         <input id="adminServiceSearch" placeholder="Buscar por título ou prestador..." aria-label="Buscar anúncio" />
         <p id="adminMessage"></p>
         <div id="adminServiceList"></div>

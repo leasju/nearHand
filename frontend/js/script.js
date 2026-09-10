@@ -790,6 +790,10 @@ function logout() {
   window.location.href = "/auth";
 }
 
+document.getElementById("topbarLogoutBtn").addEventListener("click", () => {
+  if (confirm("Sair da sua conta?")) logout();
+});
+
 async function authFetch(path, options = {}) {
   const token = localStorage.getItem("nearhand_access_token");
   const response = await fetch(path, {

@@ -189,22 +189,25 @@ Usuários
 
 # Funcionalidades — Admin
 
-## 1. Autenticação
+## 1. Autenticação e navegação
 
 - Login administrativo (email e senha), separado do login de cliente/prestador
+- Navbar em estilo tab group (pill/segmented) para alternar entre Categorias, Anúncios, Contas e Avaliações, com aba ativa destacada; botão "Sair" ao lado da navbar
 
 ## 2. Gestão de categorias
 
 - Ver todas as categorias cadastradas
 - Buscar categoria por nome
 - Criar, editar e remover categorias de serviço usadas em todo o site
+- Seleção múltipla (checkbox por linha) com remoção em massa de categorias selecionadas
 - Categorias também podem ser criadas por um prestador direto na hora de publicar um anúncio (ver Prestador, item 2)
 
 ## 3. Gestão de anúncios
 
 - Ver todos os anúncios cadastrados na plataforma (de qualquer prestador), com busca por título ou nome do prestador
 - Editar um anúncio (título, categoria, descrição, valor, tipo, negociável, raio, status) — admin **não** pode criar anúncio, só editar e apagar
-- Apagar anúncio
+- Apagar anúncio — a remoção funciona mesmo se o anúncio tiver pedidos/solicitações vinculados (remove em cascata mensagens, avaliações e solicitações ligadas ao anúncio antes de apagá-lo)
+- Seleção múltipla (checkbox por linha) com remoção em massa de anúncios selecionados
 
 ## 4. Gestão de contas
 
@@ -212,6 +215,7 @@ Usuários
 - Criar conta nova (cliente ou prestador) direto pelo painel admin
 - Editar dados de uma conta (nome, email, telefone, CPF/CNPJ quando prestador, endereço)
 - Apagar conta
+- Seleção múltipla (checkbox por linha) com remoção em massa de contas selecionadas
 
 ## 5. Moderação de avaliações
 

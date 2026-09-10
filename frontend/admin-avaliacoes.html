@@ -14,7 +14,15 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/admin/categories" aria-label="NearHand - admin"><img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" /></a>
-    <div class="top-actions"><a class="secondary-btn" href="/admin/categories">Categorias</a><a class="secondary-btn" href="/admin/anuncios">Anúncios</a><a class="secondary-btn" href="/admin/contas">Contas</a><button class="secondary-btn" id="adminLogoutBtn">Sair</button></div>
+    <div class="top-actions">
+      <nav class="admin-tabs" aria-label="Navegação admin">
+        <a class="admin-tab" href="/admin/categories">Categorias</a>
+        <a class="admin-tab" href="/admin/anuncios">Anúncios</a>
+        <a class="admin-tab" href="/admin/contas">Contas</a>
+        <a class="admin-tab active" href="/admin/avaliacoes">Avaliações</a>
+      </nav>
+      <button class="secondary-btn" id="adminLogoutBtn">Sair</button>
+    </div>
   </header>
   <main><div class="moderation-page">
     <div class="page-title"><div><span class="eyebrow">ADMIN</span><h1>Avaliações denunciadas</h1></div></div>
