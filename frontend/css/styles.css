@@ -28,6 +28,11 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF 
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 [hidden]{display:none!important}
+.icon{width:16px;height:16px;display:inline-block;vertical-align:-3px;object-fit:contain;flex-shrink:0}
+.icon-sm{width:13px;height:13px;vertical-align:-2px}
+.icon-lg{width:20px;height:20px;vertical-align:-4px}
+.icon-on-dark{filter:brightness(0) invert(1)}
+.icon-muted{filter:invert(38%) sepia(9%) saturate(1121%) hue-rotate(215deg) brightness(90%)}
 body .modal-backdrop{z-index:2000}
 .dashboard-charts{width:min(1320px,92vw);margin:0 auto 18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bar-chart{display:grid;gap:12px;margin-top:16px}.bar-chart-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(80px,1.4fr) auto;gap:10px;align-items:center;font-size:12px}.bar-chart-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:600}.bar-chart-row strong{font-size:11px;color:var(--muted);white-space:nowrap}.bar-chart-track{height:9px;overflow:hidden;background:var(--tint);border-radius:5px}.bar-chart-track i{display:block;height:100%;border-radius:inherit;background:var(--blue)}
 @media(max-width:680px){.dashboard-charts{width:calc(100vw - 24px);grid-template-columns:1fr}.bar-chart-row{grid-template-columns:minmax(78px,1fr) minmax(65px,1fr) auto;gap:7px}}

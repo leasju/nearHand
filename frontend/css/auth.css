@@ -27,6 +27,7 @@
   --radius-md:11px;
 }
 *{box-sizing:border-box}
+.icon{width:16px;height:16px;display:inline-block;vertical-align:-3px;object-fit:contain;flex-shrink:0}
 html,body{margin:0;padding:0}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",'Inter',system-ui,sans-serif;

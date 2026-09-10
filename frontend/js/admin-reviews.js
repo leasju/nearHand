@@ -16,7 +16,7 @@ function handleUnauthorized(response) {
 }
 
 function stars(rating) {
-  return "★".repeat(rating) + "☆".repeat(5 - rating);
+  return Array.from({ length: 5 }, (_, index) => `<img class="icon" src="img/icons/icon-${index < rating ? "star-filled" : "star-empty"}.png" alt="" />`).join("");
 }
 
 async function loadReportedReviews() {

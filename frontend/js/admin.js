@@ -114,7 +114,7 @@ if (categoryForm) {
   function updateBulkRemoveButton() {
     const count = getSelectedCategoryIds().length;
     removeSelectedCategoriesBtn.hidden = count === 0;
-    removeSelectedCategoriesBtn.textContent = `🗑 Remover selecionadas (${count})`;
+    removeSelectedCategoriesBtn.innerHTML = `<img class="icon" src="img/icons/icon-settings.png" alt="" /> Remover selecionadas (${count})`;
   }
 
   removeSelectedCategoriesBtn.addEventListener("click", async () => {

@@ -21,12 +21,17 @@ const radiusFilter = document.getElementById("radiusFilter");
 const radiusLabel = document.getElementById("radiusLabel");
 const toast = document.getElementById("toast");
 
+const ICON_BASE = "img/icons/";
+function iconImage(name, alt = "", className = "icon") {
+  return `<img class="${className}" src="${ICON_BASE}icon-${name}.png" alt="${alt}" />`;
+}
+
 const SERVICE_VISUALS = [
-  ["⚡", "electric"],
-  ["🧼", "clean"],
-  ["💅", "beauty"],
-  ["🔧", "plumber"],
-  ["🪛", "assembly"],
+  ["cat-eletrica", "electric"],
+  ["sparkles", "clean"],
+  ["sparkles", "beauty"],
+  ["location", "plumber"],
+  ["settings", "assembly"],
 ];
 
 function serviceVisual(service) {
@@ -137,14 +142,14 @@ function formatPrice(value) {
 // Categorias reais (vindas do backend, com contagem de serviços)
 // ============================================
 const CATEGORY_ICONS = {
-  "Eletricista": "⚡",
-  "Cabeleireiro": "💇",
-  "Manicure": "💅",
-  "Pedicure": "🦶",
-  "Marido de Aluguel": "🛠️",
+  "Eletricista": "cat-eletrica",
+  "Cabeleireiro": "sparkles",
+  "Manicure": "sparkles",
+  "Pedicure": "sparkles",
+  "Marido de Aluguel": "settings",
 };
 function categoryIcon(name) {
-  return CATEGORY_ICONS[name] || "🔧";
+  return iconImage(CATEGORY_ICONS[name] || "settings", name);
 }
 
 let categoriesData = [];
@@ -201,16 +206,16 @@ async function loadCategories() {
 function serviceCard(service) {
   const isFavorite = favorites.has(service.id);
   const visual = serviceVisual(service);
-  const distance = service.distance == null ? "Distância indisponível" : `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
+  const distance = service.distance == null ? "Distância indisponível" : `${iconImage("location")} ${service.distance.toFixed(1).replace(".", ",")} km`;
   const photoUrl = service.photos?.[0]?.url;
   const card = document.createElement("article");
   card.className = "service-card";
   card.dataset.id = service.id;
   card.innerHTML = `
     <div class="service-image ${visual.style}"${photoUrl ? ` style="background-image:url('${photoUrl}');background-size:cover;background-position:center"` : ""}>
-      <span aria-hidden="true"${photoUrl ? " hidden" : ""}>${visual.icon}</span>
+      <span aria-hidden="true"${photoUrl ? " hidden" : ""}>${iconImage(visual.icon, "", "service-icon")}</span>
       <button class="favorite-btn ${isFavorite ? "active" : ""}" data-action="favorite" aria-label="${isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}">
-        ${isFavorite ? "♥" : "♡"}
+        ${iconImage(isFavorite ? "star-filled" : "star-empty", isFavorite ? "Favoritado" : "Favoritar")}
       </button>
     </div>
     <div class="service-body">
@@ -221,7 +226,7 @@ function serviceCard(service) {
       <h3>${service.title}</h3>
       <p class="provider-name">${service.provider}</p>
       <div class="rating-row">
-        <span class="rating">⭐ <strong>${service.rating.toFixed(1).replace(".", ",")}</strong> (${service.reviews})</span>
+        <span class="rating">${iconImage("star-filled", "Avaliação")} <strong>${service.rating.toFixed(1).replace(".", ",")}</strong> (${service.reviews})</span>
         <span class="price">a partir de <strong>R$ ${formatPrice(service.price)}</strong>${service.unit}${service.negociavel ? ' <span class="negotiable-badge">negociável</span>' : ""}</span>
       </div>
       <button class="primary-btn service-action" data-action="details">Ver serviço</button>
@@ -366,7 +371,7 @@ async function loadFavoriteProviderIds() {
 function updateProviderFavoriteButton(button, providerId) {
   const active = favoriteProviderIds.has(providerId);
   button.classList.toggle("active", active);
-  button.textContent = active ? "♥" : "♡";
+  button.innerHTML = iconImage(active ? "star-filled" : "star-empty", active ? "Favoritado" : "Favoritar");
   button.setAttribute("aria-label", active ? "Remover prestador dos favoritos" : "Favoritar prestador");
 }
 
@@ -408,7 +413,7 @@ function renderFavoriteProviders() {
       <div class="history-thumb">${thumb}</div>
       <div class="history-content">
         <div class="history-title">${provider.nome}</div>
-        <div class="history-provider">⭐ ${provider.rating.toFixed(1).replace(".", ",")} (${provider.reviews}) • ${provider.anuncios_ativos} anúncio${provider.anuncios_ativos === 1 ? "" : "s"} ativo${provider.anuncios_ativos === 1 ? "" : "s"}</div>
+        <div class="history-provider">${iconImage("star-filled", "Avaliação")} ${provider.rating.toFixed(1).replace(".", ",")} (${provider.reviews}) • ${provider.anuncios_ativos} anúncio${provider.anuncios_ativos === 1 ? "" : "s"} ativo${provider.anuncios_ativos === 1 ? "" : "s"}</div>
       </div>
       <div class="history-item-actions">
         <button type="button" class="chat-group-toggle" data-toggle-provider-ads="${provider.id}" aria-expanded="false" title="Ver anúncios">
@@ -493,9 +498,9 @@ function showServiceDetails(service) {
   document.getElementById("modalCategory").textContent = service.category;
   document.getElementById("serviceTitle").textContent = service.title;
   document.getElementById("modalProvider").textContent = service.provider;
-  document.getElementById("modalRating").textContent = `⭐ ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
-  document.getElementById("modalDistance").textContent = `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
-  document.getElementById("modalPrice").textContent = `💳 R$ ${formatPrice(service.price)}${service.unit}${service.negociavel ? " (negociável)" : ""}`;
+  document.getElementById("modalRating").innerHTML = `${iconImage("star-filled", "Avaliação")} ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
+  document.getElementById("modalDistance").innerHTML = `${iconImage("location", "")} ${service.distance.toFixed(1).replace(".", ",")} km`;
+  document.getElementById("modalPrice").innerHTML = `${iconImage("settings", "")} R$ ${formatPrice(service.price)}${service.unit}${service.negociavel ? " (negociável)" : ""}`;
   document.getElementById("modalDescription").textContent = service.description || "Sem descrição.";
   const photos = (service.photos || []).map((photo) => photo.url).filter(Boolean);
   const galleryMain = document.getElementById("galleryMain");
@@ -548,7 +553,7 @@ function showServiceDetails(service) {
 }
 
 function renderStars(rating) {
-  return "★".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating));
+  return Array.from({ length: 5 }, (_, index) => iconImage(index < Math.round(rating) ? "star-filled" : "star-empty", index < Math.round(rating) ? "Estrela preenchida" : "Estrela vazia")).join("");
 }
 
 async function loadServiceReviews(serviceId) {
@@ -569,7 +574,7 @@ async function loadServiceReviews(serviceId) {
 
     const average = reviews.reduce((sum, review) => sum + review.nota, 0) / reviews.length;
     document.getElementById("reviewsBigNum").textContent = average.toFixed(1).replace(".", ",");
-    document.getElementById("reviewsStars").textContent = renderStars(average);
+    document.getElementById("reviewsStars").innerHTML = renderStars(average);
     document.getElementById("reviewsTotal").textContent = `${reviews.length} ${reviews.length === 1 ? "avaliação" : "avaliações"}`;
 
     const bars = document.getElementById("reviewsBars");
@@ -579,7 +584,7 @@ async function loadServiceReviews(serviceId) {
       const pct = Math.round((count / reviews.length) * 100);
       const row = document.createElement("div");
       row.className = "bar-row";
-      row.innerHTML = `<span>${star}★</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span>${pct}%</span>`;
+      row.innerHTML = `<span>${star}${iconImage("star-filled", "")}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span>${pct}%</span>`;
       bars.appendChild(row);
     }
     summary.hidden = false;
@@ -835,7 +840,7 @@ function renderMapSidebar() {
       : `${service.distance.toFixed(1).replace(".", ",")} km`;
     card.innerHTML = `
       <strong>${service.title}</strong>
-      <small>${service.provider} • 📍 ${distance}</small>
+      <small>${service.provider} • ${iconImage("location")} ${distance}</small>
       <button class="ghost-btn" data-focus="${service.id}">Ver no mapa</button>
     `;
     mapSidebar.appendChild(card);
@@ -849,7 +854,7 @@ function renderServiceMarkers() {
     if (service.lat == null || service.lng == null) return;
     const marker = L.marker([service.lat, service.lng]).addTo(proximityMap);
     marker.bindPopup(
-      `<strong>${service.title}</strong><br>${service.provider}<br>⭐ ${service.rating.toFixed(1).replace(".", ",")} · R$ ${formatPrice(service.price)}${service.unit}`
+      `<strong>${service.title}</strong><br>${service.provider}<br>${iconImage("star-filled")} ${service.rating.toFixed(1).replace(".", ",")} · R$ ${formatPrice(service.price)}${service.unit}`
     );
     marker.on("click", () => showServiceDetails(service));
     serviceMarkers.set(service.id, marker);
@@ -1131,7 +1136,8 @@ const notificationBtn = document.getElementById("notificationBtn");
 const notificationsPopover = document.getElementById("notificationsPopover");
 
 function notificationIcon(type) {
-  return { nova_mensagem: "💬", status_solicitacao: "✅", nova_solicitacao: "📥", nova_avaliacao: "⭐", resposta_avaliacao: "⭐" }[type] || "🔔";
+  const name = { nova_mensagem: "search", status_solicitacao: "sparkles", nova_solicitacao: "bell", nova_avaliacao: "star-filled", resposta_avaliacao: "star-filled" }[type] || "bell";
+  return iconImage(name, "Notificação");
 }
 
 let NOTIFICATIONS = [];
@@ -1728,7 +1734,7 @@ function renderClientReviews() {
     item.className = "history-item";
     item.dataset.requestId = request.id;
     const actionBtn = request.status === "concluido"
-      ? '<button class="text-btn" data-review-action="evaluate">⭐ Avaliar</button>'
+      ? `<button class="text-btn" data-review-action="evaluate">${iconImage("star-filled", "")} Avaliar</button>`
       : '<span class="field-help">Disponível após a conclusão</span>';
     item.innerHTML = `
       <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
@@ -2213,7 +2219,7 @@ function getSelectedAdIds() {
 function updateBulkRemoveButton() {
   const count = getSelectedAdIds().length;
   removeSelectedAdsBtn.hidden = count === 0;
-  removeSelectedAdsBtn.textContent = `🗑 Remover selecionados (${count})`;
+  removeSelectedAdsBtn.innerHTML = `<img class="icon" src="img/icons/icon-settings.png" alt="" /> Remover selecionados (${count})`;
 }
 
 adList.addEventListener("change", (event) => {
@@ -2252,9 +2258,9 @@ async function loadProviderServices() {
         <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
         <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
         <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
-        <button class="icon-btn ad-edit" title="Editar">✏️</button>
-        <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}>⏸</button>
-        <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}>🗑</button>
+        <button class="icon-btn ad-edit" title="Editar"><img class="icon" src="img/icons/icon-settings.png" alt="Editar" /></button>
+        <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-settings.png" alt="Pausar ou reativar" /></button>
+        <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-settings.png" alt="Remover" /></button>
       `;
       adList.appendChild(item);
     });
@@ -2538,7 +2544,7 @@ function renderSettingsPreferenceChips(selected) {
     chip.dataset.value = category.nome;
     chip.classList.toggle("active", selected.includes(category.nome));
     chip.innerHTML = category.servico_count > 0
-      ? `${category.nome} <span class="trending-badge">🔥</span>`
+      ? `${category.nome} <span class="trending-badge">${iconImage("sparkles", "Em alta")}</span>`
       : category.nome;
     settingsPreferences.appendChild(chip);
   });

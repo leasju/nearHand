@@ -76,7 +76,7 @@ function getSelectedServiceIds() {
 function updateBulkRemoveButton() {
   const count = getSelectedServiceIds().length;
   removeSelectedServicesBtn.hidden = count === 0;
-  removeSelectedServicesBtn.textContent = `🗑 Remover selecionados (${count})`;
+  removeSelectedServicesBtn.innerHTML = `<img class="icon" src="img/icons/icon-settings.png" alt="" /> Remover selecionados (${count})`;
 }
 
 list.addEventListener("change", (event) => {

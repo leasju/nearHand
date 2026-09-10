@@ -39,7 +39,7 @@
 
     <div class="top-actions">
       <button class="icon-btn" id="notificationBtn" aria-label="Notificações">
-        <span>🔔</span><span class="badge">3</span>
+        <img class="icon" src="img/icons/icon-bell.png" alt="" /><span class="badge">3</span>
       </button>
       <div class="role-switch" aria-label="Tipo de conta">
         <button class="role-btn active" data-role="cliente" id="roleBtnCliente">Cliente</button>
@@ -67,15 +67,15 @@
           <p>Compare prestadores, veja disponibilidade, converse pelo chat e solicite o serviço em poucos passos.</p>
         </div>
         <div class="hero-art" aria-hidden="true">
-          <div class="mini-card"><span class="mini-icon">📍</span><div><strong>2,3 km</strong><small>Eletricista disponível</small></div></div>
-          <div class="mini-card second"><span class="mini-icon">⭐</span><div><strong>4,9</strong><small>Mais bem avaliados</small></div></div>
+          <div class="mini-card"><span class="mini-icon"><img class="icon" src="img/icons/icon-location.png" alt="" /></span><div><strong>2,3 km</strong><small>Eletricista disponível</small></div></div>
+          <div class="mini-card second"><span class="mini-icon"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></span><div><strong>4,9</strong><small>Mais bem avaliados</small></div></div>
         </div>
       </section>
 
       <section class="search-panel section-view" data-view="explorar">
         <div class="search-row">
-          <label class="field search-field"><span>🔎</span><input id="searchInput" type="search" placeholder="O que você precisa? Ex.: eletricista, manicure..." /></label>
-          <label class="field"><span>📍</span><input id="locationInput" value="Campinas, SP" /></label>
+          <label class="field search-field"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="searchInput" type="search" placeholder="O que você precisa? Ex.: eletricista, manicure..." /></label>
+          <label class="field"><img class="icon" src="img/icons/icon-location.png" alt="" /><input id="locationInput" value="Campinas, SP" /></label>
           <button class="primary-btn" id="searchBtn">Buscar</button>
         </div>
 
@@ -96,7 +96,7 @@
           <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
           <div class="view-toggle" id="exploreViewToggle" role="group" aria-label="Modo de visualização">
             <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
-            <button class="toggle-btn" data-mode="map">⌖ Mapa</button>
+            <button class="toggle-btn" data-mode="map"><img class="icon" src="img/icons/icon-location.png" alt="" /> Mapa</button>
           </div>
         </div>
       </section>
@@ -104,15 +104,15 @@
       <section class="content-grid section-view" data-view="explorar">
         <aside class="categories-card">
           <div class="side-head"><span class="eyebrow">CATEGORIAS</span><button class="text-btn" id="clearFilters">Limpar</button></div>
-          <div class="category-search"><span>🔎</span><input id="categorySearchInput" type="search" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></div>
-          <button class="category-item active" data-category="all"><span>✨</span><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
+          <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="categorySearchInput" type="search" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></div>
+          <button class="category-item active" data-category="all"><span><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></span><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
           <div id="categoryItemsList"></div>
         </aside>
 
         <div class="results-area">
           <div class="results-head">
             <div><span class="eyebrow">PERTO DE VOCÊ</span><h2>Prestadores disponíveis</h2><p id="resultCount">6 serviços encontrados</p></div>
-            <button class="ghost-btn">⚙ Preferências</button>
+            <button class="ghost-btn"><img class="icon" src="img/icons/icon-settings.png" alt="" /> Preferências</button>
           </div>
 
           <div id="cardsView" class="service-grid"></div>
@@ -177,14 +177,14 @@
     <section id="providerView" class="app-view" hidden>
       <section class="provider-section" data-provider-view="painel">
         <section class="provider-hero">
-          <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, <span id="providerHeroName">Prestador</span> 👋</h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
+          <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, <span id="providerHeroName">Prestador</span> <img class="icon" src="img/icons/icon-sparkles.png" alt="" /></h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
         </section>
 
         <section class="metric-grid">
-          <article class="metric-card"><span>📥</span><div><small>Solicitações no mês</small><strong id="metricRequests">0</strong><em id="metricCompleted">0 realizados</em></div></article>
-          <article class="metric-card"><span>✅</span><div><small>Taxa de aceitação</small><strong id="metricAcceptance">0%</strong><em>confirmados ou concluídos</em></div></article>
-          <article class="metric-card"><span>⭐</span><div><small>Nota média</small><strong id="metricRating">0,0</strong><em>avaliações publicadas</em></div></article>
-          <article class="metric-card"><span>💳</span><div><small>Faturamento</small><strong id="metricRevenue">R$ 0</strong><em id="metricPeriod">Período atual</em></div></article>
+          <article class="metric-card"><span><img class="icon" src="img/icons/icon-bell.png" alt="" /></span><div><small>Solicitações no mês</small><strong id="metricRequests">0</strong><em id="metricCompleted">0 realizados</em></div></article>
+          <article class="metric-card"><span><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></span><div><small>Taxa de aceitação</small><strong id="metricAcceptance">0%</strong><em>confirmados ou concluídos</em></div></article>
+          <article class="metric-card"><span><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></span><div><small>Nota média</small><strong id="metricRating">0,0</strong><em>avaliações publicadas</em></div></article>
+          <article class="metric-card"><span><img class="icon" src="img/icons/icon-settings.png" alt="" /></span><div><small>Faturamento</small><strong id="metricRevenue">R$ 0</strong><em id="metricPeriod">Período atual</em></div></article>
         </section>
 
         <section class="generic-view">
@@ -239,10 +239,10 @@
 
       <section class="generic-view provider-section" data-provider-view="anuncios" hidden>
         <div class="panel-card">
-          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><div style="display:flex;gap:8px"><button class="secondary-btn" id="removeSelectedAdsBtn" hidden>🗑 Remover selecionados</button><button class="primary-btn" id="newAdBtn">+ Criar anúncio</button></div></div>
+          <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><div style="display:flex;gap:8px"><button class="secondary-btn" id="removeSelectedAdsBtn" hidden><img class="icon" src="img/icons/icon-settings.png" alt="" /> Remover selecionados</button><button class="primary-btn" id="newAdBtn">+ Criar anúncio</button></div></div>
           <div class="ad-list" id="adList">
-            <article class="ad-item"><div class="ad-thumb electric">⚡</div><div><strong>Eletricista residencial</strong><small>R$ 120/h • Raio de 10 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
-            <article class="ad-item"><div class="ad-thumb electric">💡</div><div><strong>Instalação de luminárias</strong><small>A partir de R$ 90 • Raio de 8 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar">⏸</button><button class="icon-btn ad-remove" title="Remover">🗑</button></article>
+            <article class="ad-item"><div class="ad-thumb electric"><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></div><div><strong>Eletricista residencial</strong><small>R$ 120/h • Raio de 10 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar"><img class="icon" src="img/icons/icon-settings.png" alt="" /></button><button class="icon-btn ad-remove" title="Remover"><img class="icon" src="img/icons/icon-settings.png" alt="" /></button></article>
+            <article class="ad-item"><div class="ad-thumb electric"><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></div><div><strong>Instalação de luminárias</strong><small>A partir de R$ 90 • Raio de 8 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar"><img class="icon" src="img/icons/icon-settings.png" alt="" /></button><button class="icon-btn ad-remove" title="Remover"><img class="icon" src="img/icons/icon-settings.png" alt="" /></button></article>
           </div>
         </div>
       </section>
@@ -257,8 +257,8 @@
       <section class="generic-view provider-section" data-provider-view="avaliacoes" hidden>
         <div class="panel-card">
           <div class="panel-head"><div><span class="eyebrow">REPUTAÇÃO</span><h2>Avaliações recentes</h2></div></div>
-          <div class="review"><div class="review-stars">★★★★★</div><p>“Pontual, explicou tudo e resolveu rápido.”</p><small>— Carla M.</small><button class="text-btn">Responder</button></div>
-          <div class="review"><div class="review-stars">★★★★★</div><p>“Serviço excelente e preço justo.”</p><small>— Bruno T.</small><button class="text-btn">Responder</button></div>
+          <div class="review"><div class="review-stars"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></div><p>“Pontual, explicou tudo e resolveu rápido.”</p><small>— Carla M.</small><button class="text-btn">Responder</button></div>
+          <div class="review"><div class="review-stars"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></div><p>“Serviço excelente e preço justo.”</p><small>— Bruno T.</small><button class="text-btn">Responder</button></div>
         </div>
       </section>
     </section>
@@ -277,11 +277,11 @@
               <small id="settingsSidebarEmail"></small>
             </div>
             <nav class="settings-menu">
-              <button class="settings-menu-item active" data-settings-anchor="settingsPanelPerfil">👤 Meus dados</button>
-              <button class="settings-menu-item" data-settings-anchor="clientPreferencesCard" id="settingsMenuPreferencias">✨ Preferências</button>
-              <button class="settings-menu-item" data-settings-anchor="settingsPanelPagamento">💳 Pagamento</button>
-              <button class="settings-menu-item" data-settings-anchor="settingsPanelContas">🔀 Contas vinculadas</button>
-              <button class="settings-menu-item" data-settings-anchor="settingsPanelSessao">🚪 Sair</button>
+              <button class="settings-menu-item active" data-settings-anchor="settingsPanelPerfil"><img class="icon" src="img/icons/icon-settings.png" alt="" /> Meus dados</button>
+              <button class="settings-menu-item" data-settings-anchor="clientPreferencesCard" id="settingsMenuPreferencias"><img class="icon" src="img/icons/icon-settings.png" alt="" /> Preferências</button>
+              <button class="settings-menu-item" data-settings-anchor="settingsPanelPagamento"><img class="icon" src="img/icons/icon-settings.png" alt="" /> Pagamento</button>
+              <button class="settings-menu-item" data-settings-anchor="settingsPanelContas"><img class="icon" src="img/icons/icon-sparkles.png" alt="" /> Contas vinculadas</button>
+              <button class="settings-menu-item" data-settings-anchor="settingsPanelSessao"><img class="icon" src="img/icons/icon-bell.png" alt="" /> Sair</button>
             </nav>
           </aside>
 
@@ -294,7 +294,7 @@
                 <div class="photo-dropzone" id="cpPhotoDropzone">
                   <img class="photo-thumb" id="cpPhotoPreview" alt="Pré-visualização da foto" hidden />
                   <div class="photo-dropzone-empty" id="cpPhotoEmpty">
-                    <span>📷</span>
+                    <span><img class="icon" src="img/icons/icon-search.png" alt="" /></span>
                     <small>Arraste uma foto ou clique para enviar</small>
                   </div>
                   <input id="cpPhotoFile" type="file" accept="image/*" hidden />
@@ -323,7 +323,7 @@
                 <div class="photo-dropzone" id="ppPhotoDropzone">
                   <img class="photo-thumb" id="ppPhotoPreview" alt="Pré-visualização da foto" hidden />
                   <div class="photo-dropzone-empty" id="ppPhotoEmpty">
-                    <span>📷</span>
+                    <span><img class="icon" src="img/icons/icon-search.png" alt="" /></span>
                     <small>Arraste uma foto ou clique para enviar</small>
                   </div>
                   <input id="ppPhotoFile" type="file" accept="image/*" hidden />
@@ -414,7 +414,7 @@
       <div class="chat-page">
         <aside class="chat-sidebar">
           <div class="chat-sidebar-header"><h2>Mensagens</h2></div>
-          <div class="chat-search"><span>🔎</span><input id="chatSearchInput" type="search" placeholder="Buscar por nome ou anúncio..." aria-label="Buscar conversa" /></div>
+          <div class="chat-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="chatSearchInput" type="search" placeholder="Buscar por nome ou anúncio..." aria-label="Buscar conversa" /></div>
           <div class="chat-status-legend" id="chatStatusLegend" title="Clique para filtrar por status">
             <button type="button" class="active" data-status-group="pending"><i class="chat-status-dot pending"></i>Pendente</button>
             <button type="button" class="active" data-status-group="confirmed"><i class="chat-status-dot confirmed"></i>Em andamento</button>
@@ -427,17 +427,17 @@
           <div class="chat-conversation-header" id="chatConversationHeader" hidden>
             <span class="avatar" id="chatHeaderAvatar"></span>
             <div class="chat-header-info"><strong id="chatHeaderName"></strong><small id="chatHeaderMeta"></small></div>
-            <button type="button" class="favorite-btn large" id="chatHeaderFavoriteBtn" aria-label="Favoritar prestador" hidden>♡</button>
+            <button type="button" class="favorite-btn large" id="chatHeaderFavoriteBtn" aria-label="Favoritar prestador" hidden><img class="icon" src="img/icons/icon-star-empty.png" alt="Favoritar" /></button>
           </div>
           <p class="empty-state chat-empty-state" id="chatEmptyState">Selecione uma conversa para começar.</p>
           <div class="chat-messages" id="chatMessages" hidden></div>
           <div class="chat-quick-actions" id="chatQuickActions" hidden>
-            <button type="button" class="chip" id="sendAddressBtn">📍 Enviar endereço</button>
-            <button type="button" class="chip" id="sendPhoneBtn">📞 Enviar telefone</button>
+            <button type="button" class="chip" id="sendAddressBtn"><img class="icon" src="img/icons/icon-location.png" alt="" /> Enviar endereço</button>
+            <button type="button" class="chip" id="sendPhoneBtn"><img class="icon" src="img/icons/icon-settings.png" alt="" /> Enviar telefone</button>
           </div>
           <form class="chat-input-area" id="chatForm" hidden>
             <input id="chatInput" class="chat-input-field" placeholder="Escreva uma mensagem..." autocomplete="off" />
-            <button class="chat-send" type="submit" aria-label="Enviar">➤</button>
+            <button class="chat-send" type="submit" aria-label="Enviar"><img class="icon icon-on-dark" src="img/icons/icon-sparkles.png" alt="" /></button>
           </form>
         </div>
       </div>
@@ -452,23 +452,23 @@
         <div class="gallery-strip" id="galleryStrip"></div>
       </div>
       <div class="service-detail">
-        <div class="detail-head"><div><span class="service-pill" id="modalCategory"></span><h2 id="serviceTitle">Serviço</h2><p id="modalProvider"></p></div><button class="favorite-btn large" id="modalFavorite">♡</button></div>
-        <div class="detail-metrics"><span id="modalRating">⭐ 4,9</span><span id="modalDistance">📍 2,3 km</span><span id="modalPrice">💳 R$ 120/h</span></div>
+        <div class="detail-head"><div><span class="service-pill" id="modalCategory"></span><h2 id="serviceTitle">Serviço</h2><p id="modalProvider"></p></div><button class="favorite-btn large" id="modalFavorite"><img class="icon" src="img/icons/icon-star-empty.png" alt="Favoritar" /></button></div>
+        <div class="detail-metrics"><span id="modalRating"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /> 4,9</span><span id="modalDistance"><img class="icon" src="img/icons/icon-location.png" alt="" /> 2,3 km</span><span id="modalPrice"><img class="icon" src="img/icons/icon-settings.png" alt="" /> R$ 120/h</span></div>
         <p class="detail-description" id="modalDescription"></p>
 
         <div class="provider-block" id="modalProviderBlock">
           <span class="provider-avatar-lg" id="modalProviderAvatar">P</span>
           <div class="provider-block-info"><strong id="modalProviderName"></strong><small id="modalProviderMeta"></small></div>
-          <button type="button" class="favorite-btn large" id="modalProviderFavoriteBtn" aria-label="Favoritar prestador" hidden>♡</button>
+          <button type="button" class="favorite-btn large" id="modalProviderFavoriteBtn" aria-label="Favoritar prestador" hidden><img class="icon" src="img/icons/icon-star-empty.png" alt="Favoritar" /></button>
         </div>
 
         <div class="availability-box"><div><strong>Disponibilidade</strong><small>Selecione uma data</small></div><div class="date-options"><button class="date-option active"><small>SEG</small><strong>08</strong></button><button class="date-option"><small>TER</small><strong>09</strong></button><button class="date-option"><small>QUA</small><strong>10</strong></button><button class="date-option"><small>QUI</small><strong>11</strong></button></div><div class="time-options"><button>09:00</button><button>11:30</button><button>14:00</button><button>17:30</button></div></div>
-        <div class="detail-actions"><button class="secondary-btn" id="openChatBtn">💬 Consultar</button><button class="primary-btn" id="hireBtn">Solicitar serviço</button></div>
+        <div class="detail-actions"><button class="secondary-btn" id="openChatBtn"><img class="icon" src="img/icons/icon-search.png" alt="" /> Consultar</button><button class="primary-btn" id="hireBtn">Solicitar serviço</button></div>
 
         <div class="reviews-block">
           <div class="panel-head"><h3>Avaliações</h3></div>
           <div class="reviews-summary" id="reviewsSummary" hidden>
-            <div class="reviews-score"><div class="big-num" id="reviewsBigNum">0,0</div><div class="stars" id="reviewsStars">☆☆☆☆☆</div><div class="total" id="reviewsTotal">0 avaliações</div></div>
+            <div class="reviews-score"><div class="big-num" id="reviewsBigNum">0,0</div><div class="stars" id="reviewsStars"><img class="icon" src="img/icons/icon-star-empty.png" alt="" /><img class="icon" src="img/icons/icon-star-empty.png" alt="" /><img class="icon" src="img/icons/icon-star-empty.png" alt="" /><img class="icon" src="img/icons/icon-star-empty.png" alt="" /><img class="icon" src="img/icons/icon-star-empty.png" alt="" /></div><div class="total" id="reviewsTotal">0 avaliações</div></div>
             <div class="reviews-bars" id="reviewsBars"></div>
           </div>
           <div id="reviewsList"></div>
@@ -494,7 +494,7 @@
         <div class="ad-photos-dropzone" id="adPhotosDropzone">
           <div class="ad-photos-grid" id="adPhotosGrid"></div>
           <div class="ad-photos-empty" id="adPhotosEmpty">
-            <span>📷</span>
+            <span><img class="icon" src="img/icons/icon-search.png" alt="" /></span>
             <small>Arraste fotos aqui ou clique para enviar</small>
           </div>
           <input id="adPhotoFile" type="file" accept="image/*" multiple hidden />
