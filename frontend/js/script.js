@@ -1597,14 +1597,25 @@ function renderHistoryList() {
     return;
   }
   filtered.forEach((request) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "favorite-provider-block";
+
     const item = document.createElement("article");
     item.className = "history-item";
     item.dataset.requestId = request.id;
-    const actionBtn = request.status === "concluido"
-      ? '<button class="text-btn" data-request-action="evaluate">Avaliar</button>'
-      : ["solicitado", "confirmado"].includes(request.status)
-        ? '<button class="text-btn" data-request-action="cancel">Cancelar</button>'
-        : "";
+    let actionBtn;
+    if (request.avaliacao_id) {
+      actionBtn = `
+        <span class="status done">Avaliado</span>
+        <button type="button" class="text-btn" data-toggle-review="${request.id}" aria-expanded="false">Exibir avaliação</button>
+      `;
+    } else if (request.status === "concluido") {
+      actionBtn = '<button class="text-btn" data-request-action="evaluate">Avaliar</button>';
+    } else if (["solicitado", "confirmado"].includes(request.status)) {
+      actionBtn = '<button class="text-btn" data-request-action="cancel">Cancelar</button>';
+    } else {
+      actionBtn = "";
+    }
     item.innerHTML = `
       <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
       <div class="history-content">
@@ -1617,7 +1628,20 @@ function renderHistoryList() {
       </div>
       <div class="history-item-actions">${actionBtn}</div>
     `;
-    historyList.appendChild(item);
+    wrapper.appendChild(item);
+
+    if (request.avaliacao_id) {
+      const reviewPanel = document.createElement("div");
+      reviewPanel.className = "review-inline-panel";
+      reviewPanel.hidden = true;
+      reviewPanel.innerHTML = `
+        <div class="review-stars">${renderStars(request.avaliacao_nota)}</div>
+        <p>${request.avaliacao_comentario || "Sem comentário."}</p>
+      `;
+      wrapper.appendChild(reviewPanel);
+    }
+
+    historyList.appendChild(wrapper);
   });
 }
 
@@ -1695,7 +1719,20 @@ async function promptAndSubmitReview(requestId) {
   }
 }
 
+function toggleReviewPanel(toggleBtn) {
+  const panel = toggleBtn.closest(".history-item").nextElementSibling;
+  const isExpanded = toggleBtn.getAttribute("aria-expanded") === "true";
+  toggleBtn.setAttribute("aria-expanded", String(!isExpanded));
+  toggleBtn.textContent = isExpanded ? "Exibir avaliação" : "Ocultar avaliação";
+  if (panel) panel.hidden = isExpanded;
+}
+
 historyList.addEventListener("click", async (event) => {
+  const toggleBtn = event.target.closest("[data-toggle-review]");
+  if (toggleBtn) {
+    toggleReviewPanel(toggleBtn);
+    return;
+  }
   const button = event.target.closest("[data-request-action]");
   if (!button) return;
   const item = button.closest(".history-item");
@@ -1730,12 +1767,23 @@ function renderClientReviews() {
     return;
   }
   contracted.forEach((request) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "favorite-provider-block";
+
     const item = document.createElement("article");
     item.className = "history-item";
     item.dataset.requestId = request.id;
-    const actionBtn = request.status === "concluido"
-      ? `<button class="text-btn" data-review-action="evaluate">${iconImage("star-filled", "")} Avaliar</button>`
-      : '<span class="field-help">Disponível após a conclusão</span>';
+    let actionBtn;
+    if (request.avaliacao_id) {
+      actionBtn = `
+        <span class="status done">Avaliado</span>
+        <button type="button" class="text-btn" data-toggle-review="${request.id}" aria-expanded="false">Exibir avaliação</button>
+      `;
+    } else if (request.status === "concluido") {
+      actionBtn = `<button class="text-btn" data-review-action="evaluate">${iconImage("star-filled", "")} Avaliar</button>`;
+    } else {
+      actionBtn = '<span class="field-help">Disponível após a conclusão</span>';
+    }
     item.innerHTML = `
       <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
       <div class="history-content">
@@ -1745,15 +1793,32 @@ function renderClientReviews() {
       </div>
       <div class="history-item-actions">${actionBtn}</div>
     `;
-    clientReviewsList.appendChild(item);
+    wrapper.appendChild(item);
+
+    if (request.avaliacao_id) {
+      const reviewPanel = document.createElement("div");
+      reviewPanel.className = "review-inline-panel";
+      reviewPanel.hidden = true;
+      reviewPanel.innerHTML = `
+        <div class="review-stars">${renderStars(request.avaliacao_nota)}</div>
+        <p>${request.avaliacao_comentario || "Sem comentário."}</p>
+      `;
+      wrapper.appendChild(reviewPanel);
+    }
+
+    clientReviewsList.appendChild(wrapper);
   });
 }
 
 clientReviewsList?.addEventListener("click", async (event) => {
-  const button = event.target.closest('[data-review-action="evaluate"]');
-  if (!button) return;
-  const item = button.closest(".history-item");
-  await promptAndSubmitReview(Number(item.dataset.requestId));
+  const evaluateBtn = event.target.closest('[data-review-action="evaluate"]');
+  if (evaluateBtn) {
+    const item = evaluateBtn.closest(".history-item");
+    await promptAndSubmitReview(Number(item.dataset.requestId));
+    return;
+  }
+  const toggleBtn = event.target.closest("[data-toggle-review]");
+  if (toggleBtn) toggleReviewPanel(toggleBtn);
 });
 
 // ============================================
@@ -1863,9 +1928,50 @@ async function loadProviderMetrics() {
     document.getElementById("metricPeriod").textContent = `${String(metrics.mes).padStart(2, "0")}/${metrics.ano}`;
     renderPerformanceChart("topSellingServicesChart", metrics.mais_vendidos, "vendas", "venda");
     renderPerformanceChart("bestPerformingServicesChart", metrics.melhor_desempenho, "nota_media", "estrela");
+    renderStatusPieChart("requestStatusChart", metrics.status_distribuicao);
   } catch (error) {
     showToast(error.message);
   }
+}
+
+const STATUS_CHART_COLORS = { pending: "#A77A2C", confirmed: "#7FA3C7", done: "#4E8B72", cancelled: "#A65D66" };
+
+function renderStatusPieChart(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.replaceChildren();
+  const entries = (data || []).filter((item) => item.total > 0);
+  const total = entries.reduce((sum, item) => sum + item.total, 0);
+  if (!total) {
+    container.innerHTML = '<p class="empty-state">Ainda não há pedidos neste período.</p>';
+    return;
+  }
+  let cursor = 0;
+  const stops = entries.map((item) => {
+    const cls = requestStatusClass(item.status);
+    const color = STATUS_CHART_COLORS[cls] || "var(--muted)";
+    const start = (cursor / total) * 360;
+    cursor += item.total;
+    const end = (cursor / total) * 360;
+    return `${color} ${start}deg ${end}deg`;
+  });
+
+  const pie = document.createElement("div");
+  pie.className = "pie-chart";
+  pie.style.background = `conic-gradient(${stops.join(",")})`;
+  container.appendChild(pie);
+
+  const legend = document.createElement("div");
+  legend.className = "pie-chart-legend";
+  entries.forEach((item) => {
+    const cls = requestStatusClass(item.status);
+    const color = STATUS_CHART_COLORS[cls] || "var(--muted)";
+    const row = document.createElement("div");
+    row.className = "pie-chart-legend-row";
+    row.innerHTML = `<span class="swatch" style="background:${color}"></span><span>${requestStatusLabel(item.status)}</span><strong>${item.total}</strong>`;
+    legend.appendChild(row);
+  });
+  container.appendChild(legend);
 }
 
 function renderPerformanceChart(containerId, data, valueKey, unit) {

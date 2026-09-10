@@ -196,6 +196,18 @@ def provider_metrics(
         """),
         {"provider_id": provider_id},
     ).scalar_one()
+    status_breakdown = db.execute(
+        text("""
+            SELECT so.status, COUNT(so.id) AS total
+            FROM solicitacao so
+            JOIN servico s ON s.id = so.servico_id
+            WHERE s.prestador_id = :provider_id
+              AND YEAR(so.criado_em) = :ano
+              AND MONTH(so.criado_em) = :mes
+            GROUP BY so.status
+        """),
+        {"provider_id": provider_id, "ano": selected_year, "mes": selected_month},
+    ).mappings().all()
     service_rankings = db.execute(
         text("""
             SELECT
@@ -232,6 +244,10 @@ def provider_metrics(
                 "avaliacoes": int(row["avaliacoes"] or 0),
             }
             for row in sorted(service_rankings, key=lambda row: (-float(row["nota_media"] or 0), row["titulo"]))[:5]
+        ],
+        "status_distribuicao": [
+            {"status": row["status"], "total": int(row["total"])}
+            for row in status_breakdown
         ],
     }
 
@@ -1076,11 +1092,15 @@ REQUEST_SELECT = """
         p.nome_empresa AS prestador_nome,
         c.nome_completo AS cliente_nome,
         c.email AS cliente_email,
-        c.telefone AS cliente_telefone
+        c.telefone AS cliente_telefone,
+        a.id AS avaliacao_id,
+        a.nota AS avaliacao_nota,
+        a.comentario AS avaliacao_comentario
     FROM solicitacao so
     JOIN servico s ON s.id = so.servico_id
     JOIN prestador p ON p.id = s.prestador_id
     JOIN cliente c ON c.id = so.cliente_id
+    LEFT JOIN avaliacao a ON a.solicitacao_id = so.id
 """
 
 

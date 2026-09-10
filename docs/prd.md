@@ -98,6 +98,7 @@ Usuários
 
 - Histórico de serviços contratados
 - Aba própria "Avaliações" na navbar: lista os serviços que o cliente já contratou (qualquer status exceto cancelado), com botão "Avaliar" habilitado apenas nos que já foram concluídos
+- Depois que o cliente avalia, o item passa a mostrar o status "Avaliado" e um botão "Exibir avaliação" que expande, mostrando as estrelas dadas e o comentário escrito — tanto na aba Avaliações quanto no histórico de Pedidos
 - Favoritar um **anúncio específico** (não o prestador inteiro) — favoritar um serviço de um prestador não afeta os outros anúncios dele
 - Favoritar também um **prestador** por inteiro, a partir da tela do anúncio ou do chat, sem alterar os favoritos de anúncios
 - Tela de Favoritos com navbar interna nas seções "Anúncios favoritos" e "Prestadores favoritos"; a primeira agrupa os anúncios salvos por prestador e inclui o link "Ver todos os anúncios" (leva pra Explorar já filtrado por aquele prestador), enquanto a segunda lista os prestadores salvos, cada um com um botão "Ver anúncios" que **expande/recolhe a lista de anúncios daquele prestador ali mesmo na tela**, sem sair de Favoritos
@@ -196,7 +197,7 @@ Usuários
 
 - Extrato de pagamentos recebidos por serviço
 - Métricas de desempenho: número de serviços realizados, taxa de aceitação, nota média geral do prestador (todas as avaliações recebidas) e faturamento no período
-- Gráficos no painel inicial para os anúncios mais vendidos e os anúncios com melhor avaliação
+- Gráficos no painel inicial: histograma (barras horizontais) dos anúncios mais vendidos, histograma dos anúncios com melhor avaliação, e um gráfico de pizza com a distribuição dos pedidos do mês por status (solicitado, confirmado/em andamento, concluído, cancelado)
 - Histórico financeiro filtrável por período (mês, ano)
 
 ## 8. Notificações
