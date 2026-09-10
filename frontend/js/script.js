@@ -8,6 +8,7 @@ let currentChatRequestId = null;
 let chatPollingTimer = null;
 let servicesRequest = null;
 let servicesRequestTimer = null;
+let selectedProviderId = null;
 
 const cardsView = document.getElementById("cardsView");
 const favoritesGrid = document.getElementById("favoritesGrid");
@@ -40,6 +41,7 @@ function serviceQueryParams() {
   if (search) params.set("busca", search);
   if (categoryFilter.value !== "all") params.set("categoria", categoryFilter.value);
   if (ratingFilter.value !== "0") params.set("avaliacao_min", ratingFilter.value);
+  if (selectedProviderId) params.set("prestador_id", selectedProviderId);
   if (radiusFilter.value) params.set("raio_km", radiusFilter.value);
   if (mapCenter?.lat != null && mapCenter?.lng != null) {
     params.set("lat", mapCenter.lat);
@@ -291,7 +293,7 @@ function renderFavorites() {
       <div class="favorites-group-header">
         <span class="avatar">${requestInitials(first.provider)}</span>
         <strong>${first.provider}</strong>
-        <button type="button" class="text-btn" data-view-provider="${first.provider.replace(/"/g, "&quot;")}">Ver todos os anúncios →</button>
+        <button type="button" class="text-btn" data-view-provider="${first.prestador_id}">Ver todos os anúncios →</button>
       </div>
     `;
     const grid = document.createElement("div");
@@ -312,7 +314,8 @@ favoritesFilters.addEventListener("click", (event) => {
 favoritesGrid.addEventListener("click", (event) => {
   const viewProviderBtn = event.target.closest("[data-view-provider]");
   if (!viewProviderBtn) return;
-  searchInput.value = viewProviderBtn.dataset.viewProvider;
+  selectedProviderId = Number(viewProviderBtn.dataset.viewProvider);
+  searchInput.value = "";
   showAppView("cliente");
   setActiveSection("explorar");
   loadServices();
@@ -405,7 +408,7 @@ function renderFavoriteProviders() {
         <div class="history-provider">⭐ ${provider.rating.toFixed(1).replace(".", ",")} (${provider.reviews}) • ${provider.anuncios_ativos} anúncio${provider.anuncios_ativos === 1 ? "" : "s"} ativo${provider.anuncios_ativos === 1 ? "" : "s"}</div>
       </div>
       <div class="history-item-actions">
-        <button type="button" class="text-btn" data-view-provider="${provider.nome.replace(/"/g, "&quot;")}">Ver anúncios</button>
+        <button type="button" class="text-btn" data-view-provider="${provider.id}">Ver anúncios</button>
         <button type="button" class="small-btn reject" data-unfavorite-provider="${provider.id}">Remover</button>
       </div>
     `;
@@ -429,7 +432,8 @@ favoritesTabs?.addEventListener("click", (event) => {
 favoriteProvidersList?.addEventListener("click", async (event) => {
   const viewBtn = event.target.closest("[data-view-provider]");
   if (viewBtn) {
-    searchInput.value = viewBtn.dataset.viewProvider;
+    selectedProviderId = Number(viewBtn.dataset.viewProvider);
+    searchInput.value = "";
     showAppView("cliente");
     setActiveSection("explorar");
     loadServices();
@@ -503,7 +507,7 @@ function showServiceDetails(service) {
   }
 
   loadServiceAvailability(service.id);
-  loadServiceReviews(service.prestador_id);
+  loadServiceReviews(service.id);
   document.getElementById("serviceModal").hidden = false;
 }
 
@@ -511,12 +515,12 @@ function renderStars(rating) {
   return "★".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating));
 }
 
-async function loadServiceReviews(providerId) {
+async function loadServiceReviews(serviceId) {
   const list = document.getElementById("reviewsList");
   const summary = document.getElementById("reviewsSummary");
   if (!list || !summary) return;
   try {
-    const response = await fetch(`/prestadores/${providerId}/avaliacoes`);
+    const response = await fetch(`/services/${serviceId}/avaliacoes`);
     const reviews = await response.json();
     if (!response.ok) throw new Error(reviews.detail || "Não foi possível carregar as avaliações.");
 
@@ -661,11 +665,11 @@ favoritesGrid.addEventListener("click", handleCardAction);
 // Busca por texto e o slider de raio se beneficiam de debounce (digitação/arraste contínuo);
 // selects de categoria/avaliação/ordenação são escolhas únicas e devem buscar na hora, sem atraso.
 [searchInput, radiusFilter].forEach((control) => {
-  control.addEventListener("input", applyFilters);
-  control.addEventListener("change", applyFilters);
+  control.addEventListener("input", () => { selectedProviderId = null; applyFilters(); });
+  control.addEventListener("change", () => { selectedProviderId = null; applyFilters(); });
 });
 [categoryFilter, ratingFilter, sortFilter].forEach((control) => {
-  control.addEventListener("change", () => loadServices());
+  control.addEventListener("change", () => { selectedProviderId = null; loadServices(); });
 });
 radiusFilter.addEventListener("input", () => {
   radiusLabel.textContent = `${radiusFilter.value} km`;
@@ -687,6 +691,7 @@ document.getElementById("clearFilters").addEventListener("click", () => {
   ratingFilter.value = "0";
   sortFilter.value = "distance";
   radiusFilter.value = "10";
+  selectedProviderId = null;
   radiusLabel.textContent = "10 km";
   loadServices();
 });
@@ -696,6 +701,7 @@ document.querySelector(".categories-card").addEventListener("click", (event) => 
   document.querySelectorAll(".category-item").forEach((item) => item.classList.remove("active"));
   button.classList.add("active");
   categoryFilter.value = button.dataset.category;
+  selectedProviderId = null;
   loadServices();
 });
 
@@ -1573,6 +1579,26 @@ function renderHistoryList() {
   });
 }
 
+function renderClientAgenda() {
+  const list = document.getElementById("clientAgendaList");
+  if (!list) return;
+  const appointments = CLIENT_REQUESTS
+    .filter((request) => request.data_hora_agendada && request.status !== "cancelado")
+    .sort((first, second) => new Date(first.data_hora_agendada) - new Date(second.data_hora_agendada));
+  list.replaceChildren();
+  if (!appointments.length) {
+    list.innerHTML = '<p class="empty-state">Nenhum serviço agendado.</p>';
+    return;
+  }
+  appointments.forEach((request) => {
+    const scheduledAt = new Date(request.data_hora_agendada);
+    const item = document.createElement("article");
+    item.className = "agenda-item";
+    item.innerHTML = `<div class="date-tile"><strong>${String(scheduledAt.getDate()).padStart(2, "0")}</strong><small>${MONTH_NAMES[scheduledAt.getMonth()].slice(0, 3).toUpperCase()}</small></div><div><strong>${escapeHtml(request.servico_titulo)}</strong><small>${scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} • ${escapeHtml(request.prestador_nome)}</small></div><span class="status ${requestStatusClass(request.status)}">${requestStatusLabel(request.status)}</span>`;
+    list.appendChild(item);
+  });
+}
+
 document.getElementById("historyTabs").addEventListener("click", (event) => {
   const tab = event.target.closest(".history-tab");
   if (!tab) return;
@@ -1602,6 +1628,7 @@ async function loadClientRequests() {
     renderClientCalendar();
     CLIENT_REQUESTS = requests;
     renderHistoryList();
+    renderClientAgenda();
     renderClientReviews();
   } catch (error) {
     showToast(error.message);
@@ -1792,9 +1819,29 @@ async function loadProviderMetrics() {
     document.getElementById("metricRating").textContent = String(metrics.nota_media.toFixed(1)).replace(".", ",");
     document.getElementById("metricRevenue").textContent = `R$ ${formatPrice(metrics.faturamento)}`;
     document.getElementById("metricPeriod").textContent = `${String(metrics.mes).padStart(2, "0")}/${metrics.ano}`;
+    renderPerformanceChart("topSellingServicesChart", metrics.mais_vendidos, "vendas", "venda");
+    renderPerformanceChart("bestPerformingServicesChart", metrics.melhor_desempenho, "nota_media", "estrela");
   } catch (error) {
     showToast(error.message);
   }
+}
+
+function renderPerformanceChart(containerId, data, valueKey, unit) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.replaceChildren();
+  if (!data?.length || !data.some((item) => Number(item[valueKey]) > 0)) {
+    container.innerHTML = '<p class="empty-state">Ainda não há dados suficientes.</p>';
+    return;
+  }
+  const maximum = Math.max(...data.map((item) => Number(item[valueKey])));
+  data.forEach((item) => {
+    const value = Number(item[valueKey]);
+    const row = document.createElement("div");
+    row.className = "bar-chart-row";
+    row.innerHTML = `<span title="${escapeHtml(item.titulo)}">${escapeHtml(item.titulo)}</span><div class="bar-chart-track"><i style="width:${Math.max((value / maximum) * 100, 4)}%"></i></div><strong>${String(value).replace(".", ",")} ${unit}${value === 1 ? "" : "s"}</strong>`;
+    container.appendChild(row);
+  });
 }
 
 requestList.addEventListener("click", async (event) => {

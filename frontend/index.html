@@ -134,8 +134,7 @@
             <div class="calendar-grid" id="clientCalendar"></div>
           </div>
           <div class="agenda-list">
-            <div class="agenda-item"><div class="date-tile"><strong>08</strong><small>SET</small></div><div><strong>Eletricista residencial</strong><small>09:00 • Marcos Elétrica • Confirmado</small></div><span class="status confirmed">Confirmado</span></div>
-            <div class="agenda-item"><div class="date-tile"><strong>11</strong><small>SET</small></div><div><strong>Limpeza completa</strong><small>14:30 • Brilho Certo • Solicitado</small></div><span class="status pending">Solicitado</span></div>
+            <div id="clientAgendaList"></div>
           </div>
         </div>
       </section>
@@ -190,6 +189,10 @@
         </section>
 
         <section class="generic-view">
+          <div class="dashboard-charts">
+            <article class="panel-card"><div class="panel-head"><div><span class="eyebrow">VENDAS</span><h2>Serviços mais vendidos</h2></div></div><div class="bar-chart" id="topSellingServicesChart"></div></article>
+            <article class="panel-card"><div class="panel-head"><div><span class="eyebrow">QUALIDADE</span><h2>Melhor desempenho</h2></div></div><div class="bar-chart" id="bestPerformingServicesChart"></div></article>
+          </div>
           <div class="panel-card">
             <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn">Ver todos</button></div>
             <div class="request-list" id="requestList">

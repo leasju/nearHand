@@ -177,17 +177,40 @@ def provider_metrics(
                 COUNT(so.id) AS total_requests,
                 COALESCE(SUM(so.status IN ('confirmado', 'em_andamento', 'concluido')), 0) AS accepted_requests,
                 COALESCE(SUM(CASE WHEN so.status = 'concluido' THEN so.valor_proposto ELSE 0 END), 0) AS revenue,
-                COALESCE(SUM(so.status = 'concluido'), 0) AS completed_services,
-                COALESCE(AVG(CASE WHEN a.denunciada = FALSE THEN a.nota END), 0) AS average_rating
+                COALESCE(SUM(so.status = 'concluido'), 0) AS completed_services
             FROM solicitacao so
             JOIN servico s ON s.id = so.servico_id
-            LEFT JOIN avaliacao a ON a.solicitacao_id = so.id
             WHERE s.prestador_id = :provider_id
               AND YEAR(so.criado_em) = :ano
               AND MONTH(so.criado_em) = :mes
         """),
         {"provider_id": provider_id, "ano": selected_year, "mes": selected_month},
     ).mappings().one()
+    average_rating = db.execute(
+        text("""
+            SELECT COALESCE(AVG(a.nota), 0)
+            FROM avaliacao a
+            JOIN solicitacao so ON so.id = a.solicitacao_id
+            JOIN servico s ON s.id = so.servico_id
+            WHERE s.prestador_id = :provider_id AND a.denunciada = FALSE
+        """),
+        {"provider_id": provider_id},
+    ).scalar_one()
+    service_rankings = db.execute(
+        text("""
+            SELECT
+                s.titulo,
+                COUNT(CASE WHEN so.status = 'concluido' THEN 1 END) AS vendas,
+                AVG(CASE WHEN a.denunciada = FALSE THEN a.nota END) AS nota_media,
+                COUNT(CASE WHEN a.denunciada = FALSE THEN a.id END) AS avaliacoes
+            FROM servico s
+            LEFT JOIN solicitacao so ON so.servico_id = s.id
+            LEFT JOIN avaliacao a ON a.solicitacao_id = so.id
+            WHERE s.prestador_id = :provider_id
+            GROUP BY s.id, s.titulo
+        """),
+        {"provider_id": provider_id},
+    ).mappings().all()
     total = int(result["total_requests"] or 0)
     accepted = int(result["accepted_requests"] or 0)
     return {
@@ -195,9 +218,21 @@ def provider_metrics(
         "ano": selected_year,
         "solicitacoes": total,
         "taxa_aceitacao": round((accepted / total) * 100, 1) if total else 0,
-        "nota_media": round(float(result["average_rating"] or 0), 1),
+        "nota_media": round(float(average_rating or 0), 1),
         "faturamento": float(result["revenue"] or 0),
         "servicos_realizados": int(result["completed_services"] or 0),
+        "mais_vendidos": [
+            {"titulo": row["titulo"], "vendas": int(row["vendas"] or 0)}
+            for row in sorted(service_rankings, key=lambda row: (-int(row["vendas"] or 0), row["titulo"]))[:5]
+        ],
+        "melhor_desempenho": [
+            {
+                "titulo": row["titulo"],
+                "nota_media": round(float(row["nota_media"] or 0), 1),
+                "avaliacoes": int(row["avaliacoes"] or 0),
+            }
+            for row in sorted(service_rankings, key=lambda row: (-float(row["nota_media"] or 0), row["titulo"]))[:5]
+        ],
     }
 
 
@@ -1317,6 +1352,18 @@ def list_provider_evaluations(provider_id: int, db: Session = Depends(get_db)):
     return [_evaluation_row(row) for row in rows]
 
 
+@app.get("/services/{service_id}/avaliacoes")
+def list_service_evaluations(service_id: int, db: Session = Depends(get_db)):
+    rows = db.execute(
+        text(EVALUATION_SELECT + """
+            WHERE s.id = :service_id AND a.denunciada = FALSE
+            ORDER BY a.criado_em DESC
+        """),
+        {"service_id": service_id},
+    ).mappings().all()
+    return [_evaluation_row(row) for row in rows]
+
+
 @app.patch("/avaliacoes/{evaluation_id}/resposta")
 def reply_to_evaluation(
     evaluation_id: int,
@@ -1637,6 +1684,7 @@ def list_services(
     lat: float | None = None,
     lng: float | None = None,
     raio_km: float | None = None,
+    prestador_id: int | None = None,
     ordenacao: str = Query("distancia", alias="ordenacao"),
     db: Session = Depends(get_db),
 ):
@@ -1654,6 +1702,7 @@ def list_services(
         "busca": f"%{busca.strip()}%" if busca and busca.strip() else None,
         "categoria": categoria,
         "raio_km": raio_km,
+        "prestador_id": prestador_id,
     }
     distance = _distance_expression() if lat is not None else "NULL"
     query = text(SERVICE_SELECT.format(distance_expression=distance) + """
@@ -1663,6 +1712,7 @@ def list_services(
           AND (:preco_max IS NULL OR s.valor <= :preco_max)
           AND (:avaliacao_min <= COALESCE(r.rating, 0))
           AND (:busca IS NULL OR s.titulo LIKE :busca OR s.descricao LIKE :busca OR p.nome_empresa LIKE :busca)
+                    AND (:prestador_id IS NULL OR s.prestador_id = :prestador_id)
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
                  c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
         HAVING (:raio_km IS NULL OR {distance} <= :raio_km)

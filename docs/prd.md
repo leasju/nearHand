@@ -74,7 +74,7 @@ Usuários
 - Informações aprofundadas do serviço e do prestador
 - Botão único "Consultar" abre o chat com o prestador sobre aquele serviço — **não exige ter agendado nada antes**; cliente pode tirar dúvida com o prestador logo de cara
 - Acesso à galeria estendida de fotos, se o prestador tiver adicionado além das do carrossel
-- Seção de avaliações de outros clientes (com comentários, não só nota)
+- Seção de avaliações daquele anúncio específico (com comentários, não só nota), sem replicar avaliações de outros anúncios do mesmo prestador
 - Calendário com as datas/horários em que aquele anúncio específico está disponível — calculado a partir do horário semanal fixo que o prestador definiu para aquele anúncio (ver Prestador, item 3), descontando datas que o prestador bloqueou
 - Fluxo de contratação: botão "Solicitar serviço" abre uma **solicitação de orçamento/agendamento**, que o prestador aceita, recusa ou negocia pelo chat (status: solicitado → confirmado → em andamento → concluído, com cancelado a qualquer ponto antes de concluído). Se o cliente já tinha clicado em "Consultar" antes, o agendamento continua **na mesma conversa** — não cria um chat novo
 
@@ -191,7 +191,8 @@ Usuários
 ## 7. Financeiro e desempenho
 
 - Extrato de pagamentos recebidos por serviço
-- Métricas de desempenho: número de serviços realizados, taxa de aceitação, nota média, faturamento no período
+- Métricas de desempenho: número de serviços realizados, taxa de aceitação, nota média geral do prestador (todas as avaliações recebidas) e faturamento no período
+- Gráficos no painel inicial para os anúncios mais vendidos e os anúncios com melhor avaliação
 - Histórico financeiro filtrável por período (mês, ano)
 
 ## 8. Notificações
