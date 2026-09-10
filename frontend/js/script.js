@@ -396,6 +396,9 @@ function renderFavoriteProviders() {
     return;
   }
   FAVORITE_PROVIDERS.forEach((provider) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "favorite-provider-block";
+
     const item = document.createElement("article");
     item.className = "history-item";
     const thumb = provider.foto
@@ -408,12 +411,40 @@ function renderFavoriteProviders() {
         <div class="history-provider">⭐ ${provider.rating.toFixed(1).replace(".", ",")} (${provider.reviews}) • ${provider.anuncios_ativos} anúncio${provider.anuncios_ativos === 1 ? "" : "s"} ativo${provider.anuncios_ativos === 1 ? "" : "s"}</div>
       </div>
       <div class="history-item-actions">
-        <button type="button" class="text-btn" data-view-provider="${provider.id}">Ver anúncios</button>
+        <button type="button" class="chat-group-toggle" data-toggle-provider-ads="${provider.id}" aria-expanded="false" title="Ver anúncios">
+          <span>Ver anúncios</span><span class="chat-group-chevron"><svg viewBox="0 0 12 8" width="10" height="7" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
         <button type="button" class="small-btn reject" data-unfavorite-provider="${provider.id}">Remover</button>
       </div>
     `;
-    favoriteProvidersList.appendChild(item);
+    wrapper.appendChild(item);
+
+    const adsPanel = document.createElement("div");
+    adsPanel.className = "favorite-provider-ads service-grid";
+    adsPanel.dataset.providerAds = String(provider.id);
+    adsPanel.hidden = true;
+    wrapper.appendChild(adsPanel);
+
+    favoriteProvidersList.appendChild(wrapper);
   });
+}
+
+async function loadFavoriteProviderAds(providerId, panel) {
+  panel.innerHTML = '<p class="empty-state">Carregando anúncios...</p>';
+  try {
+    const response = await authFetch(`/services?prestador_id=${providerId}`);
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Não foi possível carregar os anúncios.");
+    panel.dataset.loaded = "true";
+    panel.replaceChildren();
+    if (!data.length) {
+      panel.innerHTML = '<p class="empty-state">Esse prestador não tem anúncios ativos no momento.</p>';
+      return;
+    }
+    data.forEach((service) => panel.appendChild(serviceCard(service)));
+  } catch (error) {
+    panel.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
+  }
 }
 
 favoritesTabs?.addEventListener("click", (event) => {
@@ -430,13 +461,16 @@ favoritesTabs?.addEventListener("click", (event) => {
 });
 
 favoriteProvidersList?.addEventListener("click", async (event) => {
-  const viewBtn = event.target.closest("[data-view-provider]");
-  if (viewBtn) {
-    selectedProviderId = Number(viewBtn.dataset.viewProvider);
-    searchInput.value = "";
-    showAppView("cliente");
-    setActiveSection("explorar");
-    loadServices();
+  const toggleBtn = event.target.closest("[data-toggle-provider-ads]");
+  if (toggleBtn) {
+    const providerId = toggleBtn.dataset.toggleProviderAds;
+    const panel = favoriteProvidersList.querySelector(`[data-provider-ads="${providerId}"]`);
+    const isExpanded = toggleBtn.getAttribute("aria-expanded") === "true";
+    toggleBtn.setAttribute("aria-expanded", String(!isExpanded));
+    panel.hidden = isExpanded;
+    if (!isExpanded && !panel.dataset.loaded) {
+      await loadFavoriteProviderAds(providerId, panel);
+    }
     return;
   }
   const removeBtn = event.target.closest("[data-unfavorite-provider]");
@@ -445,7 +479,9 @@ favoriteProvidersList?.addEventListener("click", async (event) => {
     await toggleFavoriteProvider(providerId, null);
     FAVORITE_PROVIDERS = FAVORITE_PROVIDERS.filter((provider) => provider.id !== providerId);
     renderFavoriteProviders();
+    return;
   }
+  handleCardAction(event);
 });
 
 function applyFilters() {

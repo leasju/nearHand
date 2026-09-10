@@ -96,7 +96,7 @@ Usuários
 - Aba própria "Avaliações" na navbar: lista os serviços que o cliente já contratou (qualquer status exceto cancelado), com botão "Avaliar" habilitado apenas nos que já foram concluídos
 - Favoritar um **anúncio específico** (não o prestador inteiro) — favoritar um serviço de um prestador não afeta os outros anúncios dele
 - Favoritar também um **prestador** por inteiro, a partir da tela do anúncio ou do chat, sem alterar os favoritos de anúncios
-- Tela de Favoritos com navbar interna nas seções "Anúncios favoritos" e "Prestadores favoritos"; a primeira agrupa os anúncios salvos por prestador e inclui o link "Ver todos os anúncios", enquanto a segunda lista os prestadores salvos
+- Tela de Favoritos com navbar interna nas seções "Anúncios favoritos" e "Prestadores favoritos"; a primeira agrupa os anúncios salvos por prestador e inclui o link "Ver todos os anúncios" (leva pra Explorar já filtrado por aquele prestador), enquanto a segunda lista os prestadores salvos, cada um com um botão "Ver anúncios" que **expande/recolhe a lista de anúncios daquele prestador ali mesmo na tela**, sem sair de Favoritos
 - Notificações (prestador respondeu no chat, confirmou o serviço, etc.), com opção de marcar todas como lidas e limpar a caixa de entrada
 
 # Funcionalidades — Prestador de Serviço
