@@ -85,6 +85,7 @@ Usuários
 - Quando o grupo tem mais de uma conversa, ele começa recolhido (só o cabeçalho com o nome e a contagem aparecem) com um botão para expandir/recolher e ver as conversas individuais — evita lista longa quando há muitos pedidos com a mesma pessoa. Grupo com só uma conversa aparece sempre expandido, sem botão. O grupo da conversa aberta no momento fica sempre expandido automaticamente
 - Barra de busca no topo da lista de conversas, filtra por nome do prestador ou título do anúncio
 - Logo abaixo da barra de busca, uma legenda fixa com bolinhas coloridas explicando o status de cada conversa (pendente, em andamento, concluído, cancelado) — a mesma bolinha colorida aparece ao lado de cada conversa na lista
+- Filtro por status do pedido integrado à legenda: o cliente pode ativar ou desativar mais de um status ao mesmo tempo
 - Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
 - Também acessível pelo botão "Consultar" dentro da tela do serviço, abrindo direto na conversa daquele anúncio
@@ -94,8 +95,9 @@ Usuários
 - Histórico de serviços contratados
 - Aba própria "Avaliações" na navbar: lista os serviços que o cliente já contratou (qualquer status exceto cancelado), com botão "Avaliar" habilitado apenas nos que já foram concluídos
 - Favoritar um **anúncio específico** (não o prestador inteiro) — favoritar um serviço de um prestador não afeta os outros anúncios dele
-- Tela de Favoritos agrupa os anúncios salvos por prestador: cada prestador aparece com um cabeçalho (nome) e os anúncios favoritados dele embaixo, mais um link "Ver todos os anúncios" que leva pra Explorar já filtrado pelo nome daquele prestador — útil pra achar outro serviço dele pra agendar
-- Notificações (prestador respondeu no chat, confirmou o serviço, etc.)
+- Favoritar também um **prestador** por inteiro, a partir da tela do anúncio ou do chat, sem alterar os favoritos de anúncios
+- Tela de Favoritos com navbar interna nas seções "Anúncios favoritos" e "Prestadores favoritos"; a primeira agrupa os anúncios salvos por prestador e inclui o link "Ver todos os anúncios", enquanto a segunda lista os prestadores salvos
+- Notificações (prestador respondeu no chat, confirmou o serviço, etc.), com opção de marcar todas como lidas e limpar a caixa de entrada
 
 # Funcionalidades — Prestador de Serviço
 
@@ -173,6 +175,7 @@ Usuários
 - Quando o grupo tem mais de uma conversa, ele começa recolhido com um botão para expandir/recolher (mesmo comportamento do lado do cliente)
 - Barra de busca no topo da lista de conversas, filtra por nome do cliente ou título do anúncio
 - Legenda fixa abaixo da busca com bolinha colorida por status da conversa (pendente/em andamento/concluído/cancelado), mesma bolinha ao lado de cada item da lista
+- Filtro por status do pedido integrado à legenda, permitindo selecionar mais de um status para exibição
 - Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
 - Conversar com o cliente antes, durante e depois da contratação
@@ -198,12 +201,13 @@ Usuários
 - Nova avaliação recebida
 - Lembrete de compromisso agendado
 - Confirmação ou cancelamento de serviço pelo cliente
+- Caixa de notificações com opção de marcar todas como lidas e limpar as mensagens
 
 # Funcionalidades — Admin
 
 ## 1. Autenticação e navegação
 
-- Login administrativo (email e senha), separado do login de cliente/prestador
+- Login administrativo (email e senha), separado do login de cliente/prestador, com atalhos para as telas de login/cadastro de cliente e prestador
 - Navbar em estilo tab group (pill/segmented) para alternar entre Início, Categorias, Anúncios, Contas e Avaliações, com aba ativa destacada; botão "Sair" ao lado da navbar
 - **Página inicial (Início)**: banner de boas-vindas com o nome do admin, seguido de um grid 2x2 de cards clicáveis para Categorias, Anúncios, Contas e Avaliações, cada um mostrando uma contagem rápida (quantas categorias/anúncios/contas cadastradas, quantas avaliações denunciadas pendentes). É a página para onde o login redireciona
 

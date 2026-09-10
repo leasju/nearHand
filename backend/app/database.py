@@ -84,6 +84,17 @@ def ensure_optional_schema():
         """))
 
         connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS favorito_prestador (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cliente_id INT NOT NULL,
+                prestador_id INT NOT NULL,
+                FOREIGN KEY (cliente_id) REFERENCES cliente(id),
+                FOREIGN KEY (prestador_id) REFERENCES prestador(id) ON DELETE CASCADE,
+                UNIQUE (cliente_id, prestador_id)
+            )
+        """))
+
+        connection.execute(text("""
             CREATE TABLE IF NOT EXISTS horario_semanal (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 servico_id INT NOT NULL,

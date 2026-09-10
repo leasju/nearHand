@@ -443,6 +443,20 @@ def mark_all_notifications_read(
     return {"status": "read"}
 
 
+@app.delete("/notificacoes/limpar")
+def clear_notifications(
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    user_id, user_type = _current_account(credentials)
+    db.execute(
+        text("DELETE FROM notificacao WHERE usuario_id = :usuario_id AND usuario_tipo = :usuario_tipo"),
+        {"usuario_id": user_id, "usuario_tipo": user_type},
+    )
+    db.commit()
+    return {"status": "cleared"}
+
+
 def _check_message_participant(request_id: int, db: Session, credentials: HTTPAuthorizationCredentials | None):
     account_id, role = _current_account(credentials)
     request = db.execute(
@@ -915,6 +929,91 @@ def list_my_favorites(
     """)
     rows = db.execute(query, {"cliente_id": client_id, "lat": 0, "lng": 0}).mappings().all()
     return [_decode_service_row(row) for row in rows]
+
+
+class FavoriteProviderCreate(BaseModel):
+    prestador_id: int
+
+
+@app.post("/favoritos/prestadores")
+def add_favorite_provider(
+    favorite: FavoriteProviderCreate,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    provider_exists = db.execute(
+        text("SELECT id FROM prestador WHERE id = :id"), {"id": favorite.prestador_id}
+    ).first()
+    if provider_exists is None:
+        raise HTTPException(status_code=404, detail="Provider not found")
+    try:
+        db.execute(
+            text("""
+                INSERT INTO favorito_prestador (cliente_id, prestador_id)
+                VALUES (:cliente_id, :prestador_id)
+                ON DUPLICATE KEY UPDATE id = id
+            """),
+            {"cliente_id": client_id, "prestador_id": favorite.prestador_id},
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Could not save favorite")
+    return {"status": "favorited", "prestador_id": favorite.prestador_id}
+
+
+@app.delete("/favoritos/prestadores/{provider_id}")
+def remove_favorite_provider(
+    provider_id: int,
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    result = db.execute(
+        text("DELETE FROM favorito_prestador WHERE cliente_id = :cliente_id AND prestador_id = :prestador_id"),
+        {"cliente_id": client_id, "prestador_id": provider_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Favorite not found")
+    return {"status": "unfavorited", "prestador_id": provider_id}
+
+
+@app.get("/clientes/me/favoritos/prestadores")
+def list_my_favorite_providers(
+    db: Session = Depends(get_db),
+    client_id: int = Depends(get_current_client_id),
+):
+    rows = db.execute(
+        text("""
+            SELECT
+                p.id,
+                p.nome_empresa AS nome,
+                p.foto,
+                COALESCE(AVG(a.nota), 0) AS rating,
+                COUNT(DISTINCT a.id) AS reviews,
+                COUNT(DISTINCT CASE WHEN s.status = 'ativo' THEN s.id END) AS anuncios_ativos
+            FROM favorito_prestador fp
+            JOIN prestador p ON p.id = fp.prestador_id
+            LEFT JOIN servico s ON s.prestador_id = p.id
+            LEFT JOIN solicitacao so ON so.servico_id = s.id AND so.status = 'concluido'
+            LEFT JOIN avaliacao a ON a.solicitacao_id = so.id AND a.denunciada = FALSE
+            WHERE fp.cliente_id = :cliente_id
+            GROUP BY p.id, p.nome_empresa, p.foto
+            ORDER BY p.nome_empresa
+        """),
+        {"cliente_id": client_id},
+    ).mappings().all()
+    return [
+        {
+            "id": row["id"],
+            "nome": row["nome"],
+            "foto": row["foto"],
+            "rating": float(row["rating"] or 0),
+            "reviews": int(row["reviews"] or 0),
+            "anuncios_ativos": int(row["anuncios_ativos"] or 0),
+        }
+        for row in rows
+    ]
 
 
 def _request_row(row) -> dict:

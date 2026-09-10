@@ -188,6 +188,18 @@ CREATE TABLE favorito (
 );
 
 -- ============================================
+-- FAVORITO_PRESTADOR
+-- ============================================
+CREATE TABLE favorito_prestador (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    prestador_id INT NOT NULL,
+    FOREIGN KEY (cliente_id) REFERENCES cliente(id),
+    FOREIGN KEY (prestador_id) REFERENCES prestador(id) ON DELETE CASCADE,
+    UNIQUE (cliente_id, prestador_id)
+);
+
+-- ============================================
 -- METODO_PAGAMENTO (cliente)
 -- ============================================
 CREATE TABLE metodo_pagamento (

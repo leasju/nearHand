@@ -29,6 +29,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
   PRESTADOR ||--|| ENDERECO : mora_em
   CLIENTE ||--o{ SOLICITACAO : faz
   CLIENTE ||--o{ FAVORITO : possui
+  CLIENTE ||--o{ FAVORITO_PRESTADOR : possui
   CLIENTE ||--o{ METODO_PAGAMENTO : cadastra
   CLIENTE ||--o{ MENSAGEM : envia
   CLIENTE ||--o{ NOTIFICACAO : recebe
@@ -36,6 +37,7 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
   PRESTADOR ||--o{ DISPONIBILIDADE : define
   PRESTADOR ||--o{ METODO_RECEBIMENTO : cadastra
   PRESTADOR ||--o{ FAVORITO : e_favoritado
+  PRESTADOR ||--o{ FAVORITO_PRESTADOR : e_favoritado
   PRESTADOR ||--o{ MENSAGEM : envia
   PRESTADOR ||--o{ NOTIFICACAO : recebe
   CATEGORIA ||--o{ SERVICO : classifica
@@ -151,6 +153,11 @@ const { svg } = await mermaid.render('erd-svg', `erDiagram
     uuid id PK
     uuid cliente_id FK
     uuid servico_id FK
+    uuid prestador_id FK
+  }
+  FAVORITO_PRESTADOR {
+    uuid id PK
+    uuid cliente_id FK
     uuid prestador_id FK
   }
   METODO_PAGAMENTO {

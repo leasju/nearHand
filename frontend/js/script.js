@@ -334,6 +334,116 @@ async function loadFavorites() {
   }
 }
 
+// ============================================
+// Favoritar prestador (separado de favoritar um anúncio específico) —
+// acessível pelo bloco do prestador na tela do serviço e pelo cabeçalho do chat.
+// ============================================
+const favoriteProviderIds = new Set();
+let FAVORITE_PROVIDERS = [];
+const favoritesTabs = document.getElementById("favoritesTabs");
+const favoritesAnunciosPanel = document.getElementById("favoritesAnunciosPanel");
+const favoritesPrestadoresPanel = document.getElementById("favoritesPrestadoresPanel");
+const favoritesTitle = document.getElementById("favoritesTitle");
+const favoriteProvidersList = document.getElementById("favoriteProvidersList");
+
+async function loadFavoriteProviderIds() {
+  if (currentSessionRole !== "cliente") return;
+  try {
+    const response = await authFetch("/clientes/me/favoritos/prestadores");
+    const data = await readApiResponse(response);
+    if (!response.ok) return;
+    FAVORITE_PROVIDERS = data;
+    favoriteProviderIds.clear();
+    data.forEach((provider) => favoriteProviderIds.add(provider.id));
+  } catch {
+    // silencioso: não é crítico pro carregamento inicial da tela
+  }
+}
+
+function updateProviderFavoriteButton(button, providerId) {
+  const active = favoriteProviderIds.has(providerId);
+  button.classList.toggle("active", active);
+  button.textContent = active ? "♥" : "♡";
+  button.setAttribute("aria-label", active ? "Remover prestador dos favoritos" : "Favoritar prestador");
+}
+
+async function toggleFavoriteProvider(providerId, button) {
+  const isFavorite = favoriteProviderIds.has(providerId);
+  try {
+    const response = isFavorite
+      ? await authFetch(`/favoritos/prestadores/${providerId}`, { method: "DELETE" })
+      : await authFetch("/favoritos/prestadores", { method: "POST", body: JSON.stringify({ prestador_id: providerId }) });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Não foi possível atualizar o favorito.");
+    if (isFavorite) favoriteProviderIds.delete(providerId);
+    else favoriteProviderIds.add(providerId);
+    if (button) updateProviderFavoriteButton(button, providerId);
+    showToast(isFavorite ? "Prestador removido dos favoritos." : "Prestador favoritado.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderFavoriteProviders() {
+  if (!favoriteProvidersList) return;
+  favoritesCount.textContent = `${FAVORITE_PROVIDERS.length} salvo${FAVORITE_PROVIDERS.length === 1 ? "" : "s"}`;
+  favoriteProvidersList.replaceChildren();
+  if (!FAVORITE_PROVIDERS.length) {
+    favoriteProvidersList.innerHTML = '<p class="empty-state">Você ainda não favoritou nenhum prestador.</p>';
+    return;
+  }
+  FAVORITE_PROVIDERS.forEach((provider) => {
+    const item = document.createElement("article");
+    item.className = "history-item";
+    const thumb = provider.foto
+      ? `<img src="${provider.foto}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px" />`
+      : requestInitials(provider.nome);
+    item.innerHTML = `
+      <div class="history-thumb">${thumb}</div>
+      <div class="history-content">
+        <div class="history-title">${provider.nome}</div>
+        <div class="history-provider">⭐ ${provider.rating.toFixed(1).replace(".", ",")} (${provider.reviews}) • ${provider.anuncios_ativos} anúncio${provider.anuncios_ativos === 1 ? "" : "s"} ativo${provider.anuncios_ativos === 1 ? "" : "s"}</div>
+      </div>
+      <div class="history-item-actions">
+        <button type="button" class="text-btn" data-view-provider="${provider.nome.replace(/"/g, "&quot;")}">Ver anúncios</button>
+        <button type="button" class="small-btn reject" data-unfavorite-provider="${provider.id}">Remover</button>
+      </div>
+    `;
+    favoriteProvidersList.appendChild(item);
+  });
+}
+
+favoritesTabs?.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-favorites-tab]");
+  if (!tab) return;
+  favoritesTabs.querySelectorAll(".history-tab").forEach((el) => el.classList.remove("active"));
+  tab.classList.add("active");
+  const isAnuncios = tab.dataset.favoritesTab === "anuncios";
+  favoritesAnunciosPanel.hidden = !isAnuncios;
+  favoritesPrestadoresPanel.hidden = isAnuncios;
+  favoritesTitle.textContent = isAnuncios ? "Seus anúncios favoritos" : "Seus prestadores favoritos";
+  if (isAnuncios) renderFavorites();
+  else loadFavoriteProviderIds().then(renderFavoriteProviders);
+});
+
+favoriteProvidersList?.addEventListener("click", async (event) => {
+  const viewBtn = event.target.closest("[data-view-provider]");
+  if (viewBtn) {
+    searchInput.value = viewBtn.dataset.viewProvider;
+    showAppView("cliente");
+    setActiveSection("explorar");
+    loadServices();
+    return;
+  }
+  const removeBtn = event.target.closest("[data-unfavorite-provider]");
+  if (removeBtn) {
+    const providerId = Number(removeBtn.dataset.unfavoriteProvider);
+    await toggleFavoriteProvider(providerId, null);
+    FAVORITE_PROVIDERS = FAVORITE_PROVIDERS.filter((provider) => provider.id !== providerId);
+    renderFavoriteProviders();
+  }
+});
+
 function applyFilters() {
   queueServicesLoad();
 }
@@ -380,6 +490,17 @@ function showServiceDetails(service) {
   document.getElementById("modalProviderAvatar").textContent = providerInitials || "P";
   document.getElementById("modalProviderName").textContent = service.provider;
   document.getElementById("modalProviderMeta").textContent = `${service.reviews} ${service.reviews === 1 ? "avaliação" : "avaliações"} recebidas`;
+
+  const providerFavBtn = document.getElementById("modalProviderFavoriteBtn");
+  if (providerFavBtn) {
+    if (currentSessionRole === "cliente") {
+      providerFavBtn.hidden = false;
+      updateProviderFavoriteButton(providerFavBtn, service.prestador_id);
+      providerFavBtn.onclick = () => toggleFavoriteProvider(service.prestador_id, providerFavBtn);
+    } else {
+      providerFavBtn.hidden = true;
+    }
+  }
 
   loadServiceAvailability(service.id);
   loadServiceReviews(service.prestador_id);
@@ -1039,11 +1160,20 @@ document.addEventListener("click", (event) => {
     notificationsPopover.hidden = true;
   }
 });
-document.querySelector(".popover-head .text-btn").addEventListener("click", async () => {
+document.getElementById("markAllReadBtn").addEventListener("click", async () => {
   await authFetch("/notificacoes/marcar-todas-lidas", { method: "PATCH" });
   document.querySelector("#notificationBtn .badge")?.remove();
   notificationsPopover.hidden = true;
   showToast("Notificações marcadas como lidas.");
+});
+
+document.getElementById("clearNotificationsBtn").addEventListener("click", async () => {
+  await authFetch("/notificacoes/limpar", { method: "DELETE" });
+  NOTIFICATIONS = [];
+  document.getElementById("notificationList").innerHTML = '<p class="empty-state">Nenhuma notificação.</p>';
+  document.querySelector("#notificationBtn .badge")?.remove();
+  document.querySelectorAll(".chat-nav-link .badge").forEach((badge) => badge.remove());
+  showToast("Caixa de notificações limpa.");
 });
 
 // ============================================
@@ -1102,8 +1232,25 @@ const chatQuickActions = document.getElementById("chatQuickActions");
 const chatSearchInput = document.getElementById("chatSearchInput");
 let CHAT_CONVERSATIONS = [];
 const expandedChatGroups = new Set();
+const chatStatusLegend = document.getElementById("chatStatusLegend");
+const activeChatStatusGroups = new Set(["pending", "confirmed", "done", "cancelled"]);
 
 chatSearchInput.addEventListener("input", renderChatConversationList);
+
+chatStatusLegend?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-status-group]");
+  if (!button) return;
+  const group = button.dataset.statusGroup;
+  if (activeChatStatusGroups.has(group)) {
+    if (activeChatStatusGroups.size === 1) return; // mantém ao menos 1 status visível
+    activeChatStatusGroups.delete(group);
+    button.classList.remove("active");
+  } else {
+    activeChatStatusGroups.add(group);
+    button.classList.add("active");
+  }
+  renderChatConversationList();
+});
 
 async function sendChatMessage(texto) {
   if (!texto || !currentChatRequestId) return;
@@ -1169,12 +1316,12 @@ function renderChatConversationList() {
   }
 
   const term = chatSearchInput.value.trim().toLowerCase();
-  const filtered = term
-    ? CHAT_CONVERSATIONS.filter((conversation) => {
-        const other = chatOtherParty(conversation);
-        return other.name.toLowerCase().includes(term) || conversation.servico_titulo.toLowerCase().includes(term);
-      })
-    : CHAT_CONVERSATIONS;
+  const filtered = CHAT_CONVERSATIONS.filter((conversation) => {
+    if (!activeChatStatusGroups.has(requestStatusClass(conversation.status))) return false;
+    if (!term) return true;
+    const other = chatOtherParty(conversation);
+    return other.name.toLowerCase().includes(term) || conversation.servico_titulo.toLowerCase().includes(term);
+  });
 
   if (!filtered.length) {
     chatConversationList.innerHTML = '<p class="empty-state">Nenhuma conversa encontrada.</p>';
@@ -1277,11 +1424,21 @@ async function openChatConversation(requestId) {
   await loadChatConversations();
   markChatNotificationsRead();
   const conversation = CHAT_CONVERSATIONS.find((item) => item.id === requestId);
+  const chatHeaderFavBtn = document.getElementById("chatHeaderFavoriteBtn");
   if (conversation) {
     const other = chatOtherParty(conversation);
     document.getElementById("chatHeaderAvatar").textContent = requestInitials(other.name);
     document.getElementById("chatHeaderName").textContent = other.name;
     document.getElementById("chatHeaderMeta").textContent = other.meta;
+    if (chatHeaderFavBtn) {
+      if (currentSessionRole === "cliente") {
+        chatHeaderFavBtn.hidden = false;
+        updateProviderFavoriteButton(chatHeaderFavBtn, conversation.prestador_id);
+        chatHeaderFavBtn.onclick = () => toggleFavoriteProvider(conversation.prestador_id, chatHeaderFavBtn);
+      } else {
+        chatHeaderFavBtn.hidden = true;
+      }
+    }
   }
   chatConversationHeader.hidden = false;
   chatEmptyState.hidden = true;
@@ -2717,6 +2874,7 @@ if (initialRole) {
   loadProviderAvailability();
   loadProviderEvaluations();
   loadFavorites();
+  loadFavoriteProviderIds();
   renderClientCalendar();
   renderProviderAgenda();
 }

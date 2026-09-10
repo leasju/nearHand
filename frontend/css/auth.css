@@ -57,6 +57,7 @@ button{cursor:pointer;border:none;background:none}
   color:var(--text-on-dark);
   width:max-content;
 }
+.brand-logo{height:56px;width:auto;display:block}
 .brand-lockup{display:block}
 .brand-badge{display:inline-flex;align-items:center;gap:14px}
 .brand-icon{width:64px;height:64px;border-radius:18px;object-fit:cover;box-shadow:0 10px 26px rgba(0,0,0,.3);display:block}

@@ -53,7 +53,7 @@
     </div>
 
     <div class="popover notifications" id="notificationsPopover" hidden>
-      <div class="popover-head"><strong>Notificações</strong><button class="text-btn">Marcar como lidas</button></div>
+      <div class="popover-head"><strong>Notificações</strong><div style="display:flex;gap:10px"><button class="text-btn" id="markAllReadBtn">Marcar como lidas</button><button class="text-btn" id="clearNotificationsBtn">Limpar</button></div></div>
       <div id="notificationList"></div>
     </div>
   </header>
@@ -157,11 +157,22 @@
       </section>
 
       <section class="generic-view section-view" data-view="favoritos" hidden>
-        <div class="favorites-header"><div><span class="eyebrow">FAVORITOS</span><h1>Seus prestadores preferidos</h1><p id="favoritesCount">0 salvos</p></div></div>
-        <div class="favorites-filters" id="favoritesFilters">
-          <button class="chip active" data-favorite-category="all">Todos</button>
+        <div class="favorites-header"><div><span class="eyebrow">FAVORITOS</span><h1 id="favoritesTitle">Seus anúncios favoritos</h1><p id="favoritesCount">0 salvos</p></div></div>
+        <div class="history-tabs" id="favoritesTabs" role="tablist">
+          <button class="history-tab active" data-favorites-tab="anuncios">Anúncios favoritos</button>
+          <button class="history-tab" data-favorites-tab="prestadores">Prestadores favoritos</button>
         </div>
-        <div id="favoritesGrid" class="favorites-groups"></div>
+
+        <div id="favoritesAnunciosPanel">
+          <div class="favorites-filters" id="favoritesFilters">
+            <button class="chip active" data-favorite-category="all">Todos</button>
+          </div>
+          <div id="favoritesGrid" class="favorites-groups"></div>
+        </div>
+
+        <div id="favoritesPrestadoresPanel" hidden>
+          <div class="history-list" id="favoriteProvidersList"></div>
+        </div>
       </section>
     </section>
 
@@ -402,11 +413,11 @@
         <aside class="chat-sidebar">
           <div class="chat-sidebar-header"><h2>Mensagens</h2></div>
           <div class="chat-search"><span>🔎</span><input id="chatSearchInput" type="search" placeholder="Buscar por nome ou anúncio..." aria-label="Buscar conversa" /></div>
-          <div class="chat-status-legend">
-            <span><i class="chat-status-dot pending"></i>Pendente</span>
-            <span><i class="chat-status-dot confirmed"></i>Em andamento</span>
-            <span><i class="chat-status-dot done"></i>Concluído</span>
-            <span><i class="chat-status-dot cancelled"></i>Cancelado</span>
+          <div class="chat-status-legend" id="chatStatusLegend" title="Clique para filtrar por status">
+            <button type="button" class="active" data-status-group="pending"><i class="chat-status-dot pending"></i>Pendente</button>
+            <button type="button" class="active" data-status-group="confirmed"><i class="chat-status-dot confirmed"></i>Em andamento</button>
+            <button type="button" class="active" data-status-group="done"><i class="chat-status-dot done"></i>Concluído</button>
+            <button type="button" class="active" data-status-group="cancelled"><i class="chat-status-dot cancelled"></i>Cancelado</button>
           </div>
           <div class="chat-list" id="chatConversationList"></div>
         </aside>
@@ -414,6 +425,7 @@
           <div class="chat-conversation-header" id="chatConversationHeader" hidden>
             <span class="avatar" id="chatHeaderAvatar"></span>
             <div class="chat-header-info"><strong id="chatHeaderName"></strong><small id="chatHeaderMeta"></small></div>
+            <button type="button" class="favorite-btn large" id="chatHeaderFavoriteBtn" aria-label="Favoritar prestador" hidden>♡</button>
           </div>
           <p class="empty-state chat-empty-state" id="chatEmptyState">Selecione uma conversa para começar.</p>
           <div class="chat-messages" id="chatMessages" hidden></div>
@@ -445,6 +457,7 @@
         <div class="provider-block" id="modalProviderBlock">
           <span class="provider-avatar-lg" id="modalProviderAvatar">P</span>
           <div class="provider-block-info"><strong id="modalProviderName"></strong><small id="modalProviderMeta"></small></div>
+          <button type="button" class="favorite-btn large" id="modalProviderFavoriteBtn" aria-label="Favoritar prestador" hidden>♡</button>
         </div>
 
         <div class="availability-box"><div><strong>Disponibilidade</strong><small>Selecione uma data</small></div><div class="date-options"><button class="date-option active"><small>SEG</small><strong>08</strong></button><button class="date-option"><small>TER</small><strong>09</strong></button><button class="date-option"><small>QUA</small><strong>10</strong></button><button class="date-option"><small>QUI</small><strong>11</strong></button></div><div class="time-options"><button>09:00</button><button>11:30</button><button>14:00</button><button>17:30</button></div></div>
