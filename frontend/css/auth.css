@@ -11,16 +11,16 @@
   --tint-strong:rgba(77,62,107,.15);
   --page-a:#F3F1F8;
   --page-b:#F3F1F8;
-  --aside-a:#F8F6FC;
-  --aside-b:#F8F6FC;
+  --aside-a:#4D3E6B;
+  --aside-b:#3A2F54;
   --glass-strong:#FFFFFF;
   --glass-soft:rgba(77,62,107,.06);
   --text:#221D33;
-  --text-on-dark:#221D33;
+  --text-on-dark:#FFFFFF;
   --muted:#5a5468;
-  --muted-on-dark:#5a5468;
+  --muted-on-dark:rgba(255,255,255,.72);
   --border:#ECE9F5;
-  --border-on-dark:rgba(34,29,51,.09);
+  --border-on-dark:rgba(255,255,255,.16);
   --shadow:0 20px 50px rgba(77,62,107,.14);
   --radius-xl:20px;
   --radius-lg:16px;
@@ -40,13 +40,12 @@ button{cursor:pointer;border:none;background:none}
 .auth-shell{
   min-height:100vh;
   display:grid;
-  grid-template-columns:1.02fr 1fr;
+  grid-template-columns:1fr 1fr;
 }
 .auth-aside{
   position:relative;
   padding:40px clamp(24px,5vw,64px);
-  background:var(--aside-a);
-  border-right:1px solid var(--border);
+  background:linear-gradient(160deg,var(--aside-a) 0%,var(--aside-b) 100%);
   display:flex;
   flex-direction:column;
   gap:28px;
@@ -57,38 +56,41 @@ button{cursor:pointer;border:none;background:none}
   align-items:center;
   gap:8px;
   text-decoration:none;
-  color:var(--muted);
+  color:var(--muted-on-dark);
   font-size:13px;
   width:max-content;
 }
 .brand-logo{height:32px;width:auto;display:block}
 .brand-lockup{display:block}
 .brand-badge{display:inline-flex;align-items:center;gap:10px}
-.brand-icon{width:32px;height:32px;border-radius:10px;object-fit:cover;box-shadow:0 6px 16px rgba(77,62,107,.25);display:block}
-.brand-wordmark{font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
-.brand-lockup p{margin:14px 0 0;color:var(--muted);max-width:28rem}
+.brand-icon{width:36px;height:36px;border-radius:10px;object-fit:cover;background:#fff;padding:3px;box-shadow:0 6px 16px rgba(0,0,0,.25);display:block}
+.brand-wordmark{font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--text-on-dark)}
+.brand-lockup p{margin:14px 0 0;color:var(--muted-on-dark);max-width:28rem}
 .eyebrow{
   display:inline-flex;align-items:center;gap:8px;
   padding:6px 12px;border-radius:999px;
   background:var(--tint);
   color:var(--violet);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
 }
-.hero-copy h1{font-size:clamp(1.9rem,3.6vw,2.6rem);line-height:1.15;margin:12px 0 12px;max-width:14ch;color:var(--text);font-weight:800;letter-spacing:-.02em}
-.hero-copy p{font-size:.95rem;line-height:1.6;color:var(--muted);max-width:34rem}
+.auth-aside .eyebrow{background:rgba(255,255,255,.14);color:#fff}
+.hero-copy h1{font-size:clamp(1.9rem,3.6vw,2.6rem);line-height:1.15;margin:12px 0 12px;max-width:14ch;color:var(--text-on-dark);font-weight:800;letter-spacing:-.02em}
+.hero-copy p{font-size:.95rem;line-height:1.6;color:var(--muted-on-dark);max-width:34rem}
 .benefit-grid{display:grid}
 .benefit-card{
   display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:flex-start;
   padding:14px 0;border-top:1px solid var(--border-on-dark);
 }
-.benefit-card span{font-size:1.05rem;width:20px;text-align:center;color:var(--text)}
-.benefit-card strong{display:block;margin-bottom:3px;color:var(--text);font-size:.85rem}
-.benefit-card p{margin:0;color:var(--muted);line-height:1.5;font-size:.78rem}
+.benefit-card span{font-size:1.05rem;width:20px;text-align:center;color:var(--text-on-dark)}
+.benefit-card span .icon{filter:brightness(0) invert(1)}
+.benefit-card strong{display:block;margin-bottom:3px;color:var(--text-on-dark);font-size:.85rem}
+.benefit-card p{margin:0;color:var(--muted-on-dark);line-height:1.5;font-size:.78rem}
 .auth-main{
   display:grid;place-items:center;padding:32px 20px;
+  background:var(--surface);
 }
 .auth-card{
-  width:min(100%,640px);background:var(--surface);
-  border:1px solid var(--border); border-radius:var(--radius-xl); padding:30px 32px;
+  width:min(100%,560px);background:var(--surface);
+  border-radius:var(--radius-xl); padding:30px 32px;
 }
 .auth-top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
 .top-btn-row{display:flex;gap:10px}
@@ -170,7 +172,7 @@ button{cursor:pointer;border:none;background:none}
 
 @media (max-width: 1060px){
   .auth-shell{grid-template-columns:1fr}
-  .auth-aside{padding-bottom:18px;border-right:none;border-bottom:1px solid var(--border)}
+  .auth-aside{padding-bottom:18px}
   .hero-copy h1{max-width:18ch}
 }
 @media (max-width: 720px){

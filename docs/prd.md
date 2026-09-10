@@ -7,7 +7,8 @@ Usuários
 
 ## Identidade visual
 
-- Linguagem de UI clara e neutra (estilo "SaaS dashboard"): fundo em lilás bem claro e chapado (sem gradiente), cards brancos com cantos arredondados (~18px) e sombra suave e difusa, texto em tom escuro quase-preto (#221D33) sobre fundo claro em todas as telas — inclusive a de login/cadastro, que **não** usa mais painel escuro
+- Linguagem de UI clara e neutra (estilo "SaaS dashboard"): fundo em lilás bem claro e chapado (sem gradiente), cards brancos com cantos arredondados (~18px) e sombra suave e difusa, texto em tom escuro quase-preto (#221D33) sobre fundo claro em todas as telas logadas
+- Tela de login/cadastro é dividida exatamente ao meio: metade esquerda em degradê roxo (com o texto "Entre na sua conta ou crie um perfil...", a marca e a lista de benefícios, tudo em texto claro/branco pro contraste), metade direita branca com o formulário de login/cadastro
 - Botões **não** são em formato pílula: cantos moderadamente arredondados (9–11px) em botões primário/secundário/ghost; pílula (100% arredondado) fica reservada pra badges, chips e tags
 - Estado ativo da navegação (abas do topo, abas do admin) é um preenchimento sólido roxo-escuro com texto branco, não só um fundo claro/tint
 - Hero/banners de destaque (Explorar do cliente, Painel do prestador) são cards brancos simples com borda e sombra leve — não usam mais gradiente roxo cheio
