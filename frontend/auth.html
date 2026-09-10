@@ -17,7 +17,10 @@
       <a class="back-link" href="index.html">← Voltar</a>
 
       <div class="brand-lockup">
-        <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
+        <div class="brand-badge">
+          <img src="img/icon_nearhand.png" alt="" class="brand-icon" />
+          <span class="brand-wordmark">NearHand</span>
+        </div>
         <p>Serviços por proximidade, com uma experiência simples e acolhedora.</p>
       </div>
 
@@ -82,28 +85,26 @@
         </section>
 
         <form id="loginForm" class="auth-form" novalidate>
-          <div class="separator"><span>ou entre com seus dados</span></div>
-
           <div class="field-group">
             <label class="field-label" for="loginIdentity" id="loginIdentityLabel">Email ou telefone</label>
             <input id="loginIdentity" class="field-input" type="text" placeholder="Digite seu email ou telefone" />
           </div>
 
           <div class="field-group">
-            <div class="field-between">
-              <label class="field-label" for="loginPassword">Senha</label>
-              <a href="#" class="text-link">Esqueci minha senha</a>
-            </div>
+            <label class="field-label" for="loginPassword">Senha</label>
             <div class="password-wrap">
               <input id="loginPassword" class="field-input" type="password" placeholder="Digite sua senha" />
               <button type="button" class="password-toggle" data-target="loginPassword">Mostrar</button>
             </div>
           </div>
 
-          <label class="checkbox-row">
-            <input type="checkbox" checked />
-            <span>Lembrar meu acesso neste dispositivo</span>
-          </label>
+          <div class="field-between">
+            <label class="checkbox-row">
+              <input type="checkbox" checked />
+              <span>Lembrar de mim</span>
+            </label>
+            <a href="#" class="text-link">Esqueci a senha</a>
+          </div>
 
           <button type="submit" class="primary-btn full">Entrar</button>
 

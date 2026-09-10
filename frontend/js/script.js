@@ -266,14 +266,40 @@ function renderFavorites() {
     ? favoriteServices
     : favoriteServices.filter((service) => service.category === favoritesActiveCategory);
   favoritesGrid.replaceChildren();
-  filtered.forEach((service) => {
-    favoritesGrid.appendChild(serviceCard(service));
-  });
   if (!favoriteServices.length) {
-    favoritesGrid.innerHTML = "<p class=\"empty-state\">Você ainda não adicionou prestadores aos favoritos.</p>";
-  } else if (!filtered.length) {
-    favoritesGrid.innerHTML = "<p class=\"empty-state\">Nenhum favorito nessa categoria.</p>";
+    favoritesGrid.innerHTML = "<p class=\"empty-state\">Você ainda não adicionou anúncios aos favoritos.</p>";
+    return;
   }
+  if (!filtered.length) {
+    favoritesGrid.innerHTML = "<p class=\"empty-state\">Nenhum favorito nessa categoria.</p>";
+    return;
+  }
+
+  // Agrupa por prestador: favoritar um anúncio ainda dá acesso rápido aos outros
+  // anúncios daquele mesmo prestador, caso o cliente queira agendar outro serviço.
+  const groups = new Map();
+  filtered.forEach((service) => {
+    if (!groups.has(service.prestador_id)) groups.set(service.prestador_id, []);
+    groups.get(service.prestador_id).push(service);
+  });
+
+  groups.forEach((services) => {
+    const [first] = services;
+    const group = document.createElement("div");
+    group.className = "favorites-group";
+    group.innerHTML = `
+      <div class="favorites-group-header">
+        <span class="avatar">${requestInitials(first.provider)}</span>
+        <strong>${first.provider}</strong>
+        <button type="button" class="text-btn" data-view-provider="${first.provider.replace(/"/g, "&quot;")}">Ver todos os anúncios →</button>
+      </div>
+    `;
+    const grid = document.createElement("div");
+    grid.className = "service-grid";
+    services.forEach((service) => grid.appendChild(serviceCard(service)));
+    group.appendChild(grid);
+    favoritesGrid.appendChild(group);
+  });
 }
 
 favoritesFilters.addEventListener("click", (event) => {
@@ -281,6 +307,15 @@ favoritesFilters.addEventListener("click", (event) => {
   if (!chip) return;
   favoritesActiveCategory = chip.dataset.favoriteCategory;
   renderFavorites();
+});
+
+favoritesGrid.addEventListener("click", (event) => {
+  const viewProviderBtn = event.target.closest("[data-view-provider]");
+  if (!viewProviderBtn) return;
+  searchInput.value = viewProviderBtn.dataset.viewProvider;
+  showAppView("cliente");
+  setActiveSection("explorar");
+  loadServices();
 });
 
 async function loadFavorites() {
@@ -1176,7 +1211,7 @@ function renderChatConversationList() {
       toggle.className = "chat-group-toggle";
       toggle.setAttribute("aria-expanded", String(isExpanded));
       toggle.title = isExpanded ? "Recolher conversas" : "Expandir conversas";
-      toggle.innerHTML = `<span class="chat-group-count">${conversations.length}</span><span class="chat-group-chevron">⌄</span>`;
+      toggle.innerHTML = `<span class="chat-group-count">${conversations.length}</span><span class="chat-group-chevron"><svg viewBox="0 0 12 8" width="10" height="7" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
       toggle.addEventListener("click", (event) => {
         event.stopPropagation();
         const nowExpanded = group.classList.contains("collapsed");

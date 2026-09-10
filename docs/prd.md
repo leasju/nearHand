@@ -8,7 +8,8 @@ Usuários
 ## Identidade visual
 
 - Linguagem de UI inspirada na Apple: fonte prioriza a stack do sistema (-apple-system/SF Pro, com Inter como fallback em quem não é Apple), sombras suaves e em camadas (baixa opacidade, bem difusas em vez de saturadas), cantos arredondados consistentes e transições com curva "spring" (cubic-bezier) e leve efeito de pressionar (scale) nos botões
-- Tela de login/cadastro tem o painel lateral e o fundo em tom roxo escuro (gradiente), com o card do formulário claro por cima para manter o texto legível
+- Tela de login/cadastro tem o painel lateral e o fundo em tom roxo escuro (gradiente flat, sem blobs), com o card do formulário claro por cima para manter o texto legível. Marca no painel lateral é um badge (ícone dentro de um quadrado arredondado branco) + o nome "NearHand" ao lado, maior que o resto do texto. Lista de benefícios sem cartão/fundo, só ícone + texto separados por linha fina (hairline). Campos de formulário e botão principal em formato pílula (totalmente arredondados)
+- Modais do site (detalhe do serviço, criar/editar anúncio, criar/editar conta no admin) são dimensionados para desktop — bem mais largos que o padrão mobile-first, para não parecer app de celular dentro do navegador
 
 # Funcionalidades — Cliente
 
@@ -93,6 +94,7 @@ Usuários
 - Histórico de serviços contratados
 - Aba própria "Avaliações" na navbar: lista os serviços que o cliente já contratou (qualquer status exceto cancelado), com botão "Avaliar" habilitado apenas nos que já foram concluídos
 - Favoritar um **anúncio específico** (não o prestador inteiro) — favoritar um serviço de um prestador não afeta os outros anúncios dele
+- Tela de Favoritos agrupa os anúncios salvos por prestador: cada prestador aparece com um cabeçalho (nome) e os anúncios favoritados dele embaixo, mais um link "Ver todos os anúncios" que leva pra Explorar já filtrado pelo nome daquele prestador — útil pra achar outro serviço dele pra agendar
 - Notificações (prestador respondeu no chat, confirmou o serviço, etc.)
 
 # Funcionalidades — Prestador de Serviço

@@ -43,11 +43,7 @@ button{cursor:pointer;border:none;background:none}
 .auth-aside{
   position:relative;
   padding:40px clamp(24px,5vw,64px);
-  background:
-    radial-gradient(circle at top right, rgba(197,223,224,.16), transparent 42%),
-    radial-gradient(circle at left bottom, rgba(155,141,190,.24), transparent 38%),
-    linear-gradient(180deg,var(--aside-a) 0%, var(--aside-b) 100%);
-  border-right:1px solid rgba(0,0,0,.2);
+  background:linear-gradient(180deg,var(--aside-a) 0%, var(--aside-b) 100%);
   display:flex;
   flex-direction:column;
   gap:28px;
@@ -62,8 +58,10 @@ button{cursor:pointer;border:none;background:none}
   width:max-content;
 }
 .brand-lockup{display:block}
-.brand-logo{height:60px;width:auto;display:block;padding:10px 16px;border-radius:16px;background:rgba(255,255,255,.94);box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.brand-lockup p{margin:10px 0 0;color:var(--muted-on-dark);max-width:28rem}
+.brand-badge{display:inline-flex;align-items:center;gap:14px}
+.brand-icon{width:64px;height:64px;border-radius:18px;object-fit:cover;box-shadow:0 10px 26px rgba(0,0,0,.3);display:block}
+.brand-wordmark{font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--text-on-dark)}
+.brand-lockup p{margin:14px 0 0;color:var(--muted-on-dark);max-width:28rem}
 .eyebrow{
   display:inline-flex;align-items:center;gap:8px;
   padding:8px 12px;border-radius:999px;
@@ -72,13 +70,13 @@ button{cursor:pointer;border:none;background:none}
 }
 .hero-copy h1{font-size:clamp(2rem,4vw,3.4rem);line-height:1.05;margin:14px 0 14px;max-width:12ch;color:var(--text-on-dark)}
 .hero-copy p{font-size:1.02rem;line-height:1.7;color:var(--muted-on-dark);max-width:36rem}
-.benefit-grid{display:grid;gap:14px}
+.benefit-grid{display:grid}
 .benefit-card{
   display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:flex-start;
-  padding:16px 18px;border-radius:18px;background:var(--glass-soft);backdrop-filter:blur(14px);
-  border:1px solid var(--border-on-dark);
+  padding:16px 0;border-bottom:1px solid var(--border-on-dark);
 }
-.benefit-card span{font-size:1.3rem;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.12)}
+.benefit-card:last-child{border-bottom:0}
+.benefit-card span{font-size:1.2rem;width:24px;text-align:center;color:var(--text-on-dark)}
 .benefit-card strong{display:block;margin-bottom:4px;color:var(--text-on-dark)}
 .benefit-card p{margin:0;color:var(--muted-on-dark);line-height:1.55}
 .auth-main{
@@ -99,9 +97,9 @@ button{cursor:pointer;border:none;background:none}
 }
 .ghost-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(77,62,107,.14)}
 .switches{display:grid;gap:16px;margin-bottom:18px}
-.role-switch,.mode-switch{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;background:var(--tint);padding:8px;border-radius:18px}
+.role-switch,.mode-switch{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;background:var(--tint);padding:6px;border-radius:999px}
 .role-btn,.mode-btn{
-  padding:13px 16px;border-radius:14px;font-weight:700;color:var(--muted);
+  padding:13px 16px;border-radius:999px;font-weight:700;color:var(--muted);
   transition:background .22s cubic-bezier(.25,.1,.25,1),color .22s cubic-bezier(.25,.1,.25,1),box-shadow .22s cubic-bezier(.25,.1,.25,1);
 }
 .role-btn.active,.mode-btn.active{background:var(--surface);color:var(--violet);box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 20px rgba(77,62,107,.12)}
@@ -116,19 +114,16 @@ button{cursor:pointer;border:none;background:none}
 .oauth-btn{
   border:1px solid var(--border);background:var(--surface);padding:14px 16px;border-radius:16px;font-weight:600;color:var(--text);
 }
-.separator{position:relative;text-align:center;margin-top:2px}
-.separator::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border)}
-.separator span{position:relative;background:var(--glass-strong);padding:0 12px;color:var(--muted);font-size:.95rem}
 .grid{display:grid;gap:16px}
 .grid.two{grid-template-columns:repeat(2,1fr)}
 .field-group{display:grid;gap:8px}
 .field-label{font-weight:600;color:var(--text)}
 .field-help{color:var(--muted);line-height:1.45}
 .field-input{
-  width:100%;padding:15px 16px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);
+  width:100%;padding:15px 20px;border-radius:999px;border:1px solid transparent;background:var(--tint);color:var(--text);
   outline:none;transition:.2s ease;
 }
-.field-input:focus{border-color:var(--lavender);box-shadow:0 0 0 4px rgba(129,116,156,.12)}
+.field-input:focus{background:var(--surface);border-color:var(--lavender);box-shadow:0 0 0 4px rgba(129,116,156,.12)}
 .select-input{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--violet) 50%),linear-gradient(135deg,var(--violet) 50%,transparent 50%);background-position:calc(100% - 18px) calc(50% - 3px),calc(100% - 12px) calc(50% - 3px);background-size:6px 6px,6px 6px;background-repeat:no-repeat}
 .preference-chips{display:flex;flex-wrap:wrap;gap:8px}
 .preference-chip{padding:9px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.9rem;font-weight:600;transition:.18s ease;display:inline-flex;align-items:center;gap:6px}
@@ -153,7 +148,7 @@ button{cursor:pointer;border:none;background:none}
 .checkbox-row.align-start{align-items:flex-start}
 .checkbox-row input{accent-color:var(--violet);margin-top:2px}
 .primary-btn{
-  padding:16px 20px;border-radius:18px;background:linear-gradient(135deg,var(--violet),var(--lavender));
+  padding:16px 20px;border-radius:999px;background:linear-gradient(135deg,var(--violet),var(--lavender));
   color:var(--white);font-weight:700;letter-spacing:-.01em;box-shadow:0 1px 2px rgba(0,0,0,.08),0 12px 24px rgba(30,22,46,.28);
   transition:transform .2s cubic-bezier(.25,.1,.25,1),box-shadow .2s cubic-bezier(.25,.1,.25,1);
 }
