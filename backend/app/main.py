@@ -937,7 +937,8 @@ REQUEST_SELECT = """
         p.id AS prestador_id,
         p.nome_empresa AS prestador_nome,
         c.nome_completo AS cliente_nome,
-        c.email AS cliente_email
+        c.email AS cliente_email,
+        c.telefone AS cliente_telefone
     FROM solicitacao so
     JOIN servico s ON s.id = so.servico_id
     JOIN prestador p ON p.id = s.prestador_id

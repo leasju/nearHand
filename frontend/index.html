@@ -31,6 +31,7 @@
       <button class="nav-link active" data-provider-section="painel">Painel</button>
       <button class="nav-link" data-provider-section="agenda">Agenda</button>
       <button class="nav-link" data-provider-section="anuncios">Meus anúncios</button>
+      <button class="nav-link" data-provider-section="clientes">Clientes atendidos</button>
       <button class="nav-link chat-nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-provider-section="avaliacoes">Avaliações</button>
     </nav>
@@ -226,6 +227,13 @@
         </div>
       </section>
 
+      <section class="generic-view provider-section" data-provider-view="clientes" hidden>
+        <div class="panel-card">
+          <div class="panel-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Clientes atendidos</h2></div></div>
+          <div class="history-list" id="providerClientsList"></div>
+        </div>
+      </section>
+
       <section class="generic-view provider-section" data-provider-view="avaliacoes" hidden>
         <div class="panel-card">
           <div class="panel-head"><div><span class="eyebrow">REPUTAÇÃO</span><h2>Avaliações recentes</h2></div></div>
@@ -414,7 +422,7 @@
       <div class="service-detail">
         <div class="detail-head"><div><span class="service-pill" id="modalCategory"></span><h2 id="serviceTitle">Serviço</h2><p id="modalProvider"></p></div><button class="favorite-btn large" id="modalFavorite">♡</button></div>
         <div class="detail-metrics"><span id="modalRating">⭐ 4,9</span><span id="modalDistance">📍 2,3 km</span><span id="modalPrice">💳 R$ 120/h</span></div>
-        <p class="detail-description">Atendimento residencial com orçamento transparente, agenda organizada e confirmação pelo chat.</p>
+        <p class="detail-description" id="modalDescription"></p>
 
         <div class="provider-block" id="modalProviderBlock">
           <span class="provider-avatar-lg" id="modalProviderAvatar">P</span>

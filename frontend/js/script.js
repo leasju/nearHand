@@ -311,6 +311,7 @@ function showServiceDetails(service) {
   document.getElementById("modalRating").textContent = `⭐ ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
   document.getElementById("modalDistance").textContent = `📍 ${service.distance.toFixed(1).replace(".", ",")} km`;
   document.getElementById("modalPrice").textContent = `💳 R$ ${formatPrice(service.price)}${service.unit}`;
+  document.getElementById("modalDescription").textContent = service.description || "Sem descrição.";
   const photos = (service.photos || []).map((photo) => photo.url).filter(Boolean);
   const galleryMain = document.getElementById("galleryMain");
   function setMainPhoto(url) {
@@ -1136,7 +1137,8 @@ async function loadMessages() {
         chatMessages.appendChild(divider);
       }
       const bubble = document.createElement("div");
-      bubble.className = message.remetente_id === currentUser.id ? "message me" : "message them";
+      const isMine = message.remetente_id === currentUser.id && message.remetente_tipo === currentSessionRole;
+      bubble.className = isMine ? "message me" : "message them";
       const timeLabel = sentAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       bubble.innerHTML = `${escapeHtml(message.texto)}<span class="message-time">${timeLabel}</span>`;
       chatMessages.appendChild(bubble);
@@ -1319,12 +1321,41 @@ historyList.addEventListener("click", async (event) => {
 // ============================================
 const requestList = document.getElementById("requestList");
 
+let PROVIDER_REQUESTS = [];
+const providerClientsList = document.getElementById("providerClientsList");
+
+function renderProviderClients() {
+  if (!providerClientsList) return;
+  const completed = PROVIDER_REQUESTS.filter((request) => request.status === "concluido");
+  providerClientsList.replaceChildren();
+  if (!completed.length) {
+    providerClientsList.innerHTML = '<p class="empty-state">Nenhum serviço concluído ainda.</p>';
+    return;
+  }
+  completed.forEach((request) => {
+    const item = document.createElement("article");
+    item.className = "history-item";
+    const contact = [request.cliente_telefone, request.cliente_email].filter(Boolean).join(" • ");
+    item.innerHTML = `
+      <div class="history-thumb">${requestInitials(request.cliente_nome)}</div>
+      <div class="history-content">
+        <div class="history-title">${request.cliente_nome}</div>
+        <div class="history-provider">${request.servico_titulo} • ${formatRequestDate(request.data_hora_agendada)}</div>
+        <div class="history-meta"><span class="history-price">${contact || "Sem contato cadastrado"}</span></div>
+      </div>
+    `;
+    providerClientsList.appendChild(item);
+  });
+}
+
 async function loadProviderRequests() {
   if (currentSessionRole !== "prestador") return;
   try {
     const response = await authFetch("/prestadores/me/solicitacoes");
     const requests = await response.json();
     if (!response.ok) throw new Error(requests.detail || "Não foi possível carregar as solicitações.");
+    PROVIDER_REQUESTS = requests;
+    renderProviderClients();
     PROVIDER_EVENTS = requests
       .filter((request) => request.data_hora_agendada && !["cancelado", "concluido"].includes(request.status))
       .map((request) => ({
@@ -1506,6 +1537,15 @@ function getWeeklyScheduleValues() {
     hora_inicio: row.querySelector("[data-day-start]").value,
     hora_fim: row.querySelector("[data-day-end]").value,
   })).filter((item) => item.hora_inicio && item.hora_fim);
+}
+
+function validateWeeklyScheduleValues(items) {
+  for (const item of items) {
+    if (item.hora_fim <= item.hora_inicio) {
+      return `Em "${WEEKDAY_LABELS[item.dia_semana]}", o horário final precisa ser depois do inicial.`;
+    }
+  }
+  return null;
 }
 
 function setWeeklyScheduleValues(schedule) {
@@ -1715,6 +1755,12 @@ newAdForm.addEventListener("submit", async (event) => {
     showToast("Adicione pelo menos 2 fotos para publicar o anúncio.");
     return;
   }
+  const weeklySchedule = getWeeklyScheduleValues();
+  const scheduleError = validateWeeklyScheduleValues(weeklySchedule);
+  if (scheduleError) {
+    showToast(scheduleError);
+    return;
+  }
 
   const isEdit = editingServiceId !== null;
   try {
@@ -1735,11 +1781,11 @@ newAdForm.addEventListener("submit", async (event) => {
 
     const scheduleResponse = await authFetch(`/services/${data.id}/horarios`, {
       method: "PUT",
-      body: JSON.stringify({ horarios: getWeeklyScheduleValues() }),
+      body: JSON.stringify({ horarios: weeklySchedule }),
     });
     if (!scheduleResponse.ok) {
-      const scheduleError = await readApiResponse(scheduleResponse);
-      throw new Error(scheduleError.detail || "Anúncio salvo, mas não foi possível salvar a disponibilidade semanal.");
+      const scheduleErrorData = await readApiResponse(scheduleResponse);
+      throw new Error(scheduleErrorData.detail || "Anúncio salvo, mas não foi possível salvar a disponibilidade semanal.");
     }
 
     newAdModal.hidden = true;
