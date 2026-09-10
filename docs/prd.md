@@ -5,6 +5,11 @@ Usuários
 - Prestador/Contratado
 - Admin
 
+## Identidade visual
+
+- Linguagem de UI inspirada na Apple: fonte prioriza a stack do sistema (-apple-system/SF Pro, com Inter como fallback em quem não é Apple), sombras suaves e em camadas (baixa opacidade, bem difusas em vez de saturadas), cantos arredondados consistentes e transições com curva "spring" (cubic-bezier) e leve efeito de pressionar (scale) nos botões
+- Tela de login/cadastro tem o painel lateral e o fundo em tom roxo escuro (gradiente), com o card do formulário claro por cima para manter o texto legível
+
 # Funcionalidades — Cliente
 
 ## 1. Autenticação e perfil + Configurações
@@ -76,6 +81,7 @@ Usuários
 
 - Aba própria "Chat" na navbar, com lista de todas as conversas do cliente e o painel da conversa selecionada
 - **Agrupado por prestador**: se o cliente tem mais de uma conversa com o mesmo prestador (anúncios diferentes), elas ficam juntas sob um único cabeçalho com o nome dele, em vez de repetir o nome várias vezes na lista
+- Quando o grupo tem mais de uma conversa, ele começa recolhido (só o cabeçalho com o nome e a contagem aparecem) com um botão para expandir/recolher e ver as conversas individuais — evita lista longa quando há muitos pedidos com a mesma pessoa. Grupo com só uma conversa aparece sempre expandido, sem botão. O grupo da conversa aberta no momento fica sempre expandido automaticamente
 - Barra de busca no topo da lista de conversas, filtra por nome do prestador ou título do anúncio
 - Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
@@ -160,6 +166,7 @@ Usuários
 
 - Aba própria "Chat" na navbar, com lista de todas as conversas recebidas e o painel da conversa selecionada
 - **Agrupado por cliente**: se o prestador tem mais de uma conversa com o mesmo cliente (serviços diferentes), elas ficam juntas sob um único cabeçalho com o nome dele, em vez de repetir o nome várias vezes na lista
+- Quando o grupo tem mais de uma conversa, ele começa recolhido com um botão para expandir/recolher (mesmo comportamento do lado do cliente)
 - Barra de busca no topo da lista de conversas, filtra por nome do cliente ou título do anúncio
 - Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa

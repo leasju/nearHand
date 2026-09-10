@@ -1066,6 +1066,7 @@ const chatConversationList = document.getElementById("chatConversationList");
 const chatQuickActions = document.getElementById("chatQuickActions");
 const chatSearchInput = document.getElementById("chatSearchInput");
 let CHAT_CONVERSATIONS = [];
+const expandedChatGroups = new Set();
 
 chatSearchInput.addEventListener("input", renderChatConversationList);
 
@@ -1155,11 +1156,39 @@ function renderChatConversationList() {
     groups.get(key).push(conversation);
   });
 
-  groups.forEach((conversations) => {
+  groups.forEach((conversations, key) => {
     const other = chatOtherParty(conversations[0]);
+    const groupKey = String(key);
+    const hasActive = conversations.some((conversation) => conversation.id === currentChatRequestId);
+    const canCollapse = conversations.length > 1;
+    if (hasActive) expandedChatGroups.add(groupKey);
+    const isExpanded = !canCollapse || hasActive || expandedChatGroups.has(groupKey);
+
     const group = document.createElement("div");
-    group.className = "chat-group";
-    group.innerHTML = `<div class="chat-group-header"><span class="avatar">${requestInitials(other.name)}</span><strong>${other.name}</strong></div>`;
+    group.className = `chat-group${canCollapse && !isExpanded ? " collapsed" : ""}`;
+
+    const header = document.createElement("div");
+    header.className = "chat-group-header";
+    header.innerHTML = `<span class="avatar">${requestInitials(other.name)}</span><strong>${other.name}</strong>`;
+    if (canCollapse) {
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "chat-group-toggle";
+      toggle.setAttribute("aria-expanded", String(isExpanded));
+      toggle.title = isExpanded ? "Recolher conversas" : "Expandir conversas";
+      toggle.innerHTML = `<span class="chat-group-count">${conversations.length}</span><span class="chat-group-chevron">⌄</span>`;
+      toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const nowExpanded = group.classList.contains("collapsed");
+        group.classList.toggle("collapsed", !nowExpanded);
+        toggle.setAttribute("aria-expanded", String(nowExpanded));
+        toggle.title = nowExpanded ? "Recolher conversas" : "Expandir conversas";
+        if (nowExpanded) expandedChatGroups.add(groupKey);
+        else expandedChatGroups.delete(groupKey);
+      });
+      header.appendChild(toggle);
+    }
+    group.appendChild(header);
 
     conversations.forEach((conversation) => {
       const item = document.createElement("button");
