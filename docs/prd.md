@@ -194,7 +194,20 @@ Usuários
 - Criar, editar e remover categorias de serviço usadas em todo o site
 - Categorias também podem ser criadas por um prestador direto na hora de publicar um anúncio (ver Prestador, item 2)
 
-## 3. Moderação de avaliações
+## 3. Gestão de anúncios
+
+- Ver todos os anúncios cadastrados na plataforma (de qualquer prestador), com busca por título ou nome do prestador
+- Editar um anúncio (título, categoria, descrição, valor, tipo, negociável, raio, status) — admin **não** pode criar anúncio, só editar e apagar
+- Apagar anúncio
+
+## 4. Gestão de contas
+
+- Ver todas as contas cadastradas (clientes e prestadores juntos), com busca por nome/email e filtro por tipo
+- Criar conta nova (cliente ou prestador) direto pelo painel admin
+- Editar dados de uma conta (nome, email, telefone, CPF/CNPJ quando prestador, endereço)
+- Apagar conta
+
+## 5. Moderação de avaliações
 
 - Ver a fila de avaliações denunciadas por prestadores
 - Aprovar a denúncia (avaliação volta a ficar visível) ou remover a avaliação definitivamente

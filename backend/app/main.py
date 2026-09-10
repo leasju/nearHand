@@ -654,8 +654,7 @@ class AccountRegister(AddressFields):
     senha: str
 
 
-@app.post("/auth/register")
-def register_account(account: AccountRegister, db: Session = Depends(get_db)):
+def _create_account_core(account: AccountRegister, db: Session, require_photo: bool = True) -> dict:
     account_type = account.tipo.strip().lower()
     name = account.nome.strip()
     email = account.email.strip().lower()
@@ -668,7 +667,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
             status_code=400,
             detail="Name, email, address, and an 8-character password are required",
         )
-    if not account.foto.strip():
+    if require_photo and not account.foto.strip():
         raise HTTPException(status_code=400, detail="Profile or company photo is required")
     if account_type == "prestador" and not account.cpf_cnpj.strip():
         raise HTTPException(status_code=400, detail="CPF or CNPJ is required")
@@ -760,6 +759,11 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
         "tipo": account_type,
         "id": user_result.lastrowid,
     }
+
+
+@app.post("/auth/register")
+def register_account(account: AccountRegister, db: Session = Depends(get_db)):
+    return _create_account_core(account, db, require_photo=True)
 
 
 @app.post("/auth/login")
@@ -2015,6 +2019,231 @@ def moderate_evaluation(
     raise HTTPException(status_code=400, detail="Action must be aprovar or remover")
 
 
+# ============================================
+# Admin: anúncios (ver todos, editar, apagar)
+# ============================================
+@app.get("/admin/services")
+def admin_list_services(db: Session = Depends(get_db), admin=Depends(get_current_admin)):
+    query = text(SERVICE_SELECT.format(distance_expression="0") + """
+        GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
+                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+        ORDER BY s.criado_em DESC
+    """)
+    rows = db.execute(query, {"lat": 0, "lng": 0}).mappings().all()
+    return [_decode_service_row(row) for row in rows]
+
+
+@app.put("/admin/services/{service_id}")
+def admin_update_service(
+    service_id: int,
+    service: ServiceUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    existing = db.execute(text("SELECT id FROM servico WHERE id = :id"), {"id": service_id}).first()
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+    if service.tipo_valor not in {"fixo", "por_hora"} or service.valor < 0 or service.raio_atendimento_km <= 0:
+        raise HTTPException(status_code=400, detail="Invalid service values")
+    try:
+        db.execute(
+            text("""
+                UPDATE servico
+                SET categoria_id = :categoria_id, titulo = :titulo, descricao = :descricao,
+                    valor = :valor, tipo_valor = :tipo_valor, negociavel = :negociavel, raio_atendimento_km = :raio
+                WHERE id = :id
+            """),
+            {
+                "categoria_id": service.categoria_id,
+                "titulo": service.titulo.strip(),
+                "descricao": service.descricao.strip() or None,
+                "valor": service.valor,
+                "tipo_valor": service.tipo_valor,
+                "negociavel": service.negociavel,
+                "raio": service.raio_atendimento_km,
+                "id": service_id,
+            },
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid service data")
+    except DataError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
+    return get_service(service_id, db)
+
+
+@app.patch("/admin/services/{service_id}/status")
+def admin_update_service_status(
+    service_id: int,
+    payload: ServiceStatusUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    result = db.execute(
+        text("UPDATE servico SET status = :status WHERE id = :id"),
+        {"status": payload.status, "id": service_id},
+    )
+    db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return {"id": service_id, "status": payload.status}
+
+
+@app.delete("/admin/services/{service_id}")
+def admin_delete_service(
+    service_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    try:
+        result = db.execute(text("DELETE FROM servico WHERE id = :id"), {"id": service_id})
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Não é possível remover: esse anúncio tem pedidos vinculados")
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return {"status": "deleted"}
+
+
+# ============================================
+# Admin: contas (ver todas, criar, editar, apagar)
+# ============================================
+def _account_row_to_dict(row: dict, tipo: str) -> dict:
+    account = dict(row)
+    account["tipo"] = tipo
+    if account.get("criado_em") is not None:
+        account["criado_em"] = account["criado_em"].isoformat()
+    return account
+
+
+@app.get("/admin/accounts")
+def admin_list_accounts(db: Session = Depends(get_db), admin=Depends(get_current_admin)):
+    clientes = db.execute(
+        text("""
+            SELECT c.id, c.nome_completo AS nome, c.email, c.telefone, c.criado_em,
+                   {address}
+            FROM cliente c
+            JOIN endereco e ON e.id = c.endereco_id
+        """.format(address=ADDRESS_COLUMNS_SQL))
+    ).mappings().all()
+    prestadores = db.execute(
+        text("""
+            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj, p.criado_em,
+                   {address}
+            FROM prestador p
+            JOIN endereco e ON e.id = p.endereco_id
+        """.format(address=ADDRESS_COLUMNS_SQL))
+    ).mappings().all()
+    accounts = [_account_row_to_dict(row, "cliente") for row in clientes] + \
+               [_account_row_to_dict(row, "prestador") for row in prestadores]
+    accounts.sort(key=lambda a: a["criado_em"], reverse=True)
+    return accounts
+
+
+@app.post("/admin/accounts")
+def admin_create_account(
+    account: AccountRegister,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    return _create_account_core(account, db, require_photo=False)
+
+
+class AdminAccountUpdate(AddressFields):
+    nome: str
+    email: str
+    telefone: str = ""
+    cpf_cnpj: str = ""
+
+
+@app.put("/admin/accounts/{tipo}/{account_id}")
+def admin_update_account(
+    tipo: str,
+    account_id: int,
+    payload: AdminAccountUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    if tipo not in {"cliente", "prestador"}:
+        raise HTTPException(status_code=400, detail="Invalid account type")
+    name = payload.nome.strip()
+    email = payload.email.strip().lower()
+    address = payload.rua.strip()
+    if not name or not email or not address:
+        raise HTTPException(status_code=400, detail="Name, email, and address are required")
+    if tipo == "prestador" and not payload.cpf_cnpj.strip():
+        raise HTTPException(status_code=400, detail="CPF or CNPJ is required")
+
+    table = "cliente" if tipo == "cliente" else "prestador"
+    name_column = "nome_completo" if tipo == "cliente" else "nome_empresa"
+    latitude, longitude = _geocode_address(payload)
+
+    try:
+        set_clause = f"{name_column} = :nome, email = :email, telefone = :telefone"
+        params = {
+            "nome": name,
+            "email": email,
+            "telefone": _digits_only(payload.telefone) or None,
+            "id": account_id,
+        }
+        if tipo == "prestador":
+            set_clause += ", cpf_cnpj = :cpf_cnpj"
+            params["cpf_cnpj"] = _digits_only(payload.cpf_cnpj)
+        result = db.execute(text(f"UPDATE {table} SET {set_clause} WHERE id = :id"), params)
+        if result.rowcount == 0:
+            existing = db.execute(text(f"SELECT id FROM {table} WHERE id = :id"), {"id": account_id}).first()
+            if existing is None:
+                raise HTTPException(status_code=404, detail="Account not found")
+        db.execute(
+            text(f"""
+                UPDATE endereco
+                JOIN {table} ON {table}.endereco_id = endereco.id
+                SET endereco.cep = :cep, endereco.rua = :rua, endereco.numero = :numero,
+                    endereco.complemento = :complemento, endereco.bairro = :bairro,
+                    endereco.cidade = :cidade, endereco.estado = :estado,
+                    endereco.latitude = :latitude, endereco.longitude = :longitude
+                WHERE {table}.id = :id
+            """),
+            {**_address_params(payload), "latitude": latitude, "longitude": longitude, "id": account_id},
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or CPF/CNPJ already in use")
+    except DataError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
+
+    return {"status": "updated"}
+
+
+@app.delete("/admin/accounts/{tipo}/{account_id}")
+def admin_delete_account(
+    tipo: str,
+    account_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    if tipo not in {"cliente", "prestador"}:
+        raise HTTPException(status_code=400, detail="Invalid account type")
+    table = "cliente" if tipo == "cliente" else "prestador"
+    try:
+        result = db.execute(text(f"DELETE FROM {table} WHERE id = :id"), {"id": account_id})
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Não é possível remover: essa conta tem dados vinculados (anúncios, pedidos, favoritos, etc.)",
+        )
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return {"status": "deleted"}
+
+
 # Health check endpoint for the database
 @app.get("/health/db")
 def check_db(db: Session = Depends(get_db)):
@@ -2163,6 +2392,16 @@ def admin_categories_page():
 @app.get("/admin/avaliacoes", include_in_schema=False)
 def admin_evaluations_page():
     return RedirectResponse(url="/frontend/admin-avaliacoes.html")
+
+
+@app.get("/admin/anuncios", include_in_schema=False)
+def admin_services_page():
+    return RedirectResponse(url="/frontend/admin-services.html")
+
+
+@app.get("/admin/contas", include_in_schema=False)
+def admin_accounts_page():
+    return RedirectResponse(url="/frontend/admin-accounts.html")
 
 
 @app.get("/admin/login", include_in_schema=False)

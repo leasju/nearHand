@@ -502,9 +502,14 @@ function closeModals() {
 
 cardsView.addEventListener("click", handleCardAction);
 favoritesGrid.addEventListener("click", handleCardAction);
-[searchInput, categoryFilter, ratingFilter, sortFilter, radiusFilter].forEach((control) => {
+// Busca por texto e o slider de raio se beneficiam de debounce (digitação/arraste contínuo);
+// selects de categoria/avaliação/ordenação são escolhas únicas e devem buscar na hora, sem atraso.
+[searchInput, radiusFilter].forEach((control) => {
   control.addEventListener("input", applyFilters);
   control.addEventListener("change", applyFilters);
+});
+[categoryFilter, ratingFilter, sortFilter].forEach((control) => {
+  control.addEventListener("change", () => loadServices());
 });
 radiusFilter.addEventListener("input", () => {
   radiusLabel.textContent = `${radiusFilter.value} km`;
@@ -527,7 +532,7 @@ document.getElementById("clearFilters").addEventListener("click", () => {
   sortFilter.value = "distance";
   radiusFilter.value = "10";
   radiusLabel.textContent = "10 km";
-  applyFilters();
+  loadServices();
 });
 document.querySelector(".categories-card").addEventListener("click", (event) => {
   const button = event.target.closest(".category-item");
@@ -535,7 +540,7 @@ document.querySelector(".categories-card").addEventListener("click", (event) => 
   document.querySelectorAll(".category-item").forEach((item) => item.classList.remove("active"));
   button.classList.add("active");
   categoryFilter.value = button.dataset.category;
-  applyFilters();
+  loadServices();
 });
 
 const categorySearchInput = document.getElementById("categorySearchInput");

@@ -225,3 +225,10 @@ CREATE TABLE notificacao (
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_notificacao_usuario (usuario_id, usuario_tipo, lida, criado_em)
 );
+
+-- ============================================
+-- Índices auxiliares (busca de serviços e joins associados)
+-- ============================================
+CREATE INDEX idx_servico_status_categoria ON servico (status, categoria_id);
+CREATE INDEX idx_foto_servico_servico_tipo ON foto_servico (servico_id, tipo);
+CREATE INDEX idx_solicitacao_servico_status ON solicitacao (servico_id, status);

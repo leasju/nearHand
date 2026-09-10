@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Gestão de contas da plataforma NearHand." />
+  <title>NearHand — Admin</title>
+  <link rel="icon" type="image/png" href="img/icon_nearhand.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .admin-page{width:min(960px,92vw);margin:36px auto 70px}
+    .admin-page .panel-card + .panel-card{margin-top:16px}
+    .admin-filters{display:flex;gap:8px;margin-bottom:10px}
+    .admin-filters input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink)}
+    .admin-filters select{border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--surface);color:var(--ink)}
+    .admin-account-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;margin-top:8px}
+    .account-type-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:800}
+    .account-type-badge.cliente{background:var(--mint);color:var(--purple-dark)}
+    .account-type-badge.prestador{background:var(--tint);color:var(--purple-dark)}
+    #adminMessage{min-height:22px;color:var(--purple-dark);font-weight:600}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="NearHand - início">
+      <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
+    </a>
+    <div class="top-actions">
+      <a class="secondary-btn" href="/admin/categories">Categorias</a>
+      <a class="secondary-btn" href="/admin/anuncios">Anúncios</a>
+      <a class="secondary-btn" href="/admin/avaliacoes">Avaliações denunciadas</a>
+      <button class="secondary-btn" id="adminLogoutBtn">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="admin-page">
+      <div class="page-title">
+        <div><span class="eyebrow">ADMIN</span><h1>Contas</h1></div>
+        <button class="primary-btn" id="newAccountBtn">+ Nova conta</button>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-head"><div><h2>Todas as contas cadastradas</h2></div></div>
+        <div class="admin-filters">
+          <input id="adminAccountSearch" placeholder="Buscar por nome ou email..." aria-label="Buscar conta" />
+          <select id="adminAccountTypeFilter" aria-label="Filtrar por tipo">
+            <option value="all">Todos os tipos</option>
+            <option value="cliente">Clientes</option>
+            <option value="prestador">Prestadores</option>
+          </select>
+        </div>
+        <p id="adminMessage"></p>
+        <div id="adminAccountList"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="accountModal" hidden>
+    <div class="modal form-modal" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close="accountModal">×</button>
+      <span class="eyebrow" id="accountModalEyebrow">ADMIN</span><h2 id="accountModalTitle">Nova conta</h2>
+      <form id="accountForm" class="ad-form settings-form">
+        <label>Tipo de conta
+          <select id="accountType">
+            <option value="cliente">Cliente</option>
+            <option value="prestador">Prestador</option>
+          </select>
+        </label>
+        <label>Nome completo / da empresa *<input required id="accountName" /></label>
+        <div class="form-row">
+          <label>Email *<input required id="accountEmail" type="email" /></label>
+          <label>Telefone<input id="accountPhone" /></label>
+        </div>
+        <label id="accountDocumentField">CPF ou CNPJ *<input id="accountDocument" /></label>
+        <label id="accountPasswordField">Senha (mín. 8 caracteres) *<input id="accountPassword" type="password" minlength="8" /></label>
+        <label>Endereço padrão *
+          <div class="address-grid">
+            <input id="accountRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
+            <input id="accountCep" placeholder="CEP" aria-label="CEP" />
+            <input id="accountNumero" placeholder="Número" aria-label="Número" />
+            <input id="accountComplemento" placeholder="Complemento" aria-label="Complemento" />
+            <input id="accountBairro" placeholder="Bairro" aria-label="Bairro" />
+            <input id="accountCidade" placeholder="Cidade" aria-label="Cidade" />
+            <input id="accountEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
+          </div>
+        </label>
+        <button class="primary-btn full" type="submit" id="accountSubmitBtn">Criar conta</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/admin-accounts.js"></script>
+</body>
+</html>

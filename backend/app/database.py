@@ -3,7 +3,7 @@ from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
@@ -93,6 +93,25 @@ def ensure_optional_schema():
                 FOREIGN KEY (servico_id) REFERENCES servico(id) ON DELETE CASCADE
             )
         """))
+
+        # Índices para acelerar a busca de serviços (filtro por status/categoria e os
+        # joins de avaliação/fotos que rodam em toda consulta do catálogo do cliente).
+        helpful_indexes = [
+            ("servico", "idx_servico_status_categoria", "(status, categoria_id)"),
+            ("foto_servico", "idx_foto_servico_servico_tipo", "(servico_id, tipo)"),
+            ("solicitacao", "idx_solicitacao_servico_status", "(servico_id, status)"),
+        ]
+        for table, index_name, columns in helpful_indexes:
+            existing_index = connection.execute(
+                text(f"SHOW INDEX FROM {table} WHERE Key_name = :name"), {"name": index_name}
+            ).first()
+            if existing_index is not None:
+                continue
+            try:
+                connection.execute(text(f"CREATE INDEX {index_name} ON {table} {columns}"))
+            except (ProgrammingError, OperationalError) as error:
+                if not error.orig.args or error.orig.args[0] != 1061:
+                    raise
 
 # Open a database connection and provide a session
 def get_db():
