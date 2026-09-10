@@ -66,17 +66,20 @@ Usuários
 ## 5. Tela expandida do serviço
 
 - Informações aprofundadas do serviço e do prestador
-- Botão "Conversar" abre o chat com o prestador sobre aquele serviço (ver item 6, Chat)
+- Botão único "Consultar" abre o chat com o prestador sobre aquele serviço — **não exige ter agendado nada antes**; cliente pode tirar dúvida com o prestador logo de cara
 - Acesso à galeria estendida de fotos, se o prestador tiver adicionado além das do carrossel
 - Seção de avaliações de outros clientes (com comentários, não só nota)
 - Calendário com as datas/horários em que aquele anúncio específico está disponível — calculado a partir do horário semanal fixo que o prestador definiu para aquele anúncio (ver Prestador, item 3), descontando datas que o prestador bloqueou
-- Fluxo de contratação: botão "Solicitar serviço" abre uma **solicitação de orçamento/agendamento**, que o prestador aceita, recusa ou negocia pelo chat (status: solicitado → confirmado → em andamento → concluído, com cancelado a qualquer ponto antes de concluído)
+- Fluxo de contratação: botão "Solicitar serviço" abre uma **solicitação de orçamento/agendamento**, que o prestador aceita, recusa ou negocia pelo chat (status: solicitado → confirmado → em andamento → concluído, com cancelado a qualquer ponto antes de concluído). Se o cliente já tinha clicado em "Consultar" antes, o agendamento continua **na mesma conversa** — não cria um chat novo
 
 ## 6. Chat
 
-- Aba própria "Chat" na navbar, com lista de todas as conversas do cliente (uma por solicitação) e o painel da conversa selecionada
+- Aba própria "Chat" na navbar, com lista de todas as conversas do cliente e o painel da conversa selecionada
+- **Agrupado por prestador**: se o cliente tem mais de uma conversa com o mesmo prestador (anúncios diferentes), elas ficam juntas sob um único cabeçalho com o nome dele, em vez de repetir o nome várias vezes na lista
+- Barra de busca no topo da lista de conversas, filtra por nome do prestador ou título do anúncio
+- Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
-- Também acessível pelo botão "Conversar" dentro da tela do serviço, abrindo direto na conversa daquele pedido
+- Também acessível pelo botão "Consultar" dentro da tela do serviço, abrindo direto na conversa daquele anúncio
 
 ## 7. Pós-contratação
 
@@ -155,7 +158,10 @@ Usuários
 
 ## 5. Chat com clientes
 
-- Aba própria "Chat" na navbar, com lista de todas as conversas recebidas (uma por solicitação) e o painel da conversa selecionada
+- Aba própria "Chat" na navbar, com lista de todas as conversas recebidas e o painel da conversa selecionada
+- **Agrupado por cliente**: se o prestador tem mais de uma conversa com o mesmo cliente (serviços diferentes), elas ficam juntas sob um único cabeçalho com o nome dele, em vez de repetir o nome várias vezes na lista
+- Barra de busca no topo da lista de conversas, filtra por nome do cliente ou título do anúncio
+- Botões de mensagem automática no chat: "Enviar endereço" e "Enviar telefone" — manda os dados já cadastrados no perfil sem precisar digitar
 - Bolinha de notificação na aba Chat quando chega mensagem nova não lida, some ao abrir a conversa
 - Conversar com o cliente antes, durante e depois da contratação
 - Enviar orçamento/proposta de valor diretamente pelo chat

@@ -862,6 +862,17 @@ topRoleButtons.forEach((button) => {
   });
 });
 
+document.getElementById("homeLogo").addEventListener("click", (event) => {
+  event.preventDefault();
+  if (currentSessionRole === "prestador") {
+    showAppView("prestador");
+    setActiveProviderSection("painel");
+  } else {
+    showAppView("cliente");
+    setActiveSection("explorar");
+  }
+});
+
 profileBtn.addEventListener("click", () => {
   showAppView("settings");
   loadSettingsProfile();
@@ -1022,16 +1033,21 @@ document.getElementById("hireBtn").addEventListener("click", async () => {
     showToast(error.message);
   }
 });
-document.getElementById("openChatBtn").addEventListener("click", () => {
-  if (!currentChatRequestId) {
-    showToast("Solicite o serviço primeiro para abrir um chat vinculado.");
-    return;
+document.getElementById("openChatBtn").addEventListener("click", async () => {
+  if (!currentService) return;
+  try {
+    const response = await authFetch("/solicitacoes", {
+      method: "POST",
+      body: JSON.stringify({ servico_id: currentService.id }),
+    });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Não foi possível abrir o chat com o prestador.");
+    currentChatRequestId = data.id;
+    document.getElementById("serviceModal").hidden = true;
+    openChatConversation(currentChatRequestId);
+  } catch (error) {
+    showToast(error.message);
   }
-  document.getElementById("serviceModal").hidden = true;
-  openChatConversation(currentChatRequestId);
-});
-document.getElementById("openChatBtnInline").addEventListener("click", () => {
-  document.getElementById("openChatBtn").click();
 });
 
 // ============================================
@@ -1043,7 +1059,61 @@ const chatMessages = document.getElementById("chatMessages");
 const chatEmptyState = document.getElementById("chatEmptyState");
 const chatConversationHeader = document.getElementById("chatConversationHeader");
 const chatConversationList = document.getElementById("chatConversationList");
+const chatQuickActions = document.getElementById("chatQuickActions");
+const chatSearchInput = document.getElementById("chatSearchInput");
 let CHAT_CONVERSATIONS = [];
+
+chatSearchInput.addEventListener("input", renderChatConversationList);
+
+async function sendChatMessage(texto) {
+  if (!texto || !currentChatRequestId) return;
+  try {
+    const response = await authFetch(`/solicitacoes/${currentChatRequestId}/mensagens`, {
+      method: "POST",
+      body: JSON.stringify({ texto }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível enviar a mensagem.");
+    await loadMessages();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+document.getElementById("sendAddressBtn").addEventListener("click", async () => {
+  try {
+    const path = currentSessionRole === "prestador" ? "/prestadores/me" : "/clientes/me";
+    const response = await authFetch(path);
+    const profile = await readApiResponse(response);
+    if (!response.ok) throw new Error(profile.detail || "Não foi possível carregar seu endereço.");
+    const parts = [
+      [profile.rua, profile.numero].filter(Boolean).join(", "),
+      profile.complemento,
+      profile.bairro,
+      [profile.cidade, profile.estado].filter(Boolean).join("/"),
+      profile.cep,
+    ].filter(Boolean);
+    await sendChatMessage(`📍 Meu endereço: ${parts.join(" — ")}`);
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+document.getElementById("sendPhoneBtn").addEventListener("click", async () => {
+  try {
+    const path = currentSessionRole === "prestador" ? "/prestadores/me" : "/clientes/me";
+    const response = await authFetch(path);
+    const profile = await readApiResponse(response);
+    if (!response.ok) throw new Error(profile.detail || "Não foi possível carregar seu telefone.");
+    if (!profile.telefone) {
+      showToast("Você ainda não cadastrou um telefone em Configurações.");
+      return;
+    }
+    await sendChatMessage(`📞 Meu telefone: ${profile.telefone}`);
+  } catch (error) {
+    showToast(error.message);
+  }
+});
 
 function chatOtherParty(conversation) {
   return currentSessionRole === "prestador"
@@ -1057,21 +1127,52 @@ function renderChatConversationList() {
     chatConversationList.innerHTML = '<p class="empty-state">Nenhuma conversa ainda. Solicite um serviço para começar a conversar.</p>';
     return;
   }
-  CHAT_CONVERSATIONS.forEach((conversation) => {
-    const other = chatOtherParty(conversation);
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = `chat-list-item${conversation.id === currentChatRequestId ? " active" : ""}`;
-    item.dataset.requestId = conversation.id;
-    item.innerHTML = `
-      <span class="avatar">${requestInitials(other.name)}</span>
-      <span class="chat-preview">
-        <span class="chat-preview-top"><span class="chat-preview-name">${other.name}</span></span>
-        <span class="chat-preview-sub">${other.meta} • ${requestStatusLabel(conversation.status)}</span>
-      </span>
-    `;
-    item.addEventListener("click", () => openChatConversation(conversation.id));
-    chatConversationList.appendChild(item);
+
+  const term = chatSearchInput.value.trim().toLowerCase();
+  const filtered = term
+    ? CHAT_CONVERSATIONS.filter((conversation) => {
+        const other = chatOtherParty(conversation);
+        return other.name.toLowerCase().includes(term) || conversation.servico_titulo.toLowerCase().includes(term);
+      })
+    : CHAT_CONVERSATIONS;
+
+  if (!filtered.length) {
+    chatConversationList.innerHTML = '<p class="empty-state">Nenhuma conversa encontrada.</p>';
+    return;
+  }
+
+  // Agrupa por pessoa (prestador, do lado do cliente; cliente, do lado do prestador) pra não
+  // repetir o mesmo nome várias vezes quando há mais de um anúncio/pedido com a mesma pessoa.
+  const otherIdKey = currentSessionRole === "prestador" ? "cliente_id" : "prestador_id";
+  const groups = new Map();
+  filtered.forEach((conversation) => {
+    const key = conversation[otherIdKey];
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(conversation);
+  });
+
+  groups.forEach((conversations) => {
+    const other = chatOtherParty(conversations[0]);
+    const group = document.createElement("div");
+    group.className = "chat-group";
+    group.innerHTML = `<div class="chat-group-header"><span class="avatar">${requestInitials(other.name)}</span><strong>${other.name}</strong></div>`;
+
+    conversations.forEach((conversation) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = `chat-list-item mini${conversation.id === currentChatRequestId ? " active" : ""}`;
+      item.dataset.requestId = conversation.id;
+      item.innerHTML = `
+        <span class="chat-preview">
+          <span class="chat-preview-top"><span class="chat-preview-name">${conversation.servico_titulo}</span></span>
+          <span class="chat-preview-sub">${requestStatusLabel(conversation.status)}</span>
+        </span>
+      `;
+      item.addEventListener("click", () => openChatConversation(conversation.id));
+      group.appendChild(item);
+    });
+
+    chatConversationList.appendChild(group);
   });
 }
 
@@ -1117,6 +1218,7 @@ async function openChatConversation(requestId) {
   chatEmptyState.hidden = true;
   chatMessages.hidden = false;
   chatForm.hidden = false;
+  chatQuickActions.hidden = false;
   loadMessages();
   window.clearInterval(chatPollingTimer);
   chatPollingTimer = window.setInterval(loadMessages, 5000);
@@ -1160,18 +1262,7 @@ async function loadMessages() {
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = chatInput.value.trim();
-  if (!text || !currentChatRequestId) return;
-  try {
-    const response = await authFetch(`/solicitacoes/${currentChatRequestId}/mensagens`, {
-      method: "POST",
-      body: JSON.stringify({ texto: text }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Não foi possível enviar a mensagem.");
-    await loadMessages();
-  } catch (error) {
-    showToast(error.message);
-  }
+  await sendChatMessage(text);
   chatInput.value = "";
 });
 

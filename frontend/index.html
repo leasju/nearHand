@@ -14,8 +14,8 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#" aria-label="NearHand - início">
-      
+    <a class="brand" href="#" id="homeLogo" aria-label="NearHand - início">
+
       <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
     </a>
 
@@ -394,6 +394,7 @@
       <div class="chat-page">
         <aside class="chat-sidebar">
           <div class="chat-sidebar-header"><h2>Mensagens</h2></div>
+          <div class="chat-search"><span>🔎</span><input id="chatSearchInput" type="search" placeholder="Buscar por nome ou anúncio..." aria-label="Buscar conversa" /></div>
           <div class="chat-list" id="chatConversationList"></div>
         </aside>
         <div class="chat-main">
@@ -403,6 +404,10 @@
           </div>
           <p class="empty-state chat-empty-state" id="chatEmptyState">Selecione uma conversa para começar.</p>
           <div class="chat-messages" id="chatMessages" hidden></div>
+          <div class="chat-quick-actions" id="chatQuickActions" hidden>
+            <button type="button" class="chip" id="sendAddressBtn">📍 Enviar endereço</button>
+            <button type="button" class="chip" id="sendPhoneBtn">📞 Enviar telefone</button>
+          </div>
           <form class="chat-input-area" id="chatForm" hidden>
             <input id="chatInput" class="chat-input-field" placeholder="Escreva uma mensagem..." autocomplete="off" />
             <button class="chat-send" type="submit" aria-label="Enviar">➤</button>
@@ -427,11 +432,10 @@
         <div class="provider-block" id="modalProviderBlock">
           <span class="provider-avatar-lg" id="modalProviderAvatar">P</span>
           <div class="provider-block-info"><strong id="modalProviderName"></strong><small id="modalProviderMeta"></small></div>
-          <button class="secondary-btn" id="openChatBtnInline">💬 Conversar</button>
         </div>
 
         <div class="availability-box"><div><strong>Disponibilidade</strong><small>Selecione uma data</small></div><div class="date-options"><button class="date-option active"><small>SEG</small><strong>08</strong></button><button class="date-option"><small>TER</small><strong>09</strong></button><button class="date-option"><small>QUA</small><strong>10</strong></button><button class="date-option"><small>QUI</small><strong>11</strong></button></div><div class="time-options"><button>09:00</button><button>11:30</button><button>14:00</button><button>17:30</button></div></div>
-        <div class="detail-actions"><button class="secondary-btn" id="openChatBtn">💬 Conversar</button><button class="primary-btn" id="hireBtn">Solicitar serviço</button></div>
+        <div class="detail-actions"><button class="secondary-btn" id="openChatBtn">💬 Consultar</button><button class="primary-btn" id="hireBtn">Solicitar serviço</button></div>
 
         <div class="reviews-block">
           <div class="panel-head"><h3>Avaliações</h3></div>

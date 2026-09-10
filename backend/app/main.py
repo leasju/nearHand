@@ -967,6 +967,39 @@ def create_request(
     if request.valor_proposto is not None and request.valor_proposto < 0:
         raise HTTPException(status_code=400, detail="Proposed value cannot be negative")
 
+    # Reaproveita a solicitação (e o chat) já existente pra esse cliente+serviço, em vez de
+    # criar uma conversa duplicada. "Consultar" manda sem data (cria/abre sem agendar nada);
+    # "Solicitar serviço" manda com data — se já existe uma conversa ainda sem data marcada,
+    # essa mesma solicitação é atualizada com a data, continuando no mesmo chat.
+    existing = db.execute(
+        text("""
+            SELECT id, data_hora_agendada FROM solicitacao
+            WHERE cliente_id = :cliente_id AND servico_id = :servico_id
+              AND status NOT IN ('concluido', 'cancelado')
+            ORDER BY criado_em DESC LIMIT 1
+        """),
+        {"cliente_id": client_id, "servico_id": request.servico_id},
+    ).mappings().first()
+
+    if existing and existing["data_hora_agendada"] is None:
+        if request.data_hora_agendada is not None:
+            db.execute(
+                text("""
+                    UPDATE solicitacao SET data_hora_agendada = :data_hora_agendada,
+                                            valor_proposto = :valor_proposto
+                    WHERE id = :id
+                """),
+                {
+                    "data_hora_agendada": request.data_hora_agendada,
+                    "valor_proposto": request.valor_proposto if request.valor_proposto is not None else service["valor"],
+                    "id": existing["id"],
+                },
+            )
+            db.commit()
+        return _get_request(existing["id"], db, client_id=client_id)
+    if existing and request.data_hora_agendada is None:
+        return _get_request(existing["id"], db, client_id=client_id)
+
     result = db.execute(
         text("""
             INSERT INTO solicitacao
