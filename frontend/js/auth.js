@@ -184,11 +184,13 @@ document.querySelectorAll("[data-open-mode]").forEach((button) => {
 });
 
 document.querySelectorAll(".password-toggle").forEach((button) => {
+  const icon = button.querySelector("img");
   button.addEventListener("click", () => {
     const input = document.getElementById(button.dataset.target);
     const showing = input.type === "text";
     input.type = showing ? "password" : "text";
-    button.textContent = showing ? "Mostrar" : "Ocultar";
+    icon.src = showing ? "img/icons/icon-visibility-off.png" : "img/icons/icon-visibility.png";
+    icon.alt = showing ? "Mostrar senha" : "Ocultar senha";
   });
 });
 
