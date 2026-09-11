@@ -47,7 +47,11 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;background:var(--bg);color:var(--ink)}
+body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;background:var(--wine-900);color:var(--ink)}
+/* "Moldura" escura ao redor do app inteiro, como um dispositivo — identidade
+   emprestada de um mockup de referência, mas nas nossas cores (vinho). */
+.app-frame{margin:18px;border-radius:28px;background:var(--bg)}
+@media(max-width:680px){.app-frame{margin:10px;border-radius:20px}}
 /* Fonte de destaque inspirada na Ogg (Sharp Type) — usada só em títulos grandes,
    já que é uma serifada de "display", não pensada para texto corrido/UI densa. */
 h1,h2{font-family:'Fraunces',Georgia,'Times New Roman',serif;font-optical-sizing:auto}
@@ -113,7 +117,8 @@ body .modal-backdrop{z-index:2000}
 .pie-chart-wrap{display:flex;align-items:center;gap:18px;margin-top:16px}.pie-chart{width:120px;height:120px;border-radius:50%;flex-shrink:0}.pie-chart-legend{display:grid;gap:8px;flex:1;min-width:0}.pie-chart-legend-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)}.pie-chart-legend-row .swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0}.pie-chart-legend-row strong{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
 @media(max-width:1180px){.dashboard-charts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.dashboard-charts{width:calc(100vw - 24px);grid-template-columns:1fr}.bar-chart-row{grid-template-columns:minmax(78px,1fr) minmax(65px,1fr) auto;gap:7px}}
-.topbar{height:76px;display:flex;align-items:center;gap:28px;padding:0 5vw;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+.topbar{height:76px;display:flex;align-items:center;gap:28px;padding:0 5vw;background:var(--surface);border-bottom:1px solid var(--line);border-radius:28px 28px 0 0;position:sticky;top:0;z-index:50}
+@media(max-width:680px){.topbar{border-radius:20px 20px 0 0}}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--purple-dark);font-weight:800;font-size:20px}
 .brand-logo{height:44px;width:auto;display:block}
 .main-nav{display:flex;gap:5px;margin-left:10px}.nav-link{border:1px solid transparent;background:transparent;color:var(--muted);padding:10px 12px;border-radius:10px;font-weight:600;transition:background .18s var(--ease),color .18s var(--ease),border-color .18s var(--ease)}.nav-link:hover{color:var(--ink)}.nav-link.active{background:var(--purple-dark);border-color:var(--purple-dark);color:#fff}.chat-nav-link{position:relative}
