@@ -26,6 +26,23 @@ function iconImage(name, alt = "", className = "icon") {
   return `<img class="${className}" src="${ICON_BASE}icon-${name}.png" alt="${alt}" />`;
 }
 
+function openModal(modal) {
+  modal.hidden = false;
+  void modal.offsetWidth;
+  modal.classList.add("is-open");
+}
+
+function closeModal(modal) {
+  if (modal.hidden) return;
+  modal.classList.remove("is-open");
+  const onEnd = (event) => {
+    if (event.target !== modal) return;
+    modal.hidden = true;
+    modal.removeEventListener("transitionend", onEnd);
+  };
+  modal.addEventListener("transitionend", onEnd);
+}
+
 const SERVICE_VISUALS = [
   ["cat-eletrica", "electric"],
   ["sparkles", "clean"],
@@ -191,7 +208,7 @@ async function loadCategories() {
   renderAdCategoryOptions();
 }
 
-function serviceCard(service) {
+function serviceCard(service, index = 0) {
   const isFavorite = favorites.has(service.id);
   const visual = serviceVisual(service);
   const distance = service.distance == null ? "Distância indisponível" : `${iconImage("location")} ${service.distance.toFixed(1).replace(".", ",")} km`;
@@ -199,6 +216,7 @@ function serviceCard(service) {
   const card = document.createElement("article");
   card.className = "service-card";
   card.dataset.id = service.id;
+  card.style.setProperty("--i", Math.min(index, 10));
   card.innerHTML = `
     <div class="service-image ${visual.style}"${photoUrl ? ` style="background-image:url('${photoUrl}');background-size:cover;background-position:center"` : ""}>
       <span aria-hidden="true"${photoUrl ? " hidden" : ""}>${iconImage(visual.icon, "", "service-icon")}</span>
@@ -225,7 +243,7 @@ function serviceCard(service) {
 
 function renderCards() {
   cardsView.replaceChildren();
-  visibleServices.forEach((service) => cardsView.appendChild(serviceCard(service)));
+  visibleServices.forEach((service, index) => cardsView.appendChild(serviceCard(service, index)));
   resultCount.textContent = `${visibleServices.length} serviço${visibleServices.length === 1 ? "" : "s"} encontrado${visibleServices.length === 1 ? "" : "s"}`;
 }
 
@@ -291,7 +309,7 @@ function renderFavorites() {
     `;
     const grid = document.createElement("div");
     grid.className = "service-grid";
-    services.forEach((service) => grid.appendChild(serviceCard(service)));
+    services.forEach((service, index) => grid.appendChild(serviceCard(service, index)));
     group.appendChild(grid);
     favoritesGrid.appendChild(group);
   });
@@ -434,7 +452,7 @@ async function loadFavoriteProviderAds(providerId, panel) {
       panel.innerHTML = '<p class="empty-state">Esse prestador não tem anúncios ativos no momento.</p>';
       return;
     }
-    data.forEach((service) => panel.appendChild(serviceCard(service)));
+    data.forEach((service, index) => panel.appendChild(serviceCard(service, index)));
   } catch (error) {
     panel.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
   }
@@ -537,7 +555,7 @@ function showServiceDetails(service) {
 
   loadServiceAvailability(service.id);
   loadServiceReviews(service.id);
-  document.getElementById("serviceModal").hidden = false;
+  openModal(document.getElementById("serviceModal"));
 }
 
 function renderStars(rating) {
@@ -686,7 +704,7 @@ async function updateFavorite(service) {
 }
 
 function closeModals() {
-  document.querySelectorAll(".modal-backdrop").forEach((modal) => { modal.hidden = true; });
+  document.querySelectorAll(".modal-backdrop").forEach((modal) => closeModal(modal));
 }
 
 cardsView.addEventListener("click", handleCardAction);
@@ -706,12 +724,12 @@ radiusFilter.addEventListener("input", () => {
 
 document.querySelectorAll("[data-close]").forEach((button) => {
   button.addEventListener("click", () => {
-    document.getElementById(button.dataset.close).hidden = true;
+    closeModal(document.getElementById(button.dataset.close));
   });
 });
 document.querySelectorAll(".modal-backdrop").forEach((modal) => {
   modal.addEventListener("click", (event) => {
-    if (event.target === modal) modal.hidden = true;
+    if (event.target === modal) closeModal(modal);
   });
 });
 document.getElementById("clearFilters").addEventListener("click", () => {
@@ -1026,6 +1044,13 @@ async function switchAccountRole(targetRole) {
 // ============================================
 // Alternância entre Cliente / Prestador / Configurações
 // ============================================
+function revealView(el) {
+  el.hidden = false;
+  el.classList.remove("view-enter");
+  void el.offsetWidth;
+  el.classList.add("view-enter");
+}
+
 const clienteView = document.getElementById("clienteView");
 const providerView = document.getElementById("providerView");
 const settingsView = document.getElementById("settingsView");
@@ -1036,10 +1061,10 @@ const mainNav = document.querySelector(".main-nav:not(.provider-nav)");
 const providerNav = document.querySelector(".provider-nav");
 
 function showAppView(view) {
-  clienteView.hidden = view !== "cliente";
-  providerView.hidden = view !== "prestador";
-  settingsView.hidden = view !== "settings";
-  chatView.hidden = view !== "chat";
+  [[clienteView, "cliente"], [providerView, "prestador"], [settingsView, "settings"], [chatView, "chat"]].forEach(([el, key]) => {
+    if (key === view) { if (el.hidden) revealView(el); }
+    else el.hidden = true;
+  });
   const role = view === "chat" ? currentSessionRole : view;
   mainNav.hidden = role !== "cliente" || view === "settings";
   providerNav.hidden = role !== "prestador" || view === "settings";
@@ -1081,7 +1106,11 @@ const sectionViews = document.querySelectorAll(".section-view");
 
 function setActiveSection(section) {
   navLinks.forEach((link) => link.classList.toggle("active", link.dataset.section === section));
-  sectionViews.forEach((view) => { view.hidden = view.dataset.view !== section; });
+  sectionViews.forEach((view) => {
+    const show = view.dataset.view === section;
+    if (show) { if (view.hidden) revealView(view); }
+    else view.hidden = true;
+  });
 }
 
 navLinks.forEach((link) => {
@@ -1103,7 +1132,11 @@ const providerSectionViews = document.querySelectorAll(".provider-section");
 
 function setActiveProviderSection(section) {
   providerNavLinks.forEach((link) => link.classList.toggle("active", link.dataset.providerSection === section));
-  providerSectionViews.forEach((view) => { view.hidden = view.dataset.providerView !== section; });
+  providerSectionViews.forEach((view) => {
+    const show = view.dataset.providerView === section;
+    if (show) { if (view.hidden) revealView(view); }
+    else view.hidden = true;
+  });
 }
 
 providerNavLinks.forEach((link) => {
@@ -1231,7 +1264,7 @@ document.getElementById("hireBtn").addEventListener("click", async () => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Não foi possível solicitar o serviço.");
     currentChatRequestId = data.id;
-    document.getElementById("serviceModal").hidden = true;
+    closeModal(document.getElementById("serviceModal"));
     showToast("Solicitação enviada! Acompanhe em Pedidos.");
     await loadClientRequests();
   } catch (error) {
@@ -1248,7 +1281,7 @@ document.getElementById("openChatBtn").addEventListener("click", async () => {
     const data = await readApiResponse(response);
     if (!response.ok) throw new Error(data.detail || "Não foi possível abrir o chat com o prestador.");
     currentChatRequestId = data.id;
-    document.getElementById("serviceModal").hidden = true;
+    closeModal(document.getElementById("serviceModal"));
     openChatConversation(currentChatRequestId);
   } catch (error) {
     showToast(error.message);
@@ -2159,7 +2192,7 @@ document.getElementById("newAdBtn").addEventListener("click", () => {
   adPhotos = [];
   renderAdPhotosGrid();
   renderWeeklyScheduleForm();
-  newAdModal.hidden = false;
+  openModal(newAdModal);
 });
 
 async function openAdEditModal(serviceId) {
@@ -2185,7 +2218,7 @@ async function openAdEditModal(serviceId) {
     const schedule = await readApiResponse(scheduleResponse);
     setWeeklyScheduleValues(scheduleResponse.ok ? schedule : []);
 
-    newAdModal.hidden = false;
+    openModal(newAdModal);
   } catch (error) {
     showToast(error.message);
   }
@@ -2409,7 +2442,7 @@ newAdForm.addEventListener("submit", async (event) => {
       throw new Error(scheduleErrorData.detail || "Anúncio salvo, mas não foi possível salvar a disponibilidade semanal.");
     }
 
-    newAdModal.hidden = true;
+    closeModal(newAdModal);
     newAdForm.reset();
     adPhotos = [];
     editingServiceId = null;
@@ -3060,4 +3093,18 @@ if (initialRole) {
   loadFavoriteProviderIds();
   renderClientCalendar();
   renderProviderAgenda();
+}
+
+// ============================================
+// Animação de entrada ao rolar a página (scroll reveal)
+// ============================================
+if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("in-view");
+      revealObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+  document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
 }
