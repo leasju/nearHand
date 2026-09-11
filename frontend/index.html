@@ -41,6 +41,7 @@
     <nav class="main-nav provider-nav" aria-label="Navegação do prestador" hidden>
       <button class="nav-link active" data-provider-section="painel">Painel</button>
       <button class="nav-link" data-provider-section="agenda">Agenda</button>
+      <button class="nav-link" data-provider-section="pedidos">Pedidos recentes</button>
       <button class="nav-link" data-provider-section="anuncios">Meus anúncios</button>
       <button class="nav-link chat-nav-link" data-app-view="chat">Chat</button>
       <button class="nav-link" data-provider-section="avaliacoes">Avaliações</button>
@@ -207,13 +208,20 @@
             <article class="panel-card"><div class="panel-head"><div><span class="eyebrow">STATUS</span><h2>Pedidos no mês</h2></div></div><div class="pie-chart-wrap" id="requestStatusChart"></div></article>
           </div>
           <div class="panel-card">
-            <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn">Ver todos</button></div>
+            <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn" id="viewAllRequestsBtn">Ver todos</button></div>
             <div class="request-list" id="requestList">
               <article class="request-item"><div class="request-avatar">AC</div><div><strong>Ana Costa</strong><small>Troca de tomadas • 1,8 km • Hoje, 14:00</small></div><strong>R$ 140</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
               <article class="request-item"><div class="request-avatar">RB</div><div><strong>Rafael Braga</strong><small>Instalação de luminária • 3,2 km • Amanhã, 09:00</small></div><strong>R$ 110</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
             </div>
           </div>
         </section>
+      </section>
+
+      <section class="generic-view provider-section" data-provider-view="pedidos" hidden>
+        <div class="panel-card">
+          <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div></div>
+          <div class="request-list" id="requestListFull"></div>
+        </div>
       </section>
 
       <section class="generic-view provider-section" data-provider-view="agenda" hidden>
@@ -234,20 +242,24 @@
           <button class="primary-btn" type="submit">Salvar horário</button>
         </form>
 
-        <div class="calendar-card" id="providerMonthView">
-          <div class="calendar-head"><button id="providerAgendaMonthPrev">‹</button><strong id="providerAgendaMonthLabel">Setembro 2026</strong><button id="providerAgendaMonthNext">›</button></div>
-          <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-          <div class="calendar-grid" id="providerAgendaMonthGrid"></div>
-        </div>
+        <div class="calendar-layout">
+          <div class="agenda-calendar-col">
+            <div class="calendar-card" id="providerMonthView">
+              <div class="calendar-head"><button id="providerAgendaMonthPrev">‹</button><strong id="providerAgendaMonthLabel">Setembro 2026</strong><button id="providerAgendaMonthNext">›</button></div>
+              <div class="weekday-row"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+              <div class="calendar-grid" id="providerAgendaMonthGrid"></div>
+            </div>
 
-        <div class="calendar-card" id="providerWeekView" hidden>
-          <div class="calendar-head"><button id="providerAgendaWeekPrev">‹</button><strong id="providerAgendaWeekLabel">08 – 14 Set 2026</strong><button id="providerAgendaWeekNext">›</button></div>
-          <div class="week-grid" id="providerAgendaWeekGrid"></div>
-        </div>
+            <div class="calendar-card" id="providerWeekView" hidden>
+              <div class="calendar-head"><button id="providerAgendaWeekPrev">‹</button><strong id="providerAgendaWeekLabel">08 – 14 Set 2026</strong><button id="providerAgendaWeekNext">›</button></div>
+              <div class="week-grid" id="providerAgendaWeekGrid"></div>
+            </div>
+          </div>
 
-        <div class="panel-card provider-upcoming">
-          <div class="panel-head"><div><h2>Próximos serviços</h2></div></div>
-          <div class="timeline" id="providerUpcomingList"></div>
+          <div class="panel-card provider-upcoming">
+            <div class="panel-head"><div><h2>Próximos serviços</h2></div></div>
+            <div class="timeline" id="providerUpcomingList"></div>
+          </div>
         </div>
       </section>
 

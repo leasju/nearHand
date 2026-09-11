@@ -1172,6 +1172,11 @@ providerNavLinks.forEach((link) => {
   });
 });
 
+document.getElementById("viewAllRequestsBtn").addEventListener("click", () => {
+  showAppView("prestador");
+  setActiveProviderSection("pedidos");
+});
+
 // ============================================
 // Notificações
 // ============================================
@@ -1878,6 +1883,7 @@ clientReviewsSearchInput?.addEventListener("input", () => {
 // Painel do prestador: solicitações recebidas
 // ============================================
 const requestList = document.getElementById("requestList");
+const requestListFull = document.getElementById("requestListFull");
 
 let PROVIDER_REQUESTS = [];
 const providerClientsList = document.getElementById("providerClientsList");
@@ -1932,6 +1938,37 @@ providerClientsSearchInput?.addEventListener("input", () => {
   renderProviderClients();
 });
 
+function buildRequestItem(request) {
+  const item = document.createElement("article");
+  item.className = "request-item";
+  item.dataset.requestId = request.id;
+  const initials = request.cliente_nome.split(" ").map((part) => part[0]).slice(0, 2).join("");
+  const actions = request.status === "solicitado"
+    ? '<button class="small-btn accept" data-request-status="confirmado">Aceitar</button><button class="small-btn propose" data-request-status="confirmado">Propor</button><button class="small-btn reject" data-request-status="cancelado">Recusar</button><button class="small-btn" data-chat-request>Chat</button>'
+    : request.status === "confirmado"
+      ? '<button class="small-btn accept" data-request-status="em_andamento">Iniciar</button><button class="small-btn reject" data-request-status="cancelado">Cancelar</button><button class="small-btn" data-chat-request>Chat</button>'
+      : request.status === "em_andamento"
+        ? '<button class="small-btn accept" data-request-status="concluido">Concluir</button><button class="small-btn" data-chat-request>Chat</button>'
+        : "";
+  item.innerHTML = `
+    <div class="request-avatar">${initials}</div>
+    <div><strong>${request.cliente_nome}</strong><small>${request.servico_titulo} • ${formatRequestDate(request.data_hora_agendada)}</small></div>
+    <strong>R$ ${formatPrice(request.valor_proposto || 0)}</strong>
+    <div class="request-actions">${actions}</div>
+  `;
+  return item;
+}
+
+function renderRequestList(container, requests, emptyMessage) {
+  if (!container) return;
+  container.replaceChildren();
+  if (!requests.length) {
+    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    return;
+  }
+  requests.forEach((request) => container.appendChild(buildRequestItem(request)));
+}
+
 async function loadProviderRequests() {
   if (currentSessionRole !== "prestador") return;
   try {
@@ -1947,31 +1984,8 @@ async function loadProviderRequests() {
         label: `${request.servico_titulo} — ${formatRequestDate(request.data_hora_agendada)} • ${request.cliente_nome}`,
       }));
     renderProviderAgenda();
-    requestList.replaceChildren();
-    if (!requests.length) {
-      requestList.innerHTML = '<p class="empty-state">Nenhuma solicitação recebida.</p>';
-      return;
-    }
-    requests.forEach((request) => {
-      const item = document.createElement("article");
-      item.className = "request-item";
-      item.dataset.requestId = request.id;
-      const initials = request.cliente_nome.split(" ").map((part) => part[0]).slice(0, 2).join("");
-      const actions = request.status === "solicitado"
-        ? '<button class="small-btn accept" data-request-status="confirmado">Aceitar</button><button class="small-btn propose" data-request-status="confirmado">Propor</button><button class="small-btn reject" data-request-status="cancelado">Recusar</button><button class="small-btn" data-chat-request>Chat</button>'
-        : request.status === "confirmado"
-          ? '<button class="small-btn accept" data-request-status="em_andamento">Iniciar</button><button class="small-btn reject" data-request-status="cancelado">Cancelar</button><button class="small-btn" data-chat-request>Chat</button>'
-          : request.status === "em_andamento"
-            ? '<button class="small-btn accept" data-request-status="concluido">Concluir</button><button class="small-btn" data-chat-request>Chat</button>'
-            : "";
-      item.innerHTML = `
-        <div class="request-avatar">${initials}</div>
-        <div><strong>${request.cliente_nome}</strong><small>${request.servico_titulo} • ${formatRequestDate(request.data_hora_agendada)}</small></div>
-        <strong>R$ ${formatPrice(request.valor_proposto || 0)}</strong>
-        <div class="request-actions">${actions}</div>
-      `;
-      requestList.appendChild(item);
-    });
+    renderRequestList(requestList, requests.slice(0, 4), "Nenhuma solicitação recebida.");
+    renderRequestList(requestListFull, requests, "Nenhuma solicitação recebida.");
   } catch (error) {
     showToast(error.message);
   }
@@ -1997,7 +2011,7 @@ async function loadProviderMetrics() {
   }
 }
 
-const STATUS_CHART_COLORS = { pending: "#A77A2C", confirmed: "#7FA3C7", done: "#4E8B72", cancelled: "#A65D66" };
+const STATUS_CHART_COLORS = { pending: "#9B6C19", confirmed: "#3E765E", done: "#456578", cancelled: "#A65D66" };
 
 function renderStatusPieChart(containerId, data) {
   const container = document.getElementById(containerId);
@@ -2055,7 +2069,7 @@ function renderPerformanceChart(containerId, data, valueKey, unit) {
   });
 }
 
-requestList.addEventListener("click", async (event) => {
+async function handleRequestListClick(event) {
   const chatButton = event.target.closest("[data-chat-request]");
   if (chatButton) {
     openChatConversation(Number(chatButton.closest(".request-item").dataset.requestId));
@@ -2076,7 +2090,10 @@ requestList.addEventListener("click", async (event) => {
   } catch (error) {
     showToast(error.message);
   }
-});
+}
+
+requestList.addEventListener("click", handleRequestListClick);
+requestListFull?.addEventListener("click", handleRequestListClick);
 
 const availabilityForm = document.getElementById("availabilityForm");
 const availabilityDate = document.getElementById("availabilityDate");
@@ -2411,29 +2428,50 @@ removeSelectedAdsBtn.addEventListener("click", async () => {
   }
 });
 
+let providerAdsData = [];
+const myAdsSearchInput = document.getElementById("myAdsSearchInput");
+let myAdsSearchTerm = "";
+
+function renderProviderServices() {
+  const term = myAdsSearchTerm.trim().toLowerCase();
+  const filtered = providerAdsData.filter((service) => !term || service.title.toLowerCase().includes(term));
+  adList.replaceChildren();
+  if (!filtered.length) {
+    adList.innerHTML = `<p class="empty-state">${term ? "Nenhum resultado para essa busca." : "Nenhum anúncio publicado ainda."}</p>`;
+    updateBulkRemoveButton();
+    return;
+  }
+  filtered.forEach((service) => {
+    const item = document.createElement("article");
+    item.className = "ad-item";
+    item.dataset.serviceId = service.id;
+    item.innerHTML = `
+      <input type="checkbox" class="ad-select" title="Selecionar anúncio" />
+      <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
+      <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
+      <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
+      <button class="icon-btn ad-edit" title="Editar"><img class="icon" src="img/icons/icon-edit.png" alt="Editar" /></button>
+      <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-pause.png" alt="Pausar ou reativar" /></button>
+      <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-trash.png" alt="Remover" /></button>
+    `;
+    adList.appendChild(item);
+  });
+  updateBulkRemoveButton();
+}
+
+myAdsSearchInput?.addEventListener("input", () => {
+  myAdsSearchTerm = myAdsSearchInput.value;
+  renderProviderServices();
+});
+
 async function loadProviderServices() {
   if (currentSessionRole !== "prestador") return;
   try {
     const response = await authFetch("/services/mine");
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Não foi possível carregar seus anúncios.");
-    adList.replaceChildren();
-    data.forEach((service) => {
-      const item = document.createElement("article");
-      item.className = "ad-item";
-      item.dataset.serviceId = service.id;
-      item.innerHTML = `
-        <input type="checkbox" class="ad-select" title="Selecionar anúncio" />
-        <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
-        <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
-        <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
-        <button class="icon-btn ad-edit" title="Editar"><img class="icon" src="img/icons/icon-edit.png" alt="Editar" /></button>
-        <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-pause.png" alt="Pausar ou reativar" /></button>
-        <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-trash.png" alt="Remover" /></button>
-      `;
-      adList.appendChild(item);
-    });
-    updateBulkRemoveButton();
+    providerAdsData = data;
+    renderProviderServices();
   } catch (error) {
     showToast(error.message);
   }
