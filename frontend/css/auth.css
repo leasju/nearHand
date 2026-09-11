@@ -60,6 +60,8 @@ body{
   background:linear-gradient(160deg,var(--aside-a) 0%,var(--aside-b) 100%);
   position:relative;
 }
+/* Fonte de destaque inspirada na Ogg (Sharp Type) — só em títulos grandes */
+h1,h2{font-family:'Fraunces',Georgia,'Times New Roman',serif;font-optical-sizing:auto}
 .blob-field{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
 .blob{position:absolute;border-radius:42% 58% 65% 35%/45% 40% 60% 55%;filter:blur(70px);opacity:.9}
 .blob-1{width:480px;height:480px;background:var(--imperial);top:-140px;left:-100px;animation:blobDriftA 22s ease-in-out infinite}
