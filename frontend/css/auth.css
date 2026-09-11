@@ -22,6 +22,8 @@
   --border:#ECE9F5;
   --border-on-dark:rgba(255,255,255,.16);
   --shadow:0 20px 50px rgba(77,62,107,.14);
+  --shadow-sm:0 6px 22px rgba(77,62,107,.07);
+  --shadow-xs:0 2px 10px rgba(77,62,107,.06);
   --radius-xl:20px;
   --radius-lg:16px;
   --radius-md:11px;
@@ -82,6 +84,7 @@ button{cursor:pointer;border:none;background:none}
 .auth-card{
   width:min(100%,560px);background:var(--surface);
   border-radius:var(--radius-xl); padding:30px 32px;
+  box-shadow:var(--shadow-sm);
 }
 .auth-top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
 .top-btn-row{display:flex;gap:10px}
@@ -89,7 +92,7 @@ button{cursor:pointer;border:none;background:none}
 .ghost-btn{
   padding:7px 13px;border-radius:var(--radius-md);border:1px solid var(--border);color:var(--text);background:var(--tint);
   display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;
-  transition:background .18s cubic-bezier(.25,.1,.25,1);
+  transition:background .18s cubic-bezier(.25,.1,.25,1);box-shadow:var(--shadow-xs);
 }
 .ghost-btn:hover{background:var(--tint-strong)}
 .switches{display:grid;gap:10px;margin-bottom:18px}
@@ -98,10 +101,11 @@ button{cursor:pointer;border:none;background:none}
   padding:9px 14px;border-radius:8px;font-weight:700;font-size:12.5px;color:var(--muted);
   transition:background .22s cubic-bezier(.25,.1,.25,1),color .22s cubic-bezier(.25,.1,.25,1);
 }
-.role-btn.active,.mode-btn.active{background:var(--glass-strong);color:var(--text)}
+.role-btn.active,.mode-btn.active{background:var(--glass-strong);color:var(--text);box-shadow:var(--shadow-xs)}
 .context-banner{
   padding:16px;border-radius:var(--radius-lg);background:var(--tint);
   border:1px solid var(--border); margin-bottom:20px;
+  box-shadow:var(--shadow-xs);
 }
 .context-banner strong{display:block;margin-bottom:5px;color:var(--text);font-size:13px}
 .context-banner p{margin:0;color:var(--muted);line-height:1.5;font-size:12.5px}
@@ -117,7 +121,7 @@ button{cursor:pointer;border:none;background:none}
 .field-help{color:var(--muted);line-height:1.45}
 .field-input{
   width:100%;padding:11px 14px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--tint);color:var(--text);
-  outline:none;transition:.2s ease;font-size:13.5px;
+  outline:none;transition:.2s ease;font-size:13.5px;box-shadow:var(--shadow-xs);
 }
 .field-input::placeholder{color:rgba(34,29,51,.4)}
 .field-input:focus{background:var(--surface);border-color:var(--violet);box-shadow:0 0 0 3px rgba(129,116,156,.14)}
@@ -140,7 +144,7 @@ button{cursor:pointer;border:none;background:none}
 .password-toggle{
   position:absolute;right:6px;top:50%;transform:translateY(-50%);
   display:inline-flex;align-items:center;justify-content:center;
-  width:30px;height:30px;padding:0;border-radius:8px;background:var(--tint-strong);
+  width:30px;height:30px;padding:0;border-radius:8px;background:var(--tint-strong);box-shadow:var(--shadow-xs);
 }
 .password-toggle .icon{width:18px;height:18px;vertical-align:middle;opacity:.75}
 .checkbox-row{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12.5px}

@@ -74,7 +74,7 @@ function getSelectedAccounts() {
 function updateBulkRemoveButton() {
   const count = getSelectedAccounts().length;
   removeSelectedAccountsBtn.hidden = count === 0;
-  removeSelectedAccountsBtn.innerHTML = `<img class="icon" src="img/icons/icon-settings.png" alt="" /> Remover selecionadas (${count})`;
+  removeSelectedAccountsBtn.innerHTML = `<img class="icon" src="img/icons/icon-trash.png" alt="" /> Remover selecionadas (${count})`;
 }
 
 list.addEventListener("change", (event) => {

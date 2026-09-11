@@ -141,17 +141,6 @@ function formatPrice(value) {
 // ============================================
 // Categorias reais (vindas do backend, com contagem de serviços)
 // ============================================
-const CATEGORY_ICONS = {
-  "Eletricista": "cat-eletrica",
-  "Cabeleireiro": "sparkles",
-  "Manicure": "sparkles",
-  "Pedicure": "sparkles",
-  "Marido de Aluguel": "settings",
-};
-function categoryIcon(name) {
-  return iconImage(CATEGORY_ICONS[name] || "settings", name);
-}
-
 let categoriesData = [];
 
 function renderCategorySidebar() {
@@ -163,7 +152,6 @@ function renderCategorySidebar() {
     button.dataset.category = category.nome;
     const count = category.servico_count;
     button.innerHTML = `
-      <span>${categoryIcon(category.nome)}</span>
       <div><strong>${category.nome}</strong><small>${count} serviço${count === 1 ? "" : "s"}</small></div>
     `;
     container.appendChild(button);
@@ -215,7 +203,7 @@ function serviceCard(service) {
     <div class="service-image ${visual.style}"${photoUrl ? ` style="background-image:url('${photoUrl}');background-size:cover;background-position:center"` : ""}>
       <span aria-hidden="true"${photoUrl ? " hidden" : ""}>${iconImage(visual.icon, "", "service-icon")}</span>
       <button class="favorite-btn ${isFavorite ? "active" : ""}" data-action="favorite" aria-label="${isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}">
-        ${iconImage(isFavorite ? "star-filled" : "star-empty", isFavorite ? "Favoritado" : "Favoritar")}
+        ${iconImage(isFavorite ? "heart-filled" : "heart-outline", isFavorite ? "Favoritado" : "Favoritar")}
       </button>
     </div>
     <div class="service-body">
@@ -371,7 +359,7 @@ async function loadFavoriteProviderIds() {
 function updateProviderFavoriteButton(button, providerId) {
   const active = favoriteProviderIds.has(providerId);
   button.classList.toggle("active", active);
-  button.innerHTML = iconImage(active ? "star-filled" : "star-empty", active ? "Favoritado" : "Favoritar");
+  button.innerHTML = iconImage(active ? "heart-filled" : "heart-outline", active ? "Favoritado" : "Favoritar");
   button.setAttribute("aria-label", active ? "Remover prestador dos favoritos" : "Favoritar prestador");
 }
 
@@ -500,7 +488,7 @@ function showServiceDetails(service) {
   document.getElementById("modalProvider").textContent = service.provider;
   document.getElementById("modalRating").innerHTML = `${iconImage("star-filled", "Avaliação")} ${service.rating.toFixed(1).replace(".", ",")} (${service.reviews} avaliações)`;
   document.getElementById("modalDistance").innerHTML = `${iconImage("location", "")} ${service.distance.toFixed(1).replace(".", ",")} km`;
-  document.getElementById("modalPrice").innerHTML = `${iconImage("settings", "")} R$ ${formatPrice(service.price)}${service.unit}${service.negociavel ? " (negociável)" : ""}`;
+  document.getElementById("modalPrice").innerHTML = `${iconImage("tag", "")} R$ ${formatPrice(service.price)}${service.unit}${service.negociavel ? " (negociável)" : ""}`;
   document.getElementById("modalDescription").textContent = service.description || "Sem descrição.";
   const photos = (service.photos || []).map((photo) => photo.url).filter(Boolean);
   const galleryMain = document.getElementById("galleryMain");
@@ -1136,7 +1124,7 @@ const notificationBtn = document.getElementById("notificationBtn");
 const notificationsPopover = document.getElementById("notificationsPopover");
 
 function notificationIcon(type) {
-  const name = { nova_mensagem: "search", status_solicitacao: "sparkles", nova_solicitacao: "bell", nova_avaliacao: "star-filled", resposta_avaliacao: "star-filled" }[type] || "bell";
+  const name = { nova_mensagem: "chat", status_solicitacao: "check", nova_solicitacao: "bell", nova_avaliacao: "star-filled", resposta_avaliacao: "star-filled" }[type] || "bell";
   return iconImage(name, "Notificação");
 }
 
@@ -2325,7 +2313,7 @@ function getSelectedAdIds() {
 function updateBulkRemoveButton() {
   const count = getSelectedAdIds().length;
   removeSelectedAdsBtn.hidden = count === 0;
-  removeSelectedAdsBtn.innerHTML = `<img class="icon" src="img/icons/icon-settings.png" alt="" /> Remover selecionados (${count})`;
+  removeSelectedAdsBtn.innerHTML = `<img class="icon" src="img/icons/icon-trash.png" alt="" /> Remover selecionados (${count})`;
 }
 
 adList.addEventListener("change", (event) => {
@@ -2364,9 +2352,9 @@ async function loadProviderServices() {
         <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
         <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
         <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
-        <button class="icon-btn ad-edit" title="Editar"><img class="icon" src="img/icons/icon-settings.png" alt="Editar" /></button>
-        <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-settings.png" alt="Pausar ou reativar" /></button>
-        <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-settings.png" alt="Remover" /></button>
+        <button class="icon-btn ad-edit" title="Editar"><img class="icon" src="img/icons/icon-edit.png" alt="Editar" /></button>
+        <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-pause.png" alt="Pausar ou reativar" /></button>
+        <button class="icon-btn ad-remove" title="Remover" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-trash.png" alt="Remover" /></button>
       `;
       adList.appendChild(item);
     });
@@ -2650,7 +2638,7 @@ function renderSettingsPreferenceChips(selected) {
     chip.dataset.value = category.nome;
     chip.classList.toggle("active", selected.includes(category.nome));
     chip.innerHTML = category.servico_count > 0
-      ? `${category.nome} <span class="trending-badge">${iconImage("sparkles", "Em alta")}</span>`
+      ? `${category.nome} <span class="trending-badge">${iconImage("fire", "Em alta")}</span>`
       : category.nome;
     settingsPreferences.appendChild(chip);
   });
