@@ -9,6 +9,7 @@ let chatPollingTimer = null;
 let servicesRequest = null;
 let servicesRequestTimer = null;
 let selectedProviderId = null;
+let ignoreRadius = false;
 
 const cardsView = document.getElementById("cardsView");
 const favoritesGrid = document.getElementById("favoritesGrid");
@@ -19,6 +20,7 @@ const ratingFilter = document.getElementById("ratingFilter");
 const sortFilter = document.getElementById("sortFilter");
 const radiusFilter = document.getElementById("radiusFilter");
 const radiusLabel = document.getElementById("radiusLabel");
+const showAllRadiusBtn = document.getElementById("showAllRadiusBtn");
 const toast = document.getElementById("toast");
 
 const ICON_BASE = "img/icons/";
@@ -64,7 +66,7 @@ function serviceQueryParams() {
   if (categoryFilter.value !== "all") params.set("categoria", categoryFilter.value);
   if (ratingFilter.value !== "0") params.set("avaliacao_min", ratingFilter.value);
   if (selectedProviderId) params.set("prestador_id", selectedProviderId);
-  if (radiusFilter.value) params.set("raio_km", radiusFilter.value);
+  if (radiusFilter.value && !ignoreRadius) params.set("raio_km", radiusFilter.value);
   if (mapCenter?.lat != null && mapCenter?.lng != null) {
     params.set("lat", mapCenter.lat);
     params.set("lng", mapCenter.lng);
@@ -248,8 +250,10 @@ function renderCards() {
 }
 
 let favoritesActiveCategory = "all";
+let favoritesSearchTerm = "";
 const favoritesFilters = document.getElementById("favoritesFilters");
 const favoritesCount = document.getElementById("favoritesCount");
+const favoritesSearchInput = document.getElementById("favoritesSearchInput");
 
 function renderFavoritesFilters() {
   const counts = new Map();
@@ -275,16 +279,17 @@ function renderFavoritesFilters() {
 function renderFavorites() {
   renderFavoritesFilters();
   favoritesCount.textContent = `${favoriteServices.length} salvo${favoriteServices.length === 1 ? "" : "s"}`;
-  const filtered = favoritesActiveCategory === "all"
-    ? favoriteServices
-    : favoriteServices.filter((service) => service.category === favoritesActiveCategory);
+  const term = favoritesSearchTerm.trim().toLowerCase();
+  const filtered = favoriteServices
+    .filter((service) => favoritesActiveCategory === "all" || service.category === favoritesActiveCategory)
+    .filter((service) => !term || `${service.title} ${service.provider}`.toLowerCase().includes(term));
   favoritesGrid.replaceChildren();
   if (!favoriteServices.length) {
     favoritesGrid.innerHTML = "<p class=\"empty-state\">Você ainda não adicionou anúncios aos favoritos.</p>";
     return;
   }
   if (!filtered.length) {
-    favoritesGrid.innerHTML = "<p class=\"empty-state\">Nenhum favorito nessa categoria.</p>";
+    favoritesGrid.innerHTML = `<p class="empty-state">${term ? "Nenhum resultado para essa busca." : "Nenhum favorito nessa categoria."}</p>`;
     return;
   }
 
@@ -319,6 +324,11 @@ favoritesFilters.addEventListener("click", (event) => {
   const chip = event.target.closest(".chip");
   if (!chip) return;
   favoritesActiveCategory = chip.dataset.favoriteCategory;
+  renderFavorites();
+});
+
+favoritesSearchInput?.addEventListener("input", () => {
+  favoritesSearchTerm = favoritesSearchInput.value;
   renderFavorites();
 });
 
@@ -720,6 +730,16 @@ favoritesGrid.addEventListener("click", handleCardAction);
 });
 radiusFilter.addEventListener("input", () => {
   radiusLabel.textContent = `${radiusFilter.value} km`;
+  ignoreRadius = false;
+  showAllRadiusBtn.classList.remove("active");
+});
+
+showAllRadiusBtn.addEventListener("click", () => {
+  ignoreRadius = true;
+  selectedProviderId = null;
+  showAllRadiusBtn.classList.add("active");
+  loadServices();
+  showToast("Mostrando anúncios de qualquer distância.");
 });
 
 document.querySelectorAll("[data-close]").forEach((button) => {
@@ -739,6 +759,8 @@ document.getElementById("clearFilters").addEventListener("click", () => {
   sortFilter.value = "distance";
   radiusFilter.value = "10";
   selectedProviderId = null;
+  ignoreRadius = false;
+  showAllRadiusBtn.classList.remove("active");
   radiusLabel.textContent = "10 km";
   loadServices();
 });
@@ -1778,13 +1800,18 @@ historyList.addEventListener("click", async (event) => {
 // Aba "Avaliações" do cliente: serviços contratados, avaliar os concluídos
 // ============================================
 const clientReviewsList = document.getElementById("clientReviewsList");
+const clientReviewsSearchInput = document.getElementById("clientReviewsSearchInput");
+let clientReviewsSearchTerm = "";
 
 function renderClientReviews() {
   if (!clientReviewsList) return;
-  const contracted = CLIENT_REQUESTS.filter((request) => request.status !== "cancelado");
+  const term = clientReviewsSearchTerm.trim().toLowerCase();
+  const contracted = CLIENT_REQUESTS.filter((request) => request.status !== "cancelado").filter((request) => (
+    !term || `${request.servico_titulo} ${request.prestador_nome}`.toLowerCase().includes(term)
+  ));
   clientReviewsList.replaceChildren();
   if (!contracted.length) {
-    clientReviewsList.innerHTML = '<p class="empty-state">Nenhum serviço contratado ainda.</p>';
+    clientReviewsList.innerHTML = `<p class="empty-state">${term ? "Nenhum resultado para essa busca." : "Nenhum serviço contratado ainda."}</p>`;
     return;
   }
   contracted.forEach((request) => {
@@ -1842,6 +1869,11 @@ clientReviewsList?.addEventListener("click", async (event) => {
   if (toggleBtn) toggleReviewPanel(toggleBtn);
 });
 
+clientReviewsSearchInput?.addEventListener("input", () => {
+  clientReviewsSearchTerm = clientReviewsSearchInput.value;
+  renderClientReviews();
+});
+
 // ============================================
 // Painel do prestador: solicitações recebidas
 // ============================================
@@ -1849,13 +1881,18 @@ const requestList = document.getElementById("requestList");
 
 let PROVIDER_REQUESTS = [];
 const providerClientsList = document.getElementById("providerClientsList");
+const providerClientsSearchInput = document.getElementById("providerClientsSearchInput");
+let providerClientsSearchTerm = "";
 
 function renderProviderClients() {
   if (!providerClientsList) return;
-  const completed = PROVIDER_REQUESTS.filter((request) => request.status === "concluido");
+  const term = providerClientsSearchTerm.trim().toLowerCase();
+  const completed = PROVIDER_REQUESTS.filter((request) => request.status === "concluido").filter((request) => (
+    !term || request.cliente_nome.toLowerCase().includes(term)
+  ));
   providerClientsList.replaceChildren();
   if (!completed.length) {
-    providerClientsList.innerHTML = '<p class="empty-state">Nenhum serviço concluído ainda.</p>';
+    providerClientsList.innerHTML = `<p class="empty-state">${term ? "Nenhum resultado para essa busca." : "Nenhum serviço concluído ainda."}</p>`;
     return;
   }
 
@@ -1889,6 +1926,11 @@ function renderProviderClients() {
     providerClientsList.appendChild(item);
   });
 }
+
+providerClientsSearchInput?.addEventListener("input", () => {
+  providerClientsSearchTerm = providerClientsSearchInput.value;
+  renderProviderClients();
+});
 
 async function loadProviderRequests() {
   if (currentSessionRole !== "prestador") return;

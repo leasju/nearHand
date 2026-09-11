@@ -104,6 +104,7 @@
             <option value="price">Menor preço</option>
           </select>
           <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
+          <button type="button" class="chip" id="showAllRadiusBtn" title="Mostrar anúncios de qualquer distância, além do raio máximo de 30 km">Ver todos os anúncios</button>
           <div class="view-toggle" id="exploreViewToggle" role="group" aria-label="Modo de visualização">
             <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
             <button class="toggle-btn" data-mode="map"><img class="icon" src="img/icons/icon-location.png" alt="" /> Mapa</button>
@@ -161,6 +162,7 @@
 
       <section class="generic-view section-view" data-view="avaliacoes" hidden>
         <div class="page-title"><div><span class="eyebrow">AVALIAÇÕES</span><h1>Avalie os serviços contratados</h1></div></div>
+        <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="clientReviewsSearchInput" type="search" placeholder="Buscar por serviço ou prestador..." aria-label="Buscar avaliações" /></div>
         <div class="history-list" id="clientReviewsList"></div>
       </section>
 
@@ -172,6 +174,7 @@
         </div>
 
         <div id="favoritesAnunciosPanel">
+          <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="favoritesSearchInput" type="search" placeholder="Buscar por serviço ou prestador..." aria-label="Buscar favoritos" /></div>
           <div class="favorites-filters" id="favoritesFilters">
             <button class="chip active" data-favorite-category="all">Todos</button>
           </div>
@@ -251,6 +254,7 @@
       <section class="generic-view provider-section" data-provider-view="anuncios" hidden>
         <div class="panel-card">
           <div class="panel-head"><div><span class="eyebrow">MEUS ANÚNCIOS</span><h2>Serviços publicados</h2></div><div style="display:flex;gap:8px"><button class="secondary-btn" id="removeSelectedAdsBtn" hidden><img class="icon" src="img/icons/icon-trash.png" alt="" /> Remover selecionados</button><button class="primary-btn" id="newAdBtn">+ Criar anúncio</button></div></div>
+          <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="myAdsSearchInput" type="search" placeholder="Buscar nos seus anúncios..." aria-label="Buscar anúncios" /></div>
           <div class="ad-list" id="adList">
             <article class="ad-item"><div class="ad-thumb electric"><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></div><div><strong>Eletricista residencial</strong><small>R$ 120/h • Raio de 10 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar"><img class="icon" src="img/icons/icon-pause.png" alt="" /></button><button class="icon-btn ad-remove" title="Remover"><img class="icon" src="img/icons/icon-trash.png" alt="" /></button></article>
             <article class="ad-item"><div class="ad-thumb electric"><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></div><div><strong>Instalação de luminárias</strong><small>A partir de R$ 90 • Raio de 8 km</small></div><span class="status done">Ativo</span><button class="icon-btn ad-pause" title="Pausar"><img class="icon" src="img/icons/icon-pause.png" alt="" /></button><button class="icon-btn ad-remove" title="Remover"><img class="icon" src="img/icons/icon-trash.png" alt="" /></button></article>
@@ -261,6 +265,7 @@
       <section class="generic-view provider-section" data-provider-view="clientes" hidden>
         <div class="panel-card">
           <div class="panel-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Clientes atendidos</h2></div></div>
+          <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="providerClientsSearchInput" type="search" placeholder="Buscar por nome do cliente..." aria-label="Buscar clientes atendidos" /></div>
           <div class="history-list" id="providerClientsList"></div>
         </div>
       </section>
