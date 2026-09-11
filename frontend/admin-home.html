@@ -12,7 +12,8 @@
   <link rel="stylesheet" href="css/styles.css" />
   <style>
     .admin-home-page{width:min(980px,92vw);margin:36px auto 70px}
-    .admin-welcome{border-radius:24px;padding:38px 42px;background:linear-gradient(120deg,var(--purple-dark),#655580 55%,var(--purple));color:#fff;box-shadow:var(--shadow)}
+    .admin-welcome{border-radius:24px;padding:38px 42px;position:relative;overflow:hidden;background:linear-gradient(120deg,var(--wine),var(--royal-700) 55%,var(--imperial));color:#fff;box-shadow:var(--shadow)}
+    .admin-welcome>*{position:relative;z-index:2}
     .admin-welcome .eyebrow{background:rgba(255,255,255,.16);color:var(--cream)}
     .admin-welcome h1{margin:10px 0 8px;font-size:30px;letter-spacing:-.02em}
     .admin-welcome p{margin:0;color:#E9E4F0;max-width:56ch;line-height:1.6}
@@ -47,6 +48,10 @@
   <main>
     <div class="admin-home-page">
       <section class="admin-welcome">
+        <div class="blob-field" aria-hidden="true">
+          <div class="blob blob-1"></div>
+          <div class="blob blob-3"></div>
+        </div>
         <span class="eyebrow">ADMIN</span>
         <h1>Bem-vindo(a), <span id="adminWelcomeName">Admin</span> <img class="icon" src="img/icons/icon-wave.png" alt="" /></h1>
         <p>Gerencie categorias, anúncios, contas e avaliações da plataforma por aqui. Escolha uma área abaixo para começar.</p>

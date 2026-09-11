@@ -8,10 +8,10 @@
   <link rel="icon" type="image/png" href="img/icon_nearhand.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/auth.css" />
   <style>
-    .admin-shell{min-height:100vh;display:grid;place-items:center;padding:24px}
+    .admin-shell{min-height:100vh;display:grid;place-items:center;padding:24px;position:relative;z-index:1}
     .admin-wrap{width:min(420px,92vw)}
     .admin-card{text-align:center}
     .admin-card .brand-logo{margin:0 auto 18px}
@@ -23,6 +23,11 @@
   </style>
 </head>
 <body>
+  <div class="blob-field" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
   <div class="admin-shell">
     <div class="admin-wrap">
       <div class="auth-card admin-card">

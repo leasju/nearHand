@@ -8,19 +8,9 @@
   <link rel="icon" type="image/png" href="img/icon_nearhand.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="css/styles.css" />
-  <style>
-    /* Homepage-only: rounder, softer card language + a friendlier display font, inspired by a reference dashboard mockup */
-    body{
-      font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
-      --radius-card:26px;
-      --radius-btn:16px;
-      --radius-btn-sm:13px;
-    }
-    .hero{background:linear-gradient(135deg, var(--mint) 0%, var(--cream) 100%);border-color:transparent}
-  </style>
 </head>
 <body>
   <header class="topbar">
@@ -72,14 +62,27 @@
   <main>
     <section id="clienteView" class="app-view">
       <section class="hero section-view" data-view="explorar">
-        <div class="hero-copy">
-          <span class="eyebrow">SERVIÇOS LOCAIS, SEM COMPLICAÇÃO</span>
-          <h1>Encontre quem resolve<br><span>perto de você.</span></h1>
-          <p>Compare prestadores, veja disponibilidade, converse pelo chat e solicite o serviço em poucos passos.</p>
+        <div class="blob-field" aria-hidden="true">
+          <div class="blob blob-1"></div>
+          <div class="blob blob-2"></div>
+          <div class="blob blob-3"></div>
+          <div class="blob blob-4"></div>
         </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="mini-card"><span class="mini-icon"><span class="icon icon-violet" style="--icon-src:url('../img/icons/icon-location.png')" role="img" aria-label=""></span></span><div><strong>2,3 km</strong><small>Eletricista disponível</small></div></div>
-          <div class="mini-card second"><span class="mini-icon"><span class="icon icon-violet" style="--icon-src:url('../img/icons/icon-star-filled.png')" role="img" aria-label=""></span></span><div><strong>4,9</strong><small>Mais bem avaliados</small></div></div>
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <span class="eyebrow">SERVIÇOS LOCAIS, SEM COMPLICAÇÃO</span>
+            <h1>Encontre quem resolve<br><span>perto de você.</span></h1>
+            <p>Compare prestadores, veja disponibilidade, converse pelo chat e solicite o serviço em poucos passos.</p>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-visual-icon"><img src="img/icon_nearhand.png" alt="" /></div>
+            <h4 id="heroVisualHeading">Raio de 10 km ativo</h4>
+            <p id="heroVisualSub">6 serviços encontrados perto de você.</p>
+            <div class="hero-stat-row">
+              <div class="hero-stat"><span class="hero-stat-icon"><img class="icon icon-on-dark" src="img/icons/icon-location.png" alt="" /></span><div><strong>2,3 km</strong><small>Eletricista disponível</small></div></div>
+              <div class="hero-stat"><span class="hero-stat-icon"><img class="icon icon-on-dark" src="img/icons/icon-star-filled.png" alt="" /></span><div><strong>4,9</strong><small>Mais bem avaliados</small></div></div>
+            </div>
+          </div>
         </div>
       </section>
 

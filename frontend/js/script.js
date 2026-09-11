@@ -243,10 +243,21 @@ function serviceCard(service, index = 0) {
   return card;
 }
 
+const heroVisualHeading = document.getElementById("heroVisualHeading");
+const heroVisualSub = document.getElementById("heroVisualSub");
+
+function updateHeroVisual() {
+  if (!heroVisualHeading || !heroVisualSub) return;
+  heroVisualHeading.textContent = ignoreRadius ? "Buscando em qualquer distância" : `Raio de ${radiusFilter.value} km ativo`;
+  const count = visibleServices.length;
+  heroVisualSub.textContent = `${count} serviço${count === 1 ? "" : "s"} encontrado${count === 1 ? "" : "s"} perto de você.`;
+}
+
 function renderCards() {
   cardsView.replaceChildren();
   visibleServices.forEach((service, index) => cardsView.appendChild(serviceCard(service, index)));
   resultCount.textContent = `${visibleServices.length} serviço${visibleServices.length === 1 ? "" : "s"} encontrado${visibleServices.length === 1 ? "" : "s"}`;
+  updateHeroVisual();
 }
 
 let favoritesActiveCategory = "all";
@@ -732,6 +743,7 @@ radiusFilter.addEventListener("input", () => {
   radiusLabel.textContent = `${radiusFilter.value} km`;
   ignoreRadius = false;
   showAllRadiusBtn.classList.remove("active");
+  updateHeroVisual();
 });
 
 showAllRadiusBtn.addEventListener("click", () => {
