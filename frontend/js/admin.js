@@ -9,6 +9,7 @@ if (adminLoginForm) {
     const message = document.getElementById("message");
     const submitButton = adminLoginForm.querySelector("button[type=submit]");
     submitButton.disabled = true;
+    submitButton.classList.add("is-loading");
     try {
       const response = await fetch("/admin/login", {
         method: "POST",
@@ -27,6 +28,7 @@ if (adminLoginForm) {
       window.location.href = "/admin/home";
     } finally {
       submitButton.disabled = false;
+      submitButton.classList.remove("is-loading");
     }
   });
 }

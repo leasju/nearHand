@@ -45,6 +45,14 @@ function closeModal(modal) {
   modal.addEventListener("transitionend", onEnd);
 }
 
+// Estado de carregamento em botões que disparam ações assíncronas (evita duplo
+// clique e dá feedback visual real enquanto a requisição está em andamento).
+function setButtonLoading(button, loading) {
+  if (!button) return;
+  button.classList.toggle("is-loading", loading);
+  button.disabled = loading;
+}
+
 const SERVICE_VISUALS = [
   ["cat-eletrica", "electric"],
   ["sparkles", "clean"],
@@ -752,6 +760,13 @@ showAllRadiusBtn.addEventListener("click", () => {
   showAllRadiusBtn.classList.add("active");
   loadServices();
   showToast("Mostrando anúncios de qualquer distância.");
+});
+
+const searchBtn = document.getElementById("searchBtn");
+searchBtn.addEventListener("click", async () => {
+  setButtonLoading(searchBtn, true);
+  await loadServices();
+  setButtonLoading(searchBtn, false);
 });
 
 document.querySelectorAll("[data-close]").forEach((button) => {
@@ -2090,6 +2105,7 @@ async function handleRequestListClick(event) {
   const button = event.target.closest("[data-request-status]");
   if (!button) return;
   const item = button.closest(".request-item");
+  setButtonLoading(button, true);
   try {
     const response = await authFetch(`/solicitacoes/${item.dataset.requestId}/status`, {
       method: "PATCH",
@@ -2100,6 +2116,7 @@ async function handleRequestListClick(event) {
     await loadProviderRequests();
     showToast(`Solicitação ${requestStatusLabel(data.status).toLowerCase()}.`);
   } catch (error) {
+    setButtonLoading(button, false);
     showToast(error.message);
   }
 }
@@ -2508,6 +2525,7 @@ newAdForm.addEventListener("submit", async (event) => {
   }
 
   const isEdit = editingServiceId !== null;
+  setButtonLoading(newAdSubmitBtn, true);
   try {
     const response = await authFetch(isEdit ? `/services/${editingServiceId}` : "/services", {
       method: isEdit ? "PUT" : "POST",
@@ -2544,6 +2562,8 @@ newAdForm.addEventListener("submit", async (event) => {
     showToast(isEdit ? "Anúncio atualizado." : "Anúncio publicado.");
   } catch (error) {
     showToast(error.message);
+  } finally {
+    setButtonLoading(newAdSubmitBtn, false);
   }
 });
 

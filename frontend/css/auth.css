@@ -205,6 +205,19 @@ button{cursor:pointer;border:none;background:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 [hidden]{display:none !important}
 
+/* Ripple de clique + estado de carregamento (mesmo padrão de css/styles.css) */
+.primary-btn,.ghost-btn,.role-btn,.mode-btn{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;transform:scale(0);background:rgba(0,0,0,.14);pointer-events:none;animation:rippleAnim .55s cubic-bezier(.25,.1,.25,1) forwards}
+@keyframes rippleAnim{to{transform:scale(2.6);opacity:0}}
+@media (prefers-reduced-motion: reduce){.ripple{display:none}}
+.is-loading{color:transparent!important;pointer-events:none;position:relative}
+.is-loading::after{
+  content:"";position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
+  border-radius:50%;border:2px solid rgba(64,1,30,.25);border-top-color:var(--imperial);
+  animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 @media (max-width: 1060px){
   .auth-shell{grid-template-columns:minmax(0,1fr);padding:36px clamp(20px,6vw,48px)}
   .hero-copy h1{max-width:18ch}

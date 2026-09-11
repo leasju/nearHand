@@ -73,8 +73,28 @@ button{cursor:pointer}
 .modal-backdrop.is-open{opacity:1}
 .modal-backdrop .modal{transform:translateY(16px) scale(.97);opacity:0;transition:transform .28s var(--ease),opacity .28s var(--ease)}
 .modal-backdrop.is-open .modal{transform:translateY(0) scale(1);opacity:1}
-.toggle-btn,.role-btn,.mode-btn,.chip,.preference-chip,.date-option,.time-options button{transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),transform .15s var(--ease)}
+.toggle-btn,.role-btn,.mode-btn,.chip,.preference-chip,.date-option,.time-options button,.small-btn,.admin-tab,.history-tab,.nav-link{transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),transform .15s var(--ease)}
 .category-item{transition:background .18s var(--ease)}
+.small-btn:hover,.chip:hover,.admin-tab:hover:not(.active),.history-tab:hover,.preference-chip:hover:not(.active),.nav-link:hover{transform:translateY(-1px);box-shadow:var(--shadow-xs)}
+.chip:active,.toggle-btn:active,.role-btn:active,.mode-btn:active,.admin-tab:active,.history-tab:active,.icon-btn:active{transform:scale(.95)}
+
+/* Ripple de clique — feedback tátil em qualquer botão/pílula da interface */
+.primary-btn,.secondary-btn,.ghost-btn,.small-btn,.chip,.toggle-btn,.role-btn,.mode-btn,.admin-tab,.preference-chip,.category-item,.date-option{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;transform:scale(0);background:rgba(0,0,0,.14);pointer-events:none;animation:rippleAnim .55s var(--ease) forwards}
+@keyframes rippleAnim{to{transform:scale(2.6);opacity:0}}
+@media (prefers-reduced-motion: reduce){.ripple{display:none}}
+
+/* Botão em estado de carregamento — usado em ações assíncronas (buscar, salvar, aceitar...) */
+.is-loading{color:transparent!important;pointer-events:none;position:relative}
+.is-loading::after{
+  content:"";position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
+  border-radius:50%;border:2px solid rgba(64,1,30,.25);border-top-color:var(--imperial);
+  animation:spin .6s linear infinite;
+}
+.is-loading.on-dark::after{border-color:rgba(255,255,255,.4);border-top-color:#fff}
+@keyframes spin{to{transform:rotate(360deg)}}
+.badge.pulse{animation:badgePulse .4s var(--ease)}
+@keyframes badgePulse{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
 .favorite-btn{transition:transform .18s var(--ease),background .18s var(--ease)}
 .favorite-btn:active{transform:scale(.85)}
 .favorite-btn.active img{animation:heartPop .35s var(--ease)}

@@ -207,6 +207,7 @@ loginForm.addEventListener("submit", (event) => {
   }
   const submitButton = loginForm.querySelector("button[type=submit]");
   submitButton.disabled = true;
+  submitButton.classList.add("is-loading");
   fetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -234,6 +235,7 @@ loginForm.addEventListener("submit", (event) => {
     .catch((error) => {
       showToast(error.message);
       submitButton.disabled = false;
+      submitButton.classList.remove("is-loading");
     });
 });
 
@@ -272,6 +274,7 @@ registerForm.addEventListener("submit", (event) => {
 
   const submitButton = registerForm.querySelector("button[type=submit]");
   submitButton.disabled = true;
+  submitButton.classList.add("is-loading");
   fetch("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -285,7 +288,7 @@ registerForm.addEventListener("submit", (event) => {
       setMode("login");
     })
     .catch((error) => showToast(error.message))
-    .finally(() => { submitButton.disabled = false; });
+    .finally(() => { submitButton.disabled = false; submitButton.classList.remove("is-loading"); });
 });
 
 const urlParams = new URLSearchParams(window.location.search);
