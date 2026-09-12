@@ -820,6 +820,14 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
     if account_type == "prestador" and not account.cpf_cnpj.strip():
         raise HTTPException(status_code=400, detail="CPF or CNPJ is required")
 
+    # Check if email is already pending verification
+    pending_check = db.execute(
+        text("SELECT id FROM pending_registration WHERE LOWER(email) = :email AND tipo = :tipo"),
+        {"email": email, "tipo": account_type},
+    ).first()
+    if pending_check:
+        raise HTTPException(status_code=409, detail="pending")
+
     if account_type == "cliente":
         existing_client = db.execute(
             text("SELECT id FROM cliente WHERE LOWER(email) = :email"),

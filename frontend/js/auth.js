@@ -305,8 +305,16 @@ registerForm.addEventListener("submit", (event) => {
   })
     .then(async (response) => {
       const data = await readApiResponse(response);
-      if (!response.ok) throw new Error(data.detail || "Não foi possível criar a conta.");
-      showVerificationModal(payload.email, payload.tipo);
+      if (!response.ok) {
+        if (data.detail === "pending") {
+          showVerificationModal(payload.email, payload.tipo);
+          showToast("Código já foi enviado. Verifique seu email.");
+        } else {
+          throw new Error(data.detail || "Não foi possível criar a conta.");
+        }
+      } else {
+        showVerificationModal(payload.email, payload.tipo);
+      }
     })
     .catch((error) => showToast(error.message))
     .finally(() => { submitButton.disabled = false; submitButton.classList.remove("is-loading"); });
