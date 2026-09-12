@@ -206,30 +206,33 @@
   <style>
     .code-input {
       width: 100%;
-      padding: 14px 8px;
-      border: 2px solid var(--line);
+      aspect-ratio: 1;
+      padding: 0;
+      border: 2px solid var(--border);
       border-radius: 12px;
       text-align: center;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
       outline: 0;
       background: var(--surface);
-      color: var(--ink);
+      color: var(--text);
       box-shadow: var(--shadow-xs);
-      transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+      transition: border-color .18s ease, box-shadow .18s ease;
+      font-variant-numeric: tabular-nums;
     }
     .code-input:focus {
-      border-color: var(--purple);
+      border-color: var(--violet);
       box-shadow: 0 0 0 3px rgba(90,42,140,.14);
+      background: var(--tint);
     }
-    .code-input:hover {
-      border-color: var(--purple-dark);
+    .code-input:hover:not(:focus) {
+      border-color: var(--violet);
     }
   </style>
 
   <div class="toast" id="toast"></div>
 
   <script src="js/ripple.js?v=20260912"></script>
-  <script src="js/auth.js?v=20260912-3"></script>
+  <script src="js/auth.js?v=20260912-4"></script>
 </body>
 </html>
