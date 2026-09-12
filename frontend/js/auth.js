@@ -75,56 +75,8 @@ setupCepLookup("registerCep", {
 });
 
 // ============================================
-// Foto de perfil: arrastar ou clicar para enviar um arquivo
+// Cropper.js - Edição de imagem
 // ============================================
-function setupPhotoDropzone({ dropzoneId, fileId, previewId, emptyId }) {
-  const dropzone = document.getElementById(dropzoneId);
-  const fileInput = document.getElementById(fileId);
-  const preview = document.getElementById(previewId);
-  const empty = document.getElementById(emptyId);
-  let value = "";
-
-  function updatePreview() {
-    if (value) {
-      preview.src = value;
-      preview.hidden = false;
-      empty.hidden = true;
-    } else {
-      preview.hidden = true;
-      empty.hidden = false;
-    }
-  }
-
-  function handleFile(file) {
-    if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      openImageCropper(reader.result, (croppedData) => {
-        value = croppedData;
-        updatePreview();
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-
-  dropzone.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
-  dropzone.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    dropzone.classList.add("dragover");
-  });
-  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
-  dropzone.addEventListener("drop", (event) => {
-    event.preventDefault();
-    dropzone.classList.remove("dragover");
-    handleFile(event.dataTransfer.files[0]);
-  });
-
-  updatePreview();
-
-  return { getValue: () => value };
-}
-
 let cropperInstance = null;
 let pendingPhotoCallback = null;
 
@@ -193,6 +145,57 @@ document.getElementById("cropperZoomIn").addEventListener("click", () => {
 document.getElementById("cropperZoomOut").addEventListener("click", () => {
   if (cropperInstance) cropperInstance.zoom(-0.1);
 });
+
+// ============================================
+// Foto de perfil: arrastar ou clicar para enviar um arquivo
+// ============================================
+function setupPhotoDropzone({ dropzoneId, fileId, previewId, emptyId }) {
+  const dropzone = document.getElementById(dropzoneId);
+  const fileInput = document.getElementById(fileId);
+  const preview = document.getElementById(previewId);
+  const empty = document.getElementById(emptyId);
+  let value = "";
+
+  function updatePreview() {
+    if (value) {
+      preview.src = value;
+      preview.hidden = false;
+      empty.hidden = true;
+    } else {
+      preview.hidden = true;
+      empty.hidden = false;
+    }
+  }
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      openImageCropper(reader.result, (croppedData) => {
+        value = croppedData;
+        updatePreview();
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  dropzone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+  dropzone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    dropzone.classList.add("dragover");
+  });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragover");
+    handleFile(event.dataTransfer.files[0]);
+  });
+
+  updatePreview();
+
+  return { getValue: () => value };
+}
 
 const registerPhotoPicker = setupPhotoDropzone({
   dropzoneId: "registerPhotoDropzone",
