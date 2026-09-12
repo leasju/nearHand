@@ -347,6 +347,36 @@ document.getElementById("verificationBackdrop").addEventListener("click", (e) =>
   if (e.target === e.currentTarget) hideVerificationModal();
 });
 
+document.getElementById("resendCodeBtn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const btn = e.target;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Reenviando...";
+  document.getElementById("verificationMessage").textContent = "";
+
+  try {
+    const response = await fetch("/auth/resend-verification-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: verificationType,
+        email: verificationEmail,
+      }),
+    });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Falha ao reenviar código");
+    document.getElementById("verificationMessage").textContent = "Código reenviado! Verifique seu email.";
+    document.querySelectorAll(".code-input").forEach((input) => (input.value = ""));
+    document.querySelectorAll(".code-input")[0].focus();
+  } catch (error) {
+    document.getElementById("verificationMessage").textContent = error.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+
 document.getElementById("verificationForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const code = Array.from(document.querySelectorAll(".code-input"))

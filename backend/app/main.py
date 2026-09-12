@@ -967,6 +967,52 @@ def verify_email(payload: EmailVerification, db: Session = Depends(get_db)):
     return {"message": "Email verified successfully"}
 
 
+class ResendVerificationCode(BaseModel):
+    tipo: str
+    email: str
+
+
+@app.post("/auth/resend-verification-code")
+def resend_verification_code(payload: ResendVerificationCode, db: Session = Depends(get_db)):
+    """Resend verification code to email."""
+    tipo = payload.tipo.strip().lower()
+    email = payload.email.strip().lower()
+
+    if not tipo or not email:
+        raise HTTPException(status_code=400, detail="tipo and email are required")
+
+    if tipo == "cliente":
+        user = db.execute(
+            text("SELECT id, email_verificado FROM cliente WHERE LOWER(email) = :email"),
+            {"email": email},
+        ).mappings().first()
+    elif tipo == "prestador":
+        user = db.execute(
+            text("SELECT id, email_verificado FROM prestador WHERE LOWER(email) = :email"),
+            {"email": email},
+        ).mappings().first()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid tipo")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    if user["email_verificado"]:
+        raise HTTPException(status_code=400, detail="Email already verified")
+
+    verification_code = generate_verification_code()
+    token_expiry = datetime.now() + timedelta(minutes=15)
+
+    db.execute(
+        text(f"UPDATE {tipo} SET email_token = :token, email_token_expira_em = :expiry WHERE id = :id"),
+        {"token": verification_code, "expiry": token_expiry, "id": user["id"]},
+    )
+    db.commit()
+
+    send_verification_email(email, verification_code)
+    return {"message": "Verification code sent"}
+
+
 @app.post("/auth/login")
 def login_account(account: AccountLogin, request: Request, db: Session = Depends(get_db)):
     enforce_login_rate_limit(request, "account")
