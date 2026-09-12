@@ -1491,7 +1491,7 @@ function renderChatConversationList() {
 
     const header = document.createElement("div");
     header.className = "chat-group-header";
-    header.innerHTML = `<span class="avatar">${requestInitials(other.name)}</span><strong>${other.name}</strong>`;
+    header.innerHTML = `<span class="avatar">${requestInitials(other.name)}</span><strong>${other.name}</strong><span class="chat-preview-time">${formatChatTime(conversations[0].criado_em)}</span>`;
     if (canCollapse) {
       const toggle = document.createElement("button");
       toggle.type = "button";
@@ -1520,7 +1520,7 @@ function renderChatConversationList() {
       item.innerHTML = `
         <i class="chat-status-dot ${requestStatusClass(conversation.status)}" title="${requestStatusLabel(conversation.status)}"></i>
         <span class="chat-preview">
-          <span class="chat-preview-top"><span class="chat-preview-name">${conversation.servico_titulo}</span></span>
+          <span class="chat-preview-top"><span class="chat-preview-name">${conversation.servico_titulo}</span><span class="chat-preview-time">${formatChatTime(conversation.criado_em)}</span></span>
           <span class="chat-preview-sub">${requestStatusLabel(conversation.status)}</span>
         </span>
       `;
@@ -1638,6 +1638,18 @@ chatForm.addEventListener("submit", async (event) => {
 function formatRequestDate(value) {
   if (!value) return "Data a combinar";
   return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+// Formato compacto pra lista de conversas: hora se for hoje, senão data curta —
+// como em qualquer app de mensagens, em vez do carimbo completo de data/hora.
+function formatChatTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  return sameDay
+    ? date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
 
 function requestStatusLabel(status) {
@@ -2506,7 +2518,7 @@ function renderProviderServices() {
     item.innerHTML = `
       <input type="checkbox" class="ad-select" title="Selecionar anúncio" />
       <div class="ad-thumb electric" style="background-image:url('${service.photos?.[0]?.url || ""}');background-size:cover;background-position:center">${service.photos?.[0]?.url ? "" : serviceVisual(service).icon}</div>
-      <div><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
+      <div class="ad-info"><strong>${service.title}</strong><small>R$ ${formatPrice(service.price)} ${service.price_type === "por_hora" ? "por hora" : "fixo"}${service.negociavel ? " · Negociável" : ""} • Raio de ${service.raio_atendimento_km} km</small></div>
       <span class="status ${service.status === "ativo" ? "done" : "pending"}">${service.status === "ativo" ? "Ativo" : service.status === "pausado" ? "Pausado" : "Removido"}</span>
       <button class="icon-btn ad-edit" title="Editar"><img class="icon" src="img/icons/icon-edit.png" alt="Editar" /></button>
       <button class="icon-btn ad-pause" title="Pausar ou reativar" ${service.status === "removido" ? "disabled" : ""}><img class="icon" src="img/icons/icon-pause.png" alt="Pausar ou reativar" /></button>
