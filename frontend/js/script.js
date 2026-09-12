@@ -170,15 +170,21 @@ function formatPrice(value) {
 // ============================================
 let categoriesData = [];
 
+const CATEGORY_COLORS = ["var(--imperial)", "var(--royal)", "var(--tangerine-700)", "var(--wine-600)", "var(--royal-700)", "var(--peach-700)"];
+const CATEGORY_EMOJI = ["⚡", "🖌️", "🚿", "🧹", "🌿", "🔧", "🛠️", "🎨"];
+
 function renderCategorySidebar() {
   const container = document.getElementById("categoryItemsList");
   container.replaceChildren();
-  categoriesData.forEach((category) => {
+  categoriesData.forEach((category, index) => {
     const button = document.createElement("button");
     button.className = "category-item";
     button.dataset.category = category.nome;
     const count = category.servico_count;
+    const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+    const emoji = CATEGORY_EMOJI[index % CATEGORY_EMOJI.length];
     button.innerHTML = `
+      <span class="category-icon" style="background:${color}">${emoji}</span>
       <div><strong>${category.nome}</strong><small>${count} serviço${count === 1 ? "" : "s"}</small></div>
     `;
     container.appendChild(button);

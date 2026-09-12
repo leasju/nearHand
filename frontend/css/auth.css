@@ -1,51 +1,51 @@
 :root{
   /* NearHand — nova identidade (mesma paleta de css/styles.css) */
-  --wine-900:#2C0015;
-  --wine:#40011E;
-  --wine-600:#601B39;
-  --imperial-900:#3E0140;
-  --imperial:#580259;
-  --imperial-400:#7A3B78;
-  --royal-700:#5B3480;
-  --royal:#7544A6;
-  --royal-300:#A788C7;
-  --royal-150:#DACDEA;
-  --tangerine-700:#C96F02;
-  --tangerine:#F28B0C;
-  --tangerine-300:#F7B25C;
-  --tangerine-150:#FBDCB2;
-  --peach-700:#D6875C;
-  --peach:#F2A679;
-  --peach-300:#F7C4A4;
-  --peach-150:#FBE1D0;
+  --wine-900:#1E0729;
+  --wine:#2B0A3D;
+  --wine-600:#4A1D63;
+  --imperial-900:#3E1566;
+  --imperial:#5A2A8C;
+  --imperial-400:#7B4FAE;
+  --royal-700:#6748A8;
+  --royal:#7C5CC7;
+  --royal-300:#A78DDB;
+  --royal-150:#D9CFF0;
+  --tangerine-700:#2E48B8;
+  --tangerine:#3F5FE0;
+  --tangerine-300:#7C93EA;
+  --tangerine-150:#C7D2F7;
+  --peach-700:#7FA8DE;
+  --peach:#A8C8F0;
+  --peach-300:#C8DDF6;
+  --peach-150:#E7F0FB;
 
-  --lavender:#A788C7;
-  --violet:#580259;
-  --sky:#7544A6;
-  --mint:#FBE1D0;
-  --cream:#FBF5F0;
-  --page:#FBF5F0;
+  --lavender:#A78DDB;
+  --violet:#5A2A8C;
+  --sky:#7C5CC7;
+  --mint:#E7F0FB;
+  --cream:#F5F3FB;
+  --page:#F5F3FB;
   --white:#FFFFFF;
   --surface:#FFFFFF;
-  --tint:rgba(64,1,30,.07);
-  --tint-strong:rgba(64,1,30,.16);
-  --page-a:#FBF5F0;
-  --page-b:#FBF5F0;
-  --aside-a:#40011E;
-  --aside-b:#2C0015;
-  --accent:#F28B0C;
-  --accent-strong:#C96F02;
+  --tint:rgba(43,10,61,.07);
+  --tint-strong:rgba(43,10,61,.16);
+  --page-a:#F5F3FB;
+  --page-b:#F5F3FB;
+  --aside-a:#2B0A3D;
+  --aside-b:#1E0729;
+  --accent:#3F5FE0;
+  --accent-strong:#2E48B8;
   --glass-strong:#FFFFFF;
-  --glass-soft:rgba(64,1,30,.06);
-  --text:#2B0A1E;
+  --glass-soft:rgba(43,10,61,.06);
+  --text:#211433;
   --text-on-dark:#FFFFFF;
-  --muted:#8A7288;
+  --muted:#8A7FA0;
   --muted-on-dark:rgba(255,255,255,.72);
-  --border:rgba(64,1,30,.10);
+  --border:rgba(43,10,61,.10);
   --border-on-dark:rgba(255,255,255,.16);
-  --shadow:0 40px 80px -30px rgba(64,1,30,.35);
-  --shadow-sm:0 16px 40px -18px rgba(64,1,30,.28);
-  --shadow-xs:0 2px 10px rgba(64,1,30,.08);
+  --shadow:0 40px 80px -30px rgba(43,10,61,.35);
+  --shadow-sm:0 16px 40px -18px rgba(43,10,61,.28);
+  --shadow-xs:0 2px 10px rgba(43,10,61,.08);
   --radius-xl:22px;
   --radius-lg:18px;
   --radius-md:12px;
@@ -118,6 +118,10 @@ button{cursor:pointer;border:none;background:none}
   border:1.5px solid var(--accent);display:grid;place-items:center;
 }
 .check-ring .icon{width:13px;height:13px;filter:brightness(0) invert(1)}
+.aside-stats{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.aside-stat{background:rgba(255,255,255,.14);border:1px solid var(--border-on-dark);backdrop-filter:blur(10px);border-radius:14px;padding:12px 16px}
+.aside-stat b{display:block;color:#fff;font-size:18px;font-weight:800}
+.aside-stat span{color:var(--muted-on-dark);font-size:11px;font-weight:600}
 .auth-main{
   display:grid;place-items:center;
 }
@@ -164,7 +168,7 @@ button{cursor:pointer;border:none;background:none}
   outline:none;transition:.2s ease;font-size:13.5px;box-shadow:var(--shadow-xs);
 }
 .field-input::placeholder{color:rgba(34,29,51,.4)}
-.field-input:focus{background:var(--surface);border-color:var(--violet);box-shadow:0 0 0 3px rgba(88,2,89,.14)}
+.field-input:focus{background:var(--surface);border-color:var(--violet);box-shadow:0 0 0 3px rgba(90,42,140,.14)}
 .select-input{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--violet) 50%),linear-gradient(135deg,var(--violet) 50%,transparent 50%);background-position:calc(100% - 18px) calc(50% - 3px),calc(100% - 12px) calc(50% - 3px);background-size:6px 6px,6px 6px;background-repeat:no-repeat}
 .preference-chips{display:flex;flex-wrap:wrap;gap:8px}
 .preference-chip{padding:9px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.9rem;font-weight:600;transition:.18s ease;display:inline-flex;align-items:center;gap:6px}
@@ -215,7 +219,7 @@ button{cursor:pointer;border:none;background:none}
 .is-loading{color:transparent!important;pointer-events:none;position:relative}
 .is-loading::after{
   content:"";position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
-  border-radius:50%;border:2px solid rgba(64,1,30,.25);border-top-color:var(--imperial);
+  border-radius:50%;border:2px solid rgba(43,10,61,.25);border-top-color:var(--imperial);
   animation:spin .6s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
