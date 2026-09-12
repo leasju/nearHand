@@ -861,61 +861,43 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
 
         verification_code = generate_verification_code()
         token_expiry = datetime.now() + timedelta(minutes=15)
-
+        preferencias = None
         if account_type == "cliente":
             preferencias = ",".join(p.strip() for p in account.preferencias if p.strip()) or None
-            user_result = db.execute(
-                text("""
-                    INSERT INTO cliente
-                        (nome_completo, foto, endereco_id, telefone, email, senha_hash, preferencias, email_token, email_token_expira_em, email_verificado)
-                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :senha_hash, :preferencias, :email_token, :email_token_expira_em, FALSE)
-                """),
-                {
-                    "nome": name,
-                    "foto": account.foto.strip() or None,
-                    "endereco_id": address_id,
-                    "telefone": _digits_only(account.telefone) or None,
-                    "email": email,
-                    "senha_hash": password_hash,
-                    "preferencias": preferencias,
-                    "email_token": verification_code,
-                    "email_token_expira_em": token_expiry,
-                },
-            )
-        else:
-            user_result = db.execute(
-                text("""
-                    INSERT INTO prestador
-                        (nome_empresa, foto, endereco_id, telefone, email, cpf_cnpj, senha_hash, email_token, email_token_expira_em, email_verificado)
-                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :cpf_cnpj, :senha_hash, :email_token, :email_token_expira_em, FALSE)
-                """),
-                {
-                    "nome": name,
-                    "foto": account.foto.strip() or None,
-                    "endereco_id": address_id,
-                    "telefone": _digits_only(account.telefone) or None,
-                    "email": email,
-                    "cpf_cnpj": _digits_only(account.cpf_cnpj),
-                    "senha_hash": password_hash,
-                    "email_token": verification_code,
-                    "email_token_expira_em": token_expiry,
-                },
-            )
+
+        db.execute(
+            text("""
+                INSERT INTO pending_registration
+                    (tipo, nome, email, telefone, cpf_cnpj, endereco_id, foto, preferencias, senha_hash, email_token, email_token_expira_em)
+                VALUES (:tipo, :nome, :email, :telefone, :cpf_cnpj, :endereco_id, :foto, :preferencias, :senha_hash, :email_token, :email_token_expira_em)
+            """),
+            {
+                "tipo": account_type,
+                "nome": name,
+                "email": email,
+                "telefone": _digits_only(account.telefone) or None,
+                "cpf_cnpj": _digits_only(account.cpf_cnpj) if account_type == "prestador" else None,
+                "endereco_id": address_id,
+                "foto": account.foto.strip() or None,
+                "preferencias": preferencias,
+                "senha_hash": password_hash,
+                "email_token": verification_code,
+                "email_token_expira_em": token_expiry,
+            },
+        )
         db.commit()
-        user_id = user_result.lastrowid
-        logger.info(f"[REGISTER] Chamando send_verification_email para {email} com código {verification_code}")
+        logger.info(f"[REGISTER] Pedido de registro pendente criado para {email}")
         send_verification_email(email, verification_code)
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="The account data conflicts with an existing account")
+        raise HTTPException(status_code=409, detail="This email is already waiting for verification or has an account")
     except DataError:
         db.rollback()
         raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
 
     return {
-        "message": "Account created. Check your email for the verification code.",
-        "tipo": account_type,
-        "id": user_id,
+        "message": "Check your email for the verification code.",
+        "email": email,
         "email": email,
     }
 
@@ -927,7 +909,7 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
 
 @app.post("/auth/verify-email")
 def verify_email(payload: EmailVerification, db: Session = Depends(get_db)):
-    """Verify email with verification code."""
+    """Verify email with verification code and create account."""
     tipo = payload.tipo.strip().lower()
     email = payload.email.strip().lower()
     code = payload.code.strip()
@@ -935,43 +917,77 @@ def verify_email(payload: EmailVerification, db: Session = Depends(get_db)):
     if not tipo or not email or not code:
         raise HTTPException(status_code=400, detail="tipo, email, and code are required")
 
-    if tipo == "cliente":
-        user = db.execute(
-            text("""
-                SELECT id, email_token, email_token_expira_em
-                FROM cliente
-                WHERE LOWER(email) = :email
-            """),
-            {"email": email},
-        ).mappings().first()
-    elif tipo == "prestador":
-        user = db.execute(
-            text("""
-                SELECT id, email_token, email_token_expira_em
-                FROM prestador
-                WHERE LOWER(email) = :email
-            """),
-            {"email": email},
-        ).mappings().first()
-    else:
+    if tipo not in {"cliente", "prestador"}:
         raise HTTPException(status_code=400, detail="Invalid tipo")
 
-    if not user:
-        raise HTTPException(status_code=404, detail="Account not found")
+    pending = db.execute(
+        text("""
+            SELECT id, nome, telefone, cpf_cnpj, endereco_id, foto, preferencias, senha_hash, email_token, email_token_expira_em
+            FROM pending_registration
+            WHERE LOWER(email) = :email AND tipo = :tipo
+        """),
+        {"email": email, "tipo": tipo},
+    ).mappings().first()
 
-    if user["email_token"] != code:
+    if not pending:
+        raise HTTPException(status_code=404, detail="Registration request not found")
+
+    if pending["email_token"] != code:
         raise HTTPException(status_code=400, detail="Invalid verification code")
 
-    if user["email_token_expira_em"] < datetime.now():
+    if pending["email_token_expira_em"] < datetime.now():
         raise HTTPException(status_code=400, detail="Verification code expired")
 
-    db.execute(
-        text(f"UPDATE {tipo} SET email_verificado = TRUE, email_token = NULL WHERE id = :id"),
-        {"id": user["id"]},
-    )
-    db.commit()
+    try:
+        if tipo == "cliente":
+            db.execute(
+                text("""
+                    INSERT INTO cliente
+                        (nome_completo, foto, endereco_id, telefone, email, senha_hash, preferencias, email_verificado)
+                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :senha_hash, :preferencias, TRUE)
+                """),
+                {
+                    "nome": pending["nome"],
+                    "foto": pending["foto"],
+                    "endereco_id": pending["endereco_id"],
+                    "telefone": pending["telefone"],
+                    "email": email,
+                    "senha_hash": pending["senha_hash"],
+                    "preferencias": pending["preferencias"],
+                },
+            )
+        else:
+            db.execute(
+                text("""
+                    INSERT INTO prestador
+                        (nome_empresa, foto, endereco_id, telefone, email, cpf_cnpj, senha_hash, email_verificado)
+                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :cpf_cnpj, :senha_hash, TRUE)
+                """),
+                {
+                    "nome": pending["nome"],
+                    "foto": pending["foto"],
+                    "endereco_id": pending["endereco_id"],
+                    "telefone": pending["telefone"],
+                    "email": email,
+                    "cpf_cnpj": pending["cpf_cnpj"],
+                    "senha_hash": pending["senha_hash"],
+                },
+            )
 
-    return {"message": "Email verified successfully"}
+        db.execute(
+            text("DELETE FROM pending_registration WHERE id = :id"),
+            {"id": pending["id"]},
+        )
+        db.commit()
+        logger.info(f"[VERIFY] Conta criada com sucesso para {email}")
+        return {"message": "Email verified successfully"}
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email already has an account")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[VERIFY ERROR] {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error verifying email")
 
 
 class ResendVerificationCode(BaseModel):
@@ -988,31 +1004,23 @@ def resend_verification_code(payload: ResendVerificationCode, db: Session = Depe
     if not tipo or not email:
         raise HTTPException(status_code=400, detail="tipo and email are required")
 
-    if tipo == "cliente":
-        user = db.execute(
-            text("SELECT id, email_verificado FROM cliente WHERE LOWER(email) = :email"),
-            {"email": email},
-        ).mappings().first()
-    elif tipo == "prestador":
-        user = db.execute(
-            text("SELECT id, email_verificado FROM prestador WHERE LOWER(email) = :email"),
-            {"email": email},
-        ).mappings().first()
-    else:
+    if tipo not in {"cliente", "prestador"}:
         raise HTTPException(status_code=400, detail="Invalid tipo")
 
-    if not user:
-        raise HTTPException(status_code=404, detail="Account not found")
+    pending = db.execute(
+        text("SELECT id FROM pending_registration WHERE LOWER(email) = :email AND tipo = :tipo"),
+        {"email": email, "tipo": tipo},
+    ).mappings().first()
 
-    if user["email_verificado"]:
-        raise HTTPException(status_code=400, detail="Email already verified")
+    if not pending:
+        raise HTTPException(status_code=404, detail="Registration request not found")
 
     verification_code = generate_verification_code()
     token_expiry = datetime.now() + timedelta(minutes=15)
 
     db.execute(
-        text(f"UPDATE {tipo} SET email_token = :token, email_token_expira_em = :expiry WHERE id = :id"),
-        {"token": verification_code, "expiry": token_expiry, "id": user["id"]},
+        text("UPDATE pending_registration SET email_token = :token, email_token_expira_em = :expiry WHERE id = :id"),
+        {"token": verification_code, "expiry": token_expiry, "id": pending["id"]},
     )
     db.commit()
 

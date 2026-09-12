@@ -340,6 +340,15 @@ document.querySelectorAll(".code-input").forEach((input, idx, arr) => {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Backspace" && !e.target.value && idx > 0) arr[idx - 1].focus();
   });
+  input.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData("text");
+    const digits = paste.replace(/\D/g, "").slice(0, 6);
+    arr.forEach((inp, i) => {
+      inp.value = digits[i] || "";
+    });
+    if (digits.length === 6) arr[5].focus();
+  });
 });
 
 document.getElementById("closeVerificationBtn").addEventListener("click", hideVerificationModal);

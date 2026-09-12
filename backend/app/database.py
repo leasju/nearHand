@@ -105,6 +105,27 @@ def ensure_optional_schema():
             )
         """))
 
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS pending_registration (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                tipo VARCHAR(10) NOT NULL,
+                nome VARCHAR(200) NOT NULL,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                telefone VARCHAR(20) NULL,
+                cpf_cnpj VARCHAR(50) NULL,
+                endereco_id INT NOT NULL,
+                foto MEDIUMTEXT NOT NULL,
+                preferencias VARCHAR(255) NULL,
+                senha_hash VARCHAR(255) NOT NULL,
+                email_token VARCHAR(100) NOT NULL,
+                email_token_expira_em DATETIME NOT NULL,
+                criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (endereco_id) REFERENCES endereco(id) ON DELETE CASCADE,
+                INDEX idx_pending_email (email),
+                INDEX idx_pending_token (email_token)
+            )
+        """))
+
         # Favorito era por prestador inteiro (favoritar 1 anúncio "contaminava" todos os
         # anúncios daquele prestador). Migra pra favoritar o anúncio (servico_id) específico.
         # Cada passo é checado individualmente (DDL do MySQL faz commit implícito, então uma
