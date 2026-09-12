@@ -14,13 +14,6 @@
 </head>
 <body>
   <div class="app-frame">
-  <div class="promo-bar">
-    <span><strong>Prestadores verificados</strong> e avaliados por quem já contratou perto de você.</span>
-    <div class="promo-bar-links">
-      <a href="#" data-section-link="pedidos">📦 Meus pedidos</a>
-      <a href="#" id="promoHelpLink">💬 Central de ajuda</a>
-    </div>
-  </div>
   <header class="topbar">
     <a class="brand" href="#" id="homeLogo" aria-label="NearHand - início">
 
@@ -70,90 +63,67 @@
   <main>
     <section id="clienteView" class="app-view">
       <section class="hero section-view" data-view="explorar">
+        <div class="blob-field" aria-hidden="true">
+          <div class="blob blob-1"></div>
+          <div class="blob blob-2"></div>
+          <div class="blob blob-3"></div>
+          <div class="blob blob-4"></div>
+        </div>
         <div class="hero-inner">
           <div class="hero-copy">
             <span class="eyebrow">SERVIÇOS LOCAIS, SEM COMPLICAÇÃO</span>
             <h1>Encontre quem resolve<br><span>perto de você.</span></h1>
             <p>Compare prestadores, veja disponibilidade, converse pelo chat e solicite o serviço em poucos passos.</p>
-            <div class="trust-row">
-              <div class="trust-item"><span><img class="icon" src="img/icons/icon-account.png" alt="" /></span> Prestadores verificados</div>
-              <div class="trust-item"><span><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></span> Avaliações reais</div>
-              <div class="trust-item"><span><img class="icon" src="img/icons/icon-search.png" alt="" /></span> Busca por proximidade</div>
-            </div>
           </div>
-
-          <div class="hero-finder">
-            <h4>Encontre prestadores para você</h4>
-            <p>Escolha o que precisa e sua localização pra ver quem está disponível perto de você.</p>
-            <label class="field search-field"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="searchInput" type="search" placeholder="O que você precisa? Ex.: eletricista, manicure..." /></label>
-            <label class="field"><img class="icon" src="img/icons/icon-location.png" alt="" /><input id="locationInput" value="Campinas, SP" /></label>
-            <button class="primary-btn" id="searchBtn">Ver prestadores →</button>
-            <a class="hero-finder-link" href="#comoFunciona">Novo por aqui? Veja como funciona →</a>
-            <div class="hero-finder-caption">
-              <strong id="heroVisualHeading">Raio de 10 km ativo</strong>
-              <span id="heroVisualSub">6 serviços encontrados perto de você.</span>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-visual-icon"><img src="img/icon_nearhand.png" alt="" /></div>
+            <h4 id="heroVisualHeading">Raio de 10 km ativo</h4>
+            <p id="heroVisualSub">6 serviços encontrados perto de você.</p>
+            <div class="hero-stat-row">
+              <div class="hero-stat"><span class="hero-stat-icon"><img class="icon icon-on-dark" src="img/icons/icon-location.png" alt="" /></span><div><strong>2,3 km</strong><small>Eletricista disponível</small></div></div>
+              <div class="hero-stat"><span class="hero-stat-icon"><img class="icon icon-on-dark" src="img/icons/icon-star-filled.png" alt="" /></span><div><strong>4,9</strong><small>Mais bem avaliados</small></div></div>
             </div>
-          </div>
-
-          <div class="hero-collage" aria-hidden="true">
-            <div class="hero-collage-tile t1"><span><img class="icon icon-on-dark" src="img/icons/icon-sparkles.png" alt="" /></span><small>Eletricista · 2,3 km</small></div>
-            <div class="hero-collage-tile t2"><span><img class="icon icon-on-dark" src="img/icons/icon-star-filled.png" alt="" /></span><small>4,9 nota média</small></div>
-            <div class="hero-collage-tile t3"><span><img class="icon icon-on-dark" src="img/icons/icon-users.png" alt="" /></span><small>+500 prestadores</small></div>
           </div>
         </div>
       </section>
 
-      <section class="audience-band section-view" data-view="explorar">
-        <div class="audience-item"><span><img class="icon" src="img/icons/icon-user.png" alt="" /></span><div><strong>Para clientes</strong><small>Encontre prestadores avaliados perto de você.</small><a href="#" data-section-link="explorar">Explorar serviços →</a></div></div>
-        <div class="audience-item"><span><img class="icon" src="img/icons/icon-users.png" alt="" /></span><div><strong>Para prestadores</strong><small>Publique seus serviços e receba pedidos.</small><a href="auth.html">Cadastre-se como prestador →</a></div></div>
-        <div class="audience-item"><span><img class="icon" src="img/icons/icon-shopping-cart.png" alt="" /></span><div><strong>Para empresas locais</strong><small>Divulgue sua equipe pra toda a região.</small><a href="#" id="promoHelpLink2">Fale conosco →</a></div></div>
-        <div class="audience-item"><span><img class="icon" src="img/icons/icon-heart-filled.png" alt="" /></span><div><strong>Para bairros e comunidades</strong><small>Fortaleça quem presta serviço perto de você.</small><a href="#comoFunciona">Saiba mais →</a></div></div>
-      </section>
+      <section class="search-panel section-view" data-view="explorar">
+        <div class="search-row">
+          <label class="field search-field"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="searchInput" type="search" placeholder="O que você precisa? Ex.: eletricista, manicure..." /></label>
+          <label class="field"><img class="icon" src="img/icons/icon-location.png" alt="" /><input id="locationInput" value="Campinas, SP" /></label>
+          <button class="primary-btn" id="searchBtn">Buscar</button>
+        </div>
 
-      <section class="section-view" data-view="explorar" id="comoFunciona">
-        <div class="section-head"><span class="eyebrow">COMO FUNCIONA</span><h2>Do pedido ao serviço em 5 passos</h2></div>
-        <div class="how-it-works">
-          <div class="step-card"><div class="step-number">1</div><div class="step-icon"><img class="icon icon-lg" src="img/icons/icon-search.png" alt="" /></div><strong>Buscar</strong><small>Escolha a categoria do serviço que você precisa.</small></div>
-          <div class="step-card"><div class="step-number">2</div><div class="step-icon"><img class="icon icon-lg" src="img/icons/icon-star-filled.png" alt="" /></div><strong>Comparar</strong><small>Veja avaliações, distância e preços dos prestadores.</small></div>
-          <div class="step-card"><div class="step-number">3</div><div class="step-icon"><img class="icon icon-lg" src="img/icons/icon-account.png" alt="" /></div><strong>Consultar</strong><small>Tire dúvidas com o prestador pelo chat.</small></div>
-          <div class="step-card"><div class="step-number">4</div><div class="step-icon"><img class="icon icon-lg" src="img/icons/icon-shopping-cart.png" alt="" /></div><strong>Solicitar</strong><small>Peça o orçamento ou agendamento do serviço.</small></div>
-          <div class="step-card"><div class="step-number">5</div><div class="step-icon"><img class="icon icon-lg" src="img/icons/icon-heart-filled.png" alt="" /></div><strong>Concluir</strong><small>Receba o serviço e avalie o prestador.</small></div>
+        <div class="filters-row">
+          <select id="categoryFilter" class="filter-control" aria-label="Categoria">
+            <option value="all">Todos os serviços</option>
+          </select>
+          <select id="ratingFilter" class="filter-control" aria-label="Avaliação mínima">
+            <option value="0">Qualquer avaliação</option>
+            <option value="4">4+ estrelas</option>
+            <option value="4.5">4,5+ estrelas</option>
+          </select>
+          <select id="sortFilter" class="filter-control" aria-label="Ordenação">
+            <option value="distance">Mais próximo</option>
+            <option value="rating">Melhor avaliado</option>
+            <option value="price">Menor preço</option>
+          </select>
+          <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
+          <button type="button" class="chip" id="showAllRadiusBtn" title="Mostrar anúncios de qualquer distância, além do raio máximo de 30 km">Ver todos os anúncios</button>
+          <div class="view-toggle" id="exploreViewToggle" role="group" aria-label="Modo de visualização">
+            <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
+            <button class="toggle-btn" data-mode="map"><img class="icon" src="img/icons/icon-location.png" alt="" /> Mapa</button>
+          </div>
         </div>
       </section>
 
       <section class="content-grid section-view" data-view="explorar">
         <aside class="categories-card reveal">
-          <div class="side-head"><span class="eyebrow">CATEGORIAS EM DESTAQUE</span><button class="text-btn" id="clearFilters">Limpar</button></div>
+          <div class="side-head"><span class="eyebrow">CATEGORIAS</span><button class="text-btn" id="clearFilters">Limpar</button></div>
           <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="categorySearchInput" type="search" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></div>
-          <div class="category-grid">
-            <button class="category-item active" data-category="all"><span class="category-icon"><img class="icon" src="img/icons/icon-sparkles.png" alt="" /></span><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
-            <div id="categoryItemsList"></div>
-          </div>
+          <button class="category-item active" data-category="all"><div><strong>Todos</strong><small>Encontre de tudo</small></div></button>
+          <div id="categoryItemsList"></div>
         </aside>
-
-        <div class="filters-toolbar">
-          <div class="filters-row">
-            <select id="categoryFilter" class="filter-control" aria-label="Categoria">
-              <option value="all">Todos os serviços</option>
-            </select>
-            <select id="ratingFilter" class="filter-control" aria-label="Avaliação mínima">
-              <option value="0">Qualquer avaliação</option>
-              <option value="4">4+ estrelas</option>
-              <option value="4.5">4,5+ estrelas</option>
-            </select>
-            <select id="sortFilter" class="filter-control" aria-label="Ordenação">
-              <option value="distance">Mais próximo</option>
-              <option value="rating">Melhor avaliado</option>
-              <option value="price">Menor preço</option>
-            </select>
-            <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
-            <button type="button" class="chip" id="showAllRadiusBtn" title="Mostrar anúncios de qualquer distância, além do raio máximo de 30 km">Ver todos os anúncios</button>
-            <div class="view-toggle" id="exploreViewToggle" role="group" aria-label="Modo de visualização">
-              <button class="toggle-btn active" data-mode="cards">▦ Cards</button>
-              <button class="toggle-btn" data-mode="map"><img class="icon" src="img/icons/icon-location.png" alt="" /> Mapa</button>
-            </div>
-          </div>
-        </div>
 
         <div class="results-area">
           <div class="results-head">
@@ -166,40 +136,6 @@
           <div id="mapView" class="map-view" hidden>
             <div id="proximityMap" class="map-canvas"></div>
             <div id="mapSidebar" class="map-sidebar"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section-view" data-view="explorar">
-        <div class="stats-band">
-          <div class="stat-tile"><strong>500+</strong><small>Prestadores cadastrados</small></div>
-          <div class="stat-tile"><strong>1.200+</strong><small>Serviços concluídos</small></div>
-          <div class="stat-tile"><strong>50+</strong><small>Bairros atendidos</small></div>
-          <div class="stat-tile"><strong>4,8</strong><small>Nota média dos prestadores</small></div>
-          <div class="help-tile">
-            <span><img class="icon icon-on-dark" src="img/icons/icon-account.png" alt="" /></span>
-            <div><strong>Precisa de ajuda?</strong><button class="secondary-btn" id="heroHelpChatBtn">Falar no chat</button></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section-view" data-view="explorar">
-        <div class="section-head"><span class="eyebrow">QUEM JÁ USOU</span><h2>Avaliações de clientes</h2></div>
-        <div class="testimonial-grid">
-          <div class="testimonial-card">
-            <div class="review-stars"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></div>
-            <p>"Achei um eletricista a menos de 3 km de casa e já resolvi tudo pelo chat, sem sair de casa."</p>
-            <div class="testimonial-author"><span class="avatar" style="width:32px;height:32px;font-size:11px">CM</span><div><strong>Carla M.</strong><small>Cliente</small></div></div>
-          </div>
-          <div class="testimonial-card">
-            <div class="review-stars"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></div>
-            <p>"Consegui comparar preços e avaliações antes de contratar. Muito mais fácil do que pedir indicação."</p>
-            <div class="testimonial-author"><span class="avatar" style="width:32px;height:32px;font-size:11px">BT</span><div><strong>Bruno T.</strong><small>Cliente</small></div></div>
-          </div>
-          <div class="testimonial-card">
-            <div class="review-stars"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></div>
-            <p>"Desde que comecei a anunciar aqui, recebo pedidos toda semana de gente do meu próprio bairro."</p>
-            <div class="testimonial-author"><span class="avatar" style="width:32px;height:32px;font-size:11px">AC</span><div><strong>Ana Costa</strong><small>Prestadora</small></div></div>
           </div>
         </div>
       </section>
