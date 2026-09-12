@@ -55,7 +55,8 @@ body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"SF Pro Displ
 .app-frame{margin:18px;height:calc(100dvh - 36px);border-radius:28px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
 .app-frame>header.topbar{flex-shrink:0}
 .app-frame>main{flex:1;min-height:0;overflow-y:auto}
-#providerView{background:var(--royal-150);min-height:100%;padding-top:1px}
+#providerView{background:var(--imperial-900);min-height:100%;padding-top:1px}
+#providerView .page-title h1,#providerView .page-title .eyebrow{color:#fff}
 @media(max-width:680px){.app-frame{margin:10px;height:calc(100dvh - 20px);border-radius:20px}}
 /* Fonte de destaque inspirada na Ogg (Sharp Type) — usada só em títulos grandes,
    já que é uma serifada de "display", não pensada para texto corrido/UI densa. */
