@@ -3,11 +3,17 @@ from pathlib import Path
 import re
 import json
 import os
-import time
+import time as time_module
+import random
+import smtplib
+from email.mime.text import MIMEText
 from collections import defaultdict, deque
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request as UrlRequest, urlopen
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -48,9 +54,40 @@ _login_attempts: dict[str, deque[float]] = defaultdict(deque)
 LOGIN_WINDOW_SECONDS = 300
 LOGIN_MAX_ATTEMPTS = 10
 
+# Email verification
+SMTP_EMAIL = os.getenv("SMTP_EMAIL")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+
+def generate_verification_code() -> str:
+    """Generate a 6-digit verification code."""
+    return "".join(str(random.randint(0, 9)) for _ in range(6))
+
+def send_verification_email(email: str, code: str) -> bool:
+    """Send verification email. Returns True if successful."""
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        print(f"[EMAIL] Código de verificação para {email}: {code}")
+        return True
+    try:
+        msg = MIMEText(f"Seu código de verificação: {code}\n\nEste código expira em 15 minutos.")
+        msg["Subject"] = "Código de verificação - NearHand"
+        msg["From"] = SMTP_EMAIL
+        msg["To"] = email
+
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"[EMAIL ERROR] Falha ao enviar pra {email}: {e}")
+        return False
+
 
 def enforce_login_rate_limit(request: Request, bucket: str):
-    now = time.monotonic()
+    now = time_module.monotonic()
     key = f"{bucket}:{request.client.host if request.client else 'unknown'}"
     attempts = _login_attempts[key]
     while attempts and now - attempts[0] > LOGIN_WINDOW_SECONDS:
@@ -101,6 +138,12 @@ class AccountLogin(BaseModel):
     tipo: str
     identificador: str
     senha: str
+
+
+class EmailVerification(BaseModel):
+    tipo: str
+    email: str
+    code: str
 
 
 class ServiceCreate(BaseModel):
@@ -810,13 +853,16 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
         address_id = address_result.lastrowid
         password_hash = hash_password(account.senha)
 
+        verification_code = generate_verification_code()
+        token_expiry = datetime.now() + timedelta(minutes=15)
+
         if account_type == "cliente":
             preferencias = ",".join(p.strip() for p in account.preferencias if p.strip()) or None
             user_result = db.execute(
                 text("""
                     INSERT INTO cliente
-                        (nome_completo, foto, endereco_id, telefone, email, senha_hash, preferencias)
-                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :senha_hash, :preferencias)
+                        (nome_completo, foto, endereco_id, telefone, email, senha_hash, preferencias, email_token, email_token_expira_em, email_verificado)
+                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :senha_hash, :preferencias, :email_token, :email_token_expira_em, FALSE)
                 """),
                 {
                     "nome": name,
@@ -826,14 +872,16 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
                     "email": email,
                     "senha_hash": password_hash,
                     "preferencias": preferencias,
+                    "email_token": verification_code,
+                    "email_token_expira_em": token_expiry,
                 },
             )
         else:
             user_result = db.execute(
                 text("""
                     INSERT INTO prestador
-                        (nome_empresa, foto, endereco_id, telefone, email, cpf_cnpj, senha_hash)
-                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :cpf_cnpj, :senha_hash)
+                        (nome_empresa, foto, endereco_id, telefone, email, cpf_cnpj, senha_hash, email_token, email_token_expira_em, email_verificado)
+                    VALUES (:nome, :foto, :endereco_id, :telefone, :email, :cpf_cnpj, :senha_hash, :email_token, :email_token_expira_em, FALSE)
                 """),
                 {
                     "nome": name,
@@ -843,9 +891,13 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
                     "email": email,
                     "cpf_cnpj": _digits_only(account.cpf_cnpj),
                     "senha_hash": password_hash,
+                    "email_token": verification_code,
+                    "email_token_expira_em": token_expiry,
                 },
             )
         db.commit()
+        user_id = user_result.lastrowid
+        send_verification_email(email, verification_code)
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="The account data conflicts with an existing account")
@@ -854,15 +906,65 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
         raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
 
     return {
-        "message": "Account created successfully",
+        "message": "Account created. Check your email for the verification code.",
         "tipo": account_type,
-        "id": user_result.lastrowid,
+        "id": user_id,
+        "email": email,
     }
 
 
 @app.post("/auth/register")
 def register_account(account: AccountRegister, db: Session = Depends(get_db)):
     return _create_account_core(account, db, require_photo=True)
+
+
+@app.post("/auth/verify-email")
+def verify_email(payload: EmailVerification, db: Session = Depends(get_db)):
+    """Verify email with verification code."""
+    tipo = payload.tipo.strip().lower()
+    email = payload.email.strip().lower()
+    code = payload.code.strip()
+
+    if not tipo or not email or not code:
+        raise HTTPException(status_code=400, detail="tipo, email, and code are required")
+
+    if tipo == "cliente":
+        user = db.execute(
+            text("""
+                SELECT id, email_token, email_token_expira_em
+                FROM cliente
+                WHERE LOWER(email) = :email
+            """),
+            {"email": email},
+        ).mappings().first()
+    elif tipo == "prestador":
+        user = db.execute(
+            text("""
+                SELECT id, email_token, email_token_expira_em
+                FROM prestador
+                WHERE LOWER(email) = :email
+            """),
+            {"email": email},
+        ).mappings().first()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid tipo")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    if user["email_token"] != code:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+
+    if user["email_token_expira_em"] < datetime.now():
+        raise HTTPException(status_code=400, detail="Verification code expired")
+
+    db.execute(
+        text(f"UPDATE {tipo} SET email_verificado = TRUE, email_token = NULL WHERE id = :id"),
+        {"id": user["id"]},
+    )
+    db.commit()
+
+    return {"message": "Email verified successfully"}
 
 
 @app.post("/auth/login")
@@ -874,7 +976,7 @@ def login_account(account: AccountLogin, request: Request, db: Session = Depends
     if account_type == "cliente":
         user = db.execute(
             text("""
-                SELECT id, nome_completo AS nome, email, foto, senha_hash
+                SELECT id, nome_completo AS nome, email, foto, senha_hash, email_verificado
                 FROM cliente
                 WHERE LOWER(email) = :identifier
                    OR REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '-', ''), '(', ''), ')', '') = :phone
@@ -884,7 +986,7 @@ def login_account(account: AccountLogin, request: Request, db: Session = Depends
     elif account_type == "prestador":
         user = db.execute(
             text("""
-                SELECT id, nome_empresa AS nome, email, foto, senha_hash
+                SELECT id, nome_empresa AS nome, email, foto, senha_hash, email_verificado
                 FROM prestador
                 WHERE LOWER(email) = :identifier
                    OR REPLACE(REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', ''), '/', '') = :document
@@ -896,6 +998,9 @@ def login_account(account: AccountLogin, request: Request, db: Session = Depends
 
     if user is None or not verify_password(account.senha, user["senha_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not user.get("email_verificado"):
+        raise HTTPException(status_code=403, detail="Email not verified. Check your email for the verification code.")
 
     return {
         "access_token": create_role_access_token(user["id"], account_type),

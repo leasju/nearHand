@@ -179,6 +179,28 @@
     </main>
   </div>
 
+  <div class="modal-backdrop" id="verificationBackdrop" hidden>
+    <div class="modal" style="max-width: 420px;">
+      <div style="text-align: center; padding: 32px;">
+        <h2 style="margin: 0 0 8px; font-size: 24px;">Verifique seu email</h2>
+        <p style="color: var(--muted); margin: 0 0 24px; font-size: 14px;">Enviamos um código de 6 dígitos para <strong id="verificationEmail"></strong></p>
+
+        <form id="verificationForm" style="display: grid; gap: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;" id="codeInputs">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+          </div>
+          <button type="submit" class="primary-btn full">Verificar</button>
+          <p id="verificationMessage" style="text-align: center; color: var(--muted); font-size: 12px; margin: 0;"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script src="js/ripple.js?v=20260912"></script>

@@ -306,12 +306,68 @@ registerForm.addEventListener("submit", (event) => {
     .then(async (response) => {
       const data = await readApiResponse(response);
       if (!response.ok) throw new Error(data.detail || "Não foi possível criar a conta.");
-      showToast("Conta criada. Agora faça login.");
-      document.getElementById("loginIdentity").value = payload.email;
-      setMode("login");
+      showVerificationModal(payload.email, payload.tipo);
     })
     .catch((error) => showToast(error.message))
     .finally(() => { submitButton.disabled = false; submitButton.classList.remove("is-loading"); });
+});
+
+// Email verification
+let verificationEmail = "";
+let verificationType = "";
+
+function showVerificationModal(email, tipo) {
+  verificationEmail = email;
+  verificationType = tipo;
+  document.getElementById("verificationEmail").textContent = email;
+  document.getElementById("verificationBackdrop").hidden = false;
+  document.querySelectorAll(".code-input")[0].focus();
+}
+
+function hideVerificationModal() {
+  document.getElementById("verificationBackdrop").hidden = true;
+  document.querySelectorAll(".code-input").forEach((input) => (input.value = ""));
+}
+
+document.querySelectorAll(".code-input").forEach((input, idx, arr) => {
+  input.addEventListener("input", (e) => {
+    if (e.target.value && idx < arr.length - 1) arr[idx + 1].focus();
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" && !e.target.value && idx > 0) arr[idx - 1].focus();
+  });
+});
+
+document.getElementById("verificationForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = Array.from(document.querySelectorAll(".code-input"))
+    .map((input) => input.value)
+    .join("");
+
+  if (code.length !== 6) {
+    document.getElementById("verificationMessage").textContent = "Digite os 6 dígitos";
+    return;
+  }
+
+  try {
+    const response = await fetch("/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: verificationType,
+        email: verificationEmail,
+        code,
+      }),
+    });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.detail || "Código inválido");
+    showToast("Email verificado! Faça login para continuar.");
+    hideVerificationModal();
+    document.getElementById("loginIdentity").value = verificationEmail;
+    setMode("login");
+  } catch (error) {
+    document.getElementById("verificationMessage").textContent = error.message;
+  }
 });
 
 document.querySelectorAll(".auth-form input").forEach((input) => {
