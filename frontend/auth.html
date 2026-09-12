@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
   <link rel="stylesheet" href="css/auth.css?v=20260912-20" />
 </head>
 <body>
@@ -230,9 +231,32 @@
     }
   </style>
 
+  <div class="modal-backdrop" id="cropperBackdrop" hidden>
+    <div class="modal" style="width: min(600px, 94vw); max-width: 100%;">
+      <button class="modal-close" type="button" id="closeCropperBtn" aria-label="Fechar">×</button>
+      <div style="padding: 20px;">
+        <h2 style="margin: 0 0 15px; font-size: 20px; font-weight: 800;">Editar imagem</h2>
+        <div style="background: #f5f5f5; border-radius: 12px; overflow: hidden; margin-bottom: 15px; max-height: 400px;">
+          <img id="cropperImage" style="max-width: 100%;" />
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px;">
+          <button type="button" class="small-btn" id="cropperRotateLeft" title="Girar esquerda">↺ Girar</button>
+          <button type="button" class="small-btn" id="cropperRotateRight" title="Girar direita">↻ Girar</button>
+          <button type="button" class="small-btn" id="cropperZoomIn" title="Aumentar zoom">🔍+</button>
+          <button type="button" class="small-btn" id="cropperZoomOut" title="Diminuir zoom">🔍-</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button type="button" class="secondary-btn" id="cropperCancel">Cancelar</button>
+          <button type="button" class="primary-btn" id="cropperConfirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script src="js/ripple.js?v=20260912"></script>
-  <script src="js/auth.js?v=20260912-6"></script>
+  <script src="js/auth.js?v=20260912-7"></script>
 </body>
 </html>

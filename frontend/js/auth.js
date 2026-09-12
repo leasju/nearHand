@@ -99,21 +99,10 @@ function setupPhotoDropzone({ dropzoneId, fileId, previewId, emptyId }) {
     if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const size = 240;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        const scale = Math.max(size / img.width, size / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-        value = canvas.toDataURL("image/jpeg", 0.82);
+      openImageCropper(reader.result, (croppedData) => {
+        value = croppedData;
         updatePreview();
-      };
-      img.src = reader.result;
+      });
     };
     reader.readAsDataURL(file);
   }
@@ -135,6 +124,75 @@ function setupPhotoDropzone({ dropzoneId, fileId, previewId, emptyId }) {
 
   return { getValue: () => value };
 }
+
+let cropperInstance = null;
+let pendingPhotoCallback = null;
+
+function openImageCropper(imageData, callback) {
+  const cropperBackdrop = document.getElementById("cropperBackdrop");
+  const cropperImage = document.getElementById("cropperImage");
+
+  cropperImage.src = imageData;
+  pendingPhotoCallback = callback;
+  cropperBackdrop.hidden = false;
+
+  setTimeout(() => {
+    if (cropperInstance) cropperInstance.destroy();
+    cropperInstance = new Cropper(cropperImage, {
+      aspectRatio: 1,
+      viewMode: 1,
+      autoCropArea: 1,
+      responsive: true,
+      background: false,
+      guides: true,
+      center: true,
+      highlight: true,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: true,
+    });
+  }, 10);
+}
+
+function closeCropper() {
+  const cropperBackdrop = document.getElementById("cropperBackdrop");
+  if (cropperInstance) {
+    cropperInstance.destroy();
+    cropperInstance = null;
+  }
+  cropperBackdrop.hidden = true;
+  pendingPhotoCallback = null;
+}
+
+document.getElementById("closeCropperBtn").addEventListener("click", closeCropper);
+document.getElementById("cropperCancel").addEventListener("click", closeCropper);
+
+document.getElementById("cropperConfirm").addEventListener("click", () => {
+  if (!cropperInstance || !pendingPhotoCallback) return;
+  const canvas = cropperInstance.getCroppedCanvas({
+    maxWidth: 480,
+    maxHeight: 480,
+    fillColor: "#fff",
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: "high",
+  });
+  const croppedData = canvas.toDataURL("image/jpeg", 0.85);
+  pendingPhotoCallback(croppedData);
+  closeCropper();
+});
+
+document.getElementById("cropperRotateLeft").addEventListener("click", () => {
+  if (cropperInstance) cropperInstance.rotate(-90);
+});
+document.getElementById("cropperRotateRight").addEventListener("click", () => {
+  if (cropperInstance) cropperInstance.rotate(90);
+});
+document.getElementById("cropperZoomIn").addEventListener("click", () => {
+  if (cropperInstance) cropperInstance.zoom(0.1);
+});
+document.getElementById("cropperZoomOut").addEventListener("click", () => {
+  if (cropperInstance) cropperInstance.zoom(-0.1);
+});
 
 const registerPhotoPicker = setupPhotoDropzone({
   dropzoneId: "registerPhotoDropzone",
