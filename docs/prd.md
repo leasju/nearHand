@@ -15,6 +15,7 @@ Usuários
 - Cards de anúncio (catálogo, favoritos) usam uma cor chapada de fundo no thumbnail (sem gradiente diagonal) e o botão de favoritar é um círculo translúcido escuro sobre a imagem
 - Fonte prioriza a stack do sistema (-apple-system/SF Pro, com Inter como fallback em quem não é Apple)
 - Modais do site (detalhe do serviço, criar/editar anúncio, criar/editar conta no admin) são dimensionados para desktop — bem mais largos que o padrão mobile-first, para não parecer app de celular dentro do navegador
+- Tela **Explorar** do cliente segue um layout de vitrine (inspirado em home de e-commerce, adaptado à paleta e função do NearHand): faixa de aviso no topo (promo bar), hero claro com texto + selo de confiança + card de busca (categoria/localização) + coleção de ícones, faixa "para quem é" (clientes/prestadores/empresas/bairros), seção "Como funciona" em 5 passos, vitrine de categorias em destaque em grid horizontal (substitui a sidebar fixa), faixa de estatísticas com atalho de ajuda, e cards de depoimentos de clientes — nessa ordem, antes do catálogo de anúncios
 
 # Funcionalidades — Cliente
 

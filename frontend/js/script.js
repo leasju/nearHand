@@ -170,15 +170,19 @@ function formatPrice(value) {
 // ============================================
 let categoriesData = [];
 
+const CATEGORY_ICONS = ["sparkles", "settings", "users", "star-filled", "account", "heart-filled", "shopping-cart", "user", "search"];
+
 function renderCategorySidebar() {
   const container = document.getElementById("categoryItemsList");
   container.replaceChildren();
-  categoriesData.forEach((category) => {
+  categoriesData.forEach((category, index) => {
     const button = document.createElement("button");
     button.className = "category-item";
     button.dataset.category = category.nome;
     const count = category.servico_count;
+    const icon = CATEGORY_ICONS[index % CATEGORY_ICONS.length];
     button.innerHTML = `
+      <span class="category-icon">${iconImage(icon)}</span>
       <div><strong>${category.nome}</strong><small>${count} serviço${count === 1 ? "" : "s"}</small></div>
     `;
     container.appendChild(button);
@@ -1170,6 +1174,24 @@ navLinks.forEach((link) => {
     }
     showAppView("cliente");
     setActiveSection(link.dataset.section);
+  });
+});
+
+// ============================================
+// Links da home (promo bar / faixa de públicos) que reaproveitam a navegação
+// ============================================
+document.querySelectorAll("[data-section-link]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    showAppView("cliente");
+    setActiveSection(link.dataset.sectionLink);
+  });
+});
+
+[document.getElementById("promoHelpLink"), document.getElementById("promoHelpLink2"), document.getElementById("heroHelpChatBtn")].forEach((el) => {
+  el?.addEventListener("click", (event) => {
+    event.preventDefault();
+    openChatView();
   });
 });
 
