@@ -1,4 +1,18 @@
 // ============================================
+// Mostrar/ocultar senha
+// ============================================
+document.querySelectorAll(".password-toggle").forEach((button) => {
+  const icon = button.querySelector("img");
+  button.addEventListener("click", () => {
+    const input = document.getElementById(button.dataset.target);
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    icon.src = showing ? "img/icons/icon-visibility-off.png" : "img/icons/icon-visibility.png";
+    icon.alt = showing ? "Mostrar senha" : "Ocultar senha";
+  });
+});
+
+// ============================================
 // Login do admin
 // ============================================
 const adminLoginForm = document.getElementById("adminLoginForm");

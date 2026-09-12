@@ -2,12 +2,16 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 import re
 import json
+import os
+import time
+from collections import defaultdict, deque
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request as UrlRequest, urlopen
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +34,30 @@ from app.auth import (
 from app.database import ensure_optional_schema, get_db
 
 app = FastAPI(title="NearHand API")
+
+allowed_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+_login_attempts: dict[str, deque[float]] = defaultdict(deque)
+LOGIN_WINDOW_SECONDS = 300
+LOGIN_MAX_ATTEMPTS = 10
+
+
+def enforce_login_rate_limit(request: Request, bucket: str):
+    now = time.monotonic()
+    key = f"{bucket}:{request.client.host if request.client else 'unknown'}"
+    attempts = _login_attempts[key]
+    while attempts and now - attempts[0] > LOGIN_WINDOW_SECONDS:
+        attempts.popleft()
+    if len(attempts) >= LOGIN_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
+    attempts.append(now)
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
@@ -410,12 +438,18 @@ def delete_receiving_method(
     return {"status": "deleted"}
 
 
-def _current_account(credentials: HTTPAuthorizationCredentials | None) -> tuple[int, str]:
+def _current_account(credentials: HTTPAuthorizationCredentials | None, db: Session) -> tuple[int, str]:
     if credentials is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
-        return int(payload["sub"]), payload["role"]
+        account_id = int(payload["sub"])
+        role = payload["role"]
+        tables = {"cliente": "cliente", "prestador": "prestador", "admin": "admin"}
+        table = tables.get(role)
+        if table is None or db.execute(text(f"SELECT id FROM {table} WHERE id = :id"), {"id": account_id}).first() is None:
+            raise HTTPException(status_code=401, detail="Account no longer exists")
+        return account_id, role
     except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
 
@@ -443,7 +477,7 @@ def list_notifications(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
 ):
-    user_id, user_type = _current_account(credentials)
+    user_id, user_type = _current_account(credentials, db)
     rows = db.execute(
         text("""
             SELECT id, tipo, mensagem, lida, criado_em
@@ -463,7 +497,7 @@ def mark_notification_read(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
 ):
-    user_id, user_type = _current_account(credentials)
+    user_id, user_type = _current_account(credentials, db)
     result = db.execute(
         text("""
             UPDATE notificacao SET lida = TRUE
@@ -482,7 +516,7 @@ def mark_all_notifications_read(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
 ):
-    user_id, user_type = _current_account(credentials)
+    user_id, user_type = _current_account(credentials, db)
     db.execute(
         text("""
             UPDATE notificacao SET lida = TRUE
@@ -499,7 +533,7 @@ def clear_notifications(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
 ):
-    user_id, user_type = _current_account(credentials)
+    user_id, user_type = _current_account(credentials, db)
     db.execute(
         text("DELETE FROM notificacao WHERE usuario_id = :usuario_id AND usuario_tipo = :usuario_tipo"),
         {"usuario_id": user_id, "usuario_tipo": user_type},
@@ -509,7 +543,7 @@ def clear_notifications(
 
 
 def _check_message_participant(request_id: int, db: Session, credentials: HTTPAuthorizationCredentials | None):
-    account_id, role = _current_account(credentials)
+    account_id, role = _current_account(credentials, db)
     request = db.execute(
         text("""
             SELECT so.id, so.cliente_id, s.prestador_id
@@ -832,7 +866,8 @@ def register_account(account: AccountRegister, db: Session = Depends(get_db)):
 
 
 @app.post("/auth/login")
-def login_account(account: AccountLogin, db: Session = Depends(get_db)):
+def login_account(account: AccountLogin, request: Request, db: Session = Depends(get_db)):
+    enforce_login_rate_limit(request, "account")
     account_type = account.tipo.strip().lower()
     identifier = account.identificador.strip().lower()
 
@@ -1226,8 +1261,17 @@ def _get_request(
 
 
 @app.get("/solicitacoes/{request_id}")
-def get_request_detail(request_id: int, db: Session = Depends(get_db)):
-    return _get_request(request_id, db)
+def get_request_detail(
+    request_id: int,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
+):
+    account_id, role = _current_account(credentials, db)
+    if role == "cliente":
+        return _get_request(request_id, db, client_id=account_id)
+    if role == "prestador":
+        return _get_request(request_id, db, provider_id=account_id)
+    raise HTTPException(status_code=403, detail="Only clients and providers can view requests")
 
 
 @app.patch("/solicitacoes/{request_id}/status")
@@ -1237,14 +1281,7 @@ def update_request_status(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
 ):
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    try:
-        token_payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
-        account_id = int(token_payload["sub"])
-        role = token_payload["role"]
-    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    account_id, role = _current_account(credentials, db)
 
     request_row = db.execute(
         text(REQUEST_SELECT + " WHERE so.id = :request_id"),
@@ -1406,6 +1443,9 @@ def reply_to_evaluation(
         """),
         {"resposta": text_reply, "id": evaluation_id, "prestador_id": provider_id},
     )
+    if result.rowcount == 0:
+        db.rollback()
+        raise HTTPException(status_code=404, detail="Evaluation not found")
     recipient = db.execute(
         text("SELECT so.cliente_id FROM avaliacao a JOIN solicitacao so ON so.id = a.solicitacao_id WHERE a.id = :id"),
         {"id": evaluation_id},
@@ -1413,8 +1453,6 @@ def reply_to_evaluation(
     if recipient is not None:
         create_notification(db, recipient, "cliente", "resposta_avaliacao", "O prestador respondeu à sua avaliação.")
     db.commit()
-    if result.rowcount == 0:
-        raise HTTPException(status_code=404, detail="Evaluation not found")
     row = db.execute(
         text(EVALUATION_SELECT + " WHERE a.id = :id"), {"id": evaluation_id}
     ).mappings().first()
@@ -1427,14 +1465,7 @@ def report_evaluation(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(BEARER),
 ):
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
-        account_id = int(payload["sub"])
-        role = payload["role"]
-    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    account_id, role = _current_account(credentials, db)
     row = db.execute(
         text(EVALUATION_SELECT + " WHERE a.id = :id"), {"id": evaluation_id}
     ).mappings().first()
@@ -2168,7 +2199,8 @@ def update_provider_profile(
 
 
 @app.post("/admin/login")
-def admin_login(credentials: AdminLogin, db: Session = Depends(get_db)):
+def admin_login(credentials: AdminLogin, request: Request, db: Session = Depends(get_db)):
+    enforce_login_rate_limit(request, "admin")
     admin = db.execute(
         text("""
             SELECT id, nome, email, senha_hash

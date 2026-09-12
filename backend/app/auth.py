@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -15,7 +16,13 @@ load_dotenv()
 
 PASSWORD_HASH = PasswordHash.recommended()
 BEARER = HTTPBearer(auto_error=False)
-SECRET_KEY = os.getenv("SECRET_KEY", "change-this-development-secret")
+_configured_secret = os.getenv("SECRET_KEY")
+if _configured_secret:
+    SECRET_KEY = _configured_secret
+elif os.getenv("APP_ENV", "development").lower() in {"production", "prod"}:
+    raise RuntimeError("SECRET_KEY must be set in production")
+else:
+    SECRET_KEY = secrets.token_urlsafe(32)
 TOKEN_EXPIRE_HOURS = 8
 
 

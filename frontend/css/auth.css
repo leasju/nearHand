@@ -41,6 +41,7 @@
   --text-on-dark:#FFFFFF;
   --muted:#8A7FA0;
   --muted-on-dark:rgba(255,255,255,.72);
+  --danger:#A65D66;
   --border:rgba(43,10,61,.10);
   --border-on-dark:rgba(255,255,255,.16);
   --shadow:0 40px 80px -30px rgba(43,10,61,.35);
@@ -211,6 +212,7 @@ button{cursor:pointer;border:none;background:none}
 .auth-form .primary-btn{background:#7FA8DE !important;color:var(--wine)}
 .icon-btn{width:40px;height:40px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);color:var(--text);display:inline-grid;place-items:center;box-shadow:var(--shadow-xs)}
 .bottom-copy{margin:0;text-align:center;color:var(--muted);font-size:12.5px}
+#message{margin:10px 0 0;min-height:18px;text-align:center;color:var(--danger);font-weight:600;font-size:12.5px}
 .inline-action{color:var(--violet);font-weight:700}
 .toast{
   position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);

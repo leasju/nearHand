@@ -9,18 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/auth.css" />
-  <style>
-    .admin-shell{min-height:100vh;display:grid;place-items:center;padding:24px;position:relative;z-index:1}
-    .admin-wrap{width:min(420px,92vw)}
-    .admin-card{text-align:center}
-    .admin-card .brand-logo{margin:0 auto 18px}
-    .admin-card h2{margin:0 0 22px}
-    .admin-card .auth-form{text-align:left}
-    #message{color:var(--violet);min-height:20px;font-weight:600}
-    .admin-login-switch{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
-    .admin-login-switch .ghost-btn{padding:10px 16px;font-size:13px}
-  </style>
+  <link rel="stylesheet" href="css/auth.css?v=20260912-19" />
 </head>
 <body>
   <div class="blob-field" aria-hidden="true">
@@ -28,34 +17,60 @@
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
   </div>
-  <div class="admin-shell">
-    <div class="admin-wrap">
-      <div class="auth-card admin-card">
-        <button class="icon-btn" id="themeToggleBtn" type="button" aria-label="Ativar modo escuro" title="Ativar modo escuro"><img class="icon" src="img/icons/icon-moonlight.png?v=20260912" alt="" /></button>
-        <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
-        <h2>Painel administrativo</h2>
+  <div class="auth-shell">
+    <aside class="auth-aside">
+      <div class="brand-lockup">
+        <img src="img/logotype_nearhand.png?v=20260912" alt="NearHand" class="brand-logo" />
+      </div>
+
+      <span class="badge-pill"><img class="icon" src="img/icons/icon-settings.png" alt="" /> Acesso restrito</span>
+
+      <div class="hero-copy">
+        <h1>Painel administrativo</h1>
+        <p>Gerencie contas, anúncios, categorias e avaliações da plataforma NearHand.</p>
+      </div>
+
+      <ul class="check-list">
+        <li><span class="check-ring"><img class="icon" src="img/icons/icon-check.png" alt="" /></span> Moderação de contas e anúncios</li>
+        <li><span class="check-ring"><img class="icon" src="img/icons/icon-check.png" alt="" /></span> Gestão de categorias de serviço</li>
+        <li><span class="check-ring"><img class="icon" src="img/icons/icon-check.png" alt="" /></span> Avaliações e denúncias</li>
+      </ul>
+    </aside>
+
+    <main class="auth-main">
+      <div class="auth-card">
+        <div class="auth-top">
+          <div>
+            <span class="eyebrow">Acesso</span>
+            <h2>Entrar no painel</h2>
+          </div>
+        </div>
+
         <form id="adminLoginForm" class="auth-form" novalidate>
           <div class="field-group">
             <label class="field-label" for="adminEmail">Email</label>
-            <input id="adminEmail" class="field-input" type="email" required />
+            <input id="adminEmail" class="field-input" type="email" placeholder="Digite seu email" autocomplete="email" required />
           </div>
+
           <div class="field-group">
             <label class="field-label" for="adminPassword">Senha</label>
-            <input id="adminPassword" class="field-input" type="password" required />
+            <div class="password-wrap">
+              <input id="adminPassword" class="field-input" type="password" placeholder="Digite sua senha" autocomplete="current-password" required />
+              <button type="button" class="password-toggle" data-target="adminPassword"><img class="icon" src="img/icons/icon-visibility-off.png" alt="Mostrar senha" /></button>
+            </div>
           </div>
+
           <button type="submit" class="primary-btn full">Entrar</button>
+
+          <p class="bottom-copy">Não é administrador? <a class="inline-action" href="/auth?tipo=cliente&modo=login">Entrar como cliente</a> ou <a class="inline-action" href="/auth?tipo=prestador&modo=login">como prestador</a></p>
         </form>
+
         <p id="message"></p>
-        <div class="admin-login-switch">
-          <a class="ghost-btn" href="/auth?tipo=cliente&modo=login">Entrar como cliente</a>
-          <a class="ghost-btn" href="/auth?tipo=prestador&modo=login">Entrar como prestador</a>
-        </div>
       </div>
-    </div>
+    </main>
   </div>
 
-  <script src="js/ripple.js"></script>
-  <script src="js/theme.js?v=20260912"></script>
+  <script src="js/ripple.js?v=20260912"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
