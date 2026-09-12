@@ -6,12 +6,15 @@ import os
 import time as time_module
 import random
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from collections import defaultdict, deque
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request as UrlRequest, urlopen
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -66,23 +69,26 @@ def generate_verification_code() -> str:
 
 def send_verification_email(email: str, code: str) -> bool:
     """Send verification email. Returns True if successful."""
+    logger.info(f"[EMAIL] Iniciando envio de código para {email}")
     if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print(f"[EMAIL] Código de verificação para {email}: {code}")
+        logger.warning(f"[EMAIL FALLBACK] Credenciais não configuradas. Código: {code}")
         return True
     try:
+        logger.info(f"[EMAIL] Conectando ao SMTP para {email}...")
         msg = MIMEText(f"Seu código de verificação: {code}\n\nEste código expira em 15 minutos.")
         msg["Subject"] = "Código de verificação - NearHand"
         msg["From"] = SMTP_EMAIL
         msg["To"] = email
 
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
         server.starttls()
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
+        logger.info(f"[EMAIL OK] Email enviado com sucesso para {email}")
         return True
     except Exception as e:
-        print(f"[EMAIL ERROR] Falha ao enviar pra {email}: {e}")
+        logger.error(f"[EMAIL ERROR] Falha ao enviar para {email}: {e}", exc_info=True)
         return False
 
 
@@ -897,6 +903,7 @@ def _create_account_core(account: AccountRegister, db: Session, require_photo: b
             )
         db.commit()
         user_id = user_result.lastrowid
+        logger.info(f"[REGISTER] Chamando send_verification_email para {email} com código {verification_code}")
         send_verification_email(email, verification_code)
     except IntegrityError:
         db.rollback()
