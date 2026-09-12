@@ -28,7 +28,7 @@ def ensure_optional_schema():
     with engine.begin() as connection:
         optional_columns = {
             "prestador": {"foto": "TEXT NULL", "metodos_pagamento": "VARCHAR(60) NULL"},
-            "cliente": {"preferencias": "VARCHAR(255) NULL"},
+            "cliente": {"preferencias": "VARCHAR(255) NULL", "metodos_pagamento_busca": "VARCHAR(60) NULL"},
             "servico": {"negociavel": "BOOLEAN NOT NULL DEFAULT FALSE"},
             "avaliacao": {"resposta_prestador": "TEXT NULL"},
             "metodo_pagamento": {

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="css/styles.css?v=20260912-9" />
+  <link rel="stylesheet" href="css/styles.css?v=20260912-10" />
 </head>
 <body>
   <div class="app-frame">
@@ -394,26 +394,21 @@
 
           <div class="panel-card" id="clientPreferencesCard">
             <div class="panel-head"><div><span class="eyebrow">PREFERÊNCIAS</span><h2>Serviços de interesse</h2></div></div>
+            <div class="category-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="settingsPreferencesSearchInput" type="search" placeholder="Buscar preferências..." aria-label="Buscar preferências" /></div>
             <div class="preference-chips" id="settingsPreferences"></div>
             <button class="secondary-btn settings-standalone-btn" id="savePreferencesBtn">Salvar preferências</button>
           </div>
 
           <div id="settingsPanelPagamento">
           <div class="panel-card" id="clientPaymentCard">
-            <div class="panel-head"><div><span class="eyebrow">PAGAMENTO</span><h2>Método de pagamento</h2></div></div>
-            <form id="paymentForm" class="ad-form settings-form">
-              <label>Tipo
-                <select id="paymentType">
-                  <option value="pix">Pix</option>
-                  <option value="cartao_credito">Cartão de crédito</option>
-                  <option value="cartao_debito">Cartão de débito</option>
-                </select>
-              </label>
-              <label id="paymentPixField">Chave Pix<input id="paymentPixKey" placeholder="sua chave Pix" /></label>
-              <label id="paymentCardField" hidden>Últimos 4 dígitos<input id="paymentLast4" inputmode="numeric" maxlength="4" placeholder="1234" /></label>
-              <button class="primary-btn" type="submit">Salvar método de pagamento</button>
-              <div id="paymentMethodsList" class="saved-methods"></div>
-            </form>
+            <div class="panel-head"><div><span class="eyebrow">PAGAMENTO</span><h2>Métodos de pagamento</h2></div></div>
+            <p class="field-help">Escolha quais formas de pagamento você procura nos anúncios. Isso não cadastra nenhum dado bancário — é só um filtro de preferência.</p>
+            <div class="preference-chips" id="settingsClientPaymentMethods">
+              <button type="button" class="preference-chip" data-payment-method="cartao">Cartão</button>
+              <button type="button" class="preference-chip" data-payment-method="pix">Pix</button>
+              <button type="button" class="preference-chip" data-payment-method="boleto">Boleto</button>
+            </div>
+            <button class="secondary-btn settings-standalone-btn" id="saveClientPaymentMethodsBtn">Salvar métodos de pagamento</button>
           </div>
 
           <div class="panel-card" id="providerAcceptedPaymentsCard" hidden>
@@ -425,25 +420,6 @@
               <button type="button" class="preference-chip" data-payment-method="boleto">Boleto</button>
             </div>
             <button class="secondary-btn settings-standalone-btn" id="saveAcceptedPaymentsBtn">Salvar métodos aceitos</button>
-          </div>
-
-          <div class="panel-card" id="providerPaymentCard" hidden>
-            <div class="panel-head"><div><span class="eyebrow">RECEBIMENTO</span><h2>Método de recebimento</h2></div></div>
-            <form id="receivingForm" class="ad-form settings-form">
-              <label>Tipo
-                <select id="receivingType">
-                  <option value="pix">Chave Pix</option>
-                  <option value="banco">Conta bancária</option>
-                  <option value="cartao">Cartão</option>
-                </select>
-              </label>
-              <label id="receivingPixField">Chave Pix<input id="receivingPixKey" placeholder="sua chave Pix" /></label>
-              <label id="receivingBankField" hidden>Banco<input id="receivingBank" placeholder="Nome do banco" /></label>
-              <div class="form-row" id="receivingBankDetails" hidden><label>Agência<input id="receivingAgency" /></label><label>Conta<input id="receivingAccount" /></label></div>
-              <label id="receivingCardField" hidden>Últimos 4 dígitos<input id="receivingLast4" inputmode="numeric" maxlength="4" placeholder="1234" /></label>
-              <button class="primary-btn" type="submit">Salvar método de recebimento</button>
-              <div id="receivingMethodsList" class="saved-methods"></div>
-            </form>
             <button class="secondary-btn settings-standalone-btn" id="goToAdsBtn">Gerenciar meus anúncios</button>
           </div>
           </div>
@@ -567,6 +543,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/ripple.js"></script>
   <script src="js/theme.js?v=20260912"></script>
-  <script src="js/script.js?v=20260912-5"></script>
+  <script src="js/script.js?v=20260912-6"></script>
 </body>
 </html>

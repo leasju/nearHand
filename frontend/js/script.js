@@ -746,11 +746,22 @@ async function updateFavorite(service) {
       favorites.add(service.id);
       favoriteServices.push(service);
     }
-    renderCards();
+    updateFavoriteButtons(service.id);
     renderFavorites();
   } catch (error) {
     showToast(error.message);
   }
+}
+
+function updateFavoriteButtons(serviceId) {
+  const isFavorite = favorites.has(serviceId);
+  document.querySelectorAll(`.favorite-btn[data-action="favorite"]`).forEach((btn) => {
+    const card = btn.closest(".service-card");
+    if (!card || Number(card.dataset.id) !== serviceId) return;
+    btn.classList.toggle("active", isFavorite);
+    btn.setAttribute("aria-label", isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos");
+    btn.innerHTML = iconImage(isFavorite ? "heart-filled" : "heart-outline", isFavorite ? "Favoritado" : "Favoritar");
+  });
 }
 
 function closeModals() {
@@ -2684,6 +2695,7 @@ document.querySelector('[data-provider-view="avaliacoes"] .panel-card').addEvent
 const clientProfileForm = document.getElementById("clientProfileForm");
 const providerProfileForm = document.getElementById("providerProfileForm");
 const settingsPreferences = document.getElementById("settingsPreferences");
+const settingsPreferencesSearchInput = document.getElementById("settingsPreferencesSearchInput");
 const settingsAcceptedPayments = document.getElementById("settingsAcceptedPayments");
 let settingsProfile = null;
 
@@ -2716,7 +2728,6 @@ function setSettingsRoleVisibility(role) {
   providerProfileForm.hidden = !isProvider;
   document.getElementById("clientPreferencesCard").hidden = isProvider;
   document.getElementById("clientPaymentCard").hidden = isProvider;
-  document.getElementById("providerPaymentCard").hidden = !isProvider;
   document.getElementById("providerAcceptedPaymentsCard").hidden = !isProvider;
   const settingsMenuPreferencias = document.getElementById("settingsMenuPreferencias");
   if (settingsMenuPreferencias) settingsMenuPreferencias.hidden = isProvider;
@@ -2839,20 +2850,30 @@ async function loadSettingsCategories() {
   return settingsCategories;
 }
 
+let settingsPreferencesSelected = new Set();
+
 function renderSettingsPreferenceChips(selected) {
+  settingsPreferencesSelected = new Set(selected);
+  const term = (settingsPreferencesSearchInput?.value || "").trim().toLowerCase();
   settingsPreferences.replaceChildren();
-  settingsCategories.forEach((category) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "preference-chip";
-    chip.dataset.value = category.nome;
-    chip.classList.toggle("active", selected.includes(category.nome));
-    chip.innerHTML = category.servico_count > 0
-      ? `${category.nome} <span class="trending-badge">${iconImage("fire", "Em alta")}</span>`
-      : category.nome;
-    settingsPreferences.appendChild(chip);
-  });
+  settingsCategories
+    .filter((category) => !term || category.nome.toLowerCase().includes(term))
+    .forEach((category) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "preference-chip";
+      chip.dataset.value = category.nome;
+      chip.classList.toggle("active", settingsPreferencesSelected.has(category.nome));
+      chip.innerHTML = category.servico_count > 0
+        ? `${category.nome} <span class="trending-badge">${iconImage("fire", "Em alta")}</span>`
+        : category.nome;
+      settingsPreferences.appendChild(chip);
+    });
 }
+
+settingsPreferencesSearchInput?.addEventListener("input", () => {
+  renderSettingsPreferenceChips(Array.from(settingsPreferencesSelected));
+});
 
 async function loadSettingsProfile() {
   setSettingsRoleVisibility(currentSessionRole);
@@ -2879,6 +2900,9 @@ async function loadSettingsProfile() {
       document.getElementById("cpEmail").value = settingsProfile.email || "";
       await loadSettingsCategories();
       renderSettingsPreferenceChips(settingsProfile.preferencias || []);
+      settingsClientPaymentMethods.querySelectorAll(".preference-chip").forEach((chip) => {
+        chip.classList.toggle("active", (settingsProfile.metodos_pagamento_busca || []).includes(chip.dataset.paymentMethod));
+      });
     }
   } catch (error) {
     showToast(error.message || "Não foi possível carregar seu perfil.");
@@ -2887,7 +2911,10 @@ async function loadSettingsProfile() {
 
 settingsPreferences.addEventListener("click", (event) => {
   const chip = event.target.closest(".preference-chip");
-  if (chip) chip.classList.toggle("active");
+  if (!chip) return;
+  chip.classList.toggle("active");
+  if (chip.classList.contains("active")) settingsPreferencesSelected.add(chip.dataset.value);
+  else settingsPreferencesSelected.delete(chip.dataset.value);
 });
 
 settingsAcceptedPayments.addEventListener("click", (event) => {
@@ -2907,8 +2934,9 @@ clientProfileForm.addEventListener("submit", async (event) => {
   }
   const submitButton = clientProfileForm.querySelector("button[type=submit]");
   setButtonLoading(submitButton, true);
-  const preferencias = Array.from(settingsPreferences.querySelectorAll(".preference-chip.active"))
-    .map((chip) => chip.dataset.value);
+  const preferencias = Array.from(settingsPreferencesSelected);
+  const metodosPagamentoBusca = Array.from(settingsClientPaymentMethods.querySelectorAll(".preference-chip.active"))
+    .map((chip) => chip.dataset.paymentMethod);
   const payload = {
     nome: document.getElementById("cpName").value,
     email: document.getElementById("cpEmail").value,
@@ -2916,6 +2944,7 @@ clientProfileForm.addEventListener("submit", async (event) => {
     foto: cpPhotoPicker.getValue(),
     ...readAddressFields("cp"),
     preferencias,
+    metodos_pagamento_busca: metodosPagamentoBusca,
   };
   try {
     const response = await authFetch("/clientes/me", { method: "PUT", body: JSON.stringify(payload) });
@@ -2968,85 +2997,17 @@ providerProfileForm.addEventListener("submit", async (event) => {
   }
 });
 
-function methodLabel(method) {
-  const labels = { pix: "Pix", cartao_credito: "Cartão de crédito", cartao_debito: "Cartão de débito", banco: "Conta bancária", cartao: "Cartão" };
-  return labels[method.tipo] || method.tipo;
-}
+const settingsClientPaymentMethods = document.getElementById("settingsClientPaymentMethods");
 
-function renderSavedMethods(containerId, methods, receiving = false) {
-  const container = document.getElementById(containerId);
-  container.replaceChildren();
-  methods.forEach((method) => {
-    const item = document.createElement("div");
-    item.className = "saved-method";
-    const detail = method.tipo === "pix" ? method.chave_pix : method.tipo === "banco" ? `${method.banco} · Ag. ${method.agencia || "-"} · Conta ${method.conta || "-"}` : `Cartão terminado em ${method.ultimos_4_digitos}`;
-    item.innerHTML = `<span><strong>${methodLabel(method)}</strong><small>${detail}</small></span><button type="button" class="text-btn" data-method-id="${method.id}" data-receiving="${receiving}">Excluir</button>`;
-    container.appendChild(item);
-  });
-}
-
-async function loadPaymentMethods() {
-  if (currentSessionRole !== "cliente") return;
-  const response = await authFetch("/clientes/me/metodos-pagamento");
-  const methods = await response.json();
-  if (response.ok) renderSavedMethods("paymentMethodsList", methods);
-}
-
-async function loadReceivingMethods() {
-  if (currentSessionRole !== "prestador") return;
-  const response = await authFetch("/prestadores/me/metodos-recebimento");
-  const methods = await response.json();
-  if (response.ok) renderSavedMethods("receivingMethodsList", methods, true);
-}
-
-document.getElementById("paymentType").addEventListener("change", () => {
-  const pix = document.getElementById("paymentType").value === "pix";
-  document.getElementById("paymentPixField").hidden = !pix;
-  document.getElementById("paymentCardField").hidden = pix;
-});
-document.getElementById("receivingType").addEventListener("change", () => {
-  const type = document.getElementById("receivingType").value;
-  document.getElementById("receivingPixField").hidden = type !== "pix";
-  document.getElementById("receivingBankField").hidden = type !== "banco";
-  document.getElementById("receivingBankDetails").hidden = type !== "banco";
-  document.getElementById("receivingCardField").hidden = type !== "cartao";
+settingsClientPaymentMethods.addEventListener("click", (event) => {
+  const chip = event.target.closest(".preference-chip");
+  if (chip) chip.classList.toggle("active");
 });
 
-document.getElementById("paymentForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const submitButton = event.target.querySelector("button[type=submit]");
-  setButtonLoading(submitButton, true);
-  const tipo = document.getElementById("paymentType").value;
-  try {
-    const response = await authFetch("/clientes/me/metodos-pagamento", { method: "POST", body: JSON.stringify({ tipo, chave_pix: document.getElementById("paymentPixKey").value, ultimos_4_digitos: document.getElementById("paymentLast4").value }) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o pagamento.");
-    event.target.reset(); await loadPaymentMethods(); showToast("Método de pagamento salvo.");
-  } catch (error) { showToast(error.message); }
-  finally { setButtonLoading(submitButton, false); }
+document.getElementById("saveClientPaymentMethodsBtn").addEventListener("click", () => {
+  clientProfileForm.requestSubmit();
 });
 
-document.getElementById("receivingForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const tipo = document.getElementById("receivingType").value;
-  try {
-    const response = await authFetch("/prestadores/me/metodos-recebimento", { method: "POST", body: JSON.stringify({ tipo, chave_pix: document.getElementById("receivingPixKey").value, ultimos_4_digitos: document.getElementById("receivingLast4").value, banco: document.getElementById("receivingBank").value, agencia: document.getElementById("receivingAgency").value, conta: document.getElementById("receivingAccount").value }) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o recebimento.");
-    event.target.reset(); await loadReceivingMethods(); showToast("Método de recebimento salvo.");
-  } catch (error) { showToast(error.message); }
-});
-
-document.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-method-id]");
-  if (!button) return;
-  const base = button.dataset.receiving === "true" ? "/prestadores/me/metodos-recebimento" : "/clientes/me/metodos-pagamento";
-  try {
-    const response = await authFetch(`${base}/${button.dataset.methodId}`, { method: "DELETE" });
-    if (!response.ok) throw new Error("Não foi possível excluir o método.");
-    button.closest(".saved-method").remove(); showToast("Método excluído.");
-  } catch (error) { showToast(error.message); }
-});
 document.getElementById("goToAdsBtn").addEventListener("click", () => {
   setActiveRole("prestador");
   setActiveProviderSection("anuncios");
@@ -3296,8 +3257,6 @@ if (initialRole) {
   loadProviderMetrics();
   loadNotifications();
   window.setInterval(loadNotifications, 20000);
-  loadPaymentMethods();
-  loadReceivingMethods();
   loadProviderAvailability();
   loadProviderEvaluations();
   loadFavorites();

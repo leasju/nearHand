@@ -2000,6 +2000,7 @@ class ClientProfileUpdate(AddressFields):
     telefone: str = ""
     foto: str = ""
     preferencias: list[str] = []
+    metodos_pagamento_busca: list[str] = []
 
 
 ADDRESS_COLUMNS_SQL = """
@@ -2012,6 +2013,7 @@ def get_client_profile(db: Session = Depends(get_db), client_id: int = Depends(g
     row = db.execute(
         text(f"""
             SELECT c.id, c.nome_completo AS nome, c.email, c.telefone, c.foto, c.preferencias,
+                   c.metodos_pagamento_busca,
                    {ADDRESS_COLUMNS_SQL}
             FROM cliente c
             JOIN endereco e ON e.id = c.endereco_id
@@ -2022,6 +2024,9 @@ def get_client_profile(db: Session = Depends(get_db), client_id: int = Depends(g
 
     profile = dict(row)
     profile["preferencias"] = profile["preferencias"].split(",") if profile["preferencias"] else []
+    profile["metodos_pagamento_busca"] = (
+        profile["metodos_pagamento_busca"].split(",") if profile["metodos_pagamento_busca"] else []
+    )
     return profile
 
 
@@ -2039,6 +2044,7 @@ def update_client_profile(
         raise HTTPException(status_code=400, detail="Name, email, and address are required")
 
     preferencias = ",".join(p.strip() for p in payload.preferencias if p.strip()) or None
+    metodos_pagamento_busca = ",".join(m.strip() for m in payload.metodos_pagamento_busca if m.strip()) or None
     latitude, longitude = _geocode_address(payload)
 
     try:
@@ -2046,7 +2052,8 @@ def update_client_profile(
             text("""
                 UPDATE cliente
                 SET nome_completo = :nome, email = :email, telefone = :telefone,
-                    foto = :foto, preferencias = :preferencias
+                    foto = :foto, preferencias = :preferencias,
+                    metodos_pagamento_busca = :metodos_pagamento_busca
                 WHERE id = :id
             """),
             {
@@ -2055,6 +2062,7 @@ def update_client_profile(
                 "telefone": _digits_only(payload.telefone) or None,
                 "foto": payload.foto.strip() or None,
                 "preferencias": preferencias,
+                "metodos_pagamento_busca": metodos_pagamento_busca,
                 "id": client_id,
             },
         )
