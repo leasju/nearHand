@@ -5,14 +5,18 @@ import json
 import os
 import time as time_module
 import random
-import smtplib
 import logging
-from email.mime.text import MIMEText
 from collections import defaultdict, deque
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request as UrlRequest, urlopen
 from dotenv import load_dotenv
+
+try:
+    from resend import Resend
+    HAS_RESEND = True
+except ImportError:
+    HAS_RESEND = False
 
 logger = logging.getLogger(__name__)
 
@@ -58,33 +62,45 @@ LOGIN_WINDOW_SECONDS = 300
 LOGIN_MAX_ATTEMPTS = 10
 
 # Email verification
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@nearhand.com")
 
 def generate_verification_code() -> str:
     """Generate a 6-digit verification code."""
     return "".join(str(random.randint(0, 9)) for _ in range(6))
 
 def send_verification_email(email: str, code: str) -> bool:
-    """Send verification email. Returns True if successful."""
+    """Send verification email using Resend. Returns True if successful."""
     logger.info(f"[EMAIL] Iniciando envio de código para {email}")
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        logger.warning(f"[EMAIL FALLBACK] Credenciais não configuradas. Código: {code}")
-        return True
-    try:
-        logger.info(f"[EMAIL] Conectando ao SMTP para {email}...")
-        msg = MIMEText(f"Seu código de verificação: {code}\n\nEste código expira em 15 minutos.")
-        msg["Subject"] = "Código de verificação - NearHand"
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = email
 
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
-        server.starttls()
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
+    if not RESEND_API_KEY:
+        logger.warning(f"[EMAIL FALLBACK] Resend API key não configurada. Código: {code}")
+        return True
+
+    if not HAS_RESEND:
+        logger.warning(f"[EMAIL] Biblioteca resend não instalada. Código: {code}")
+        return True
+
+    try:
+        logger.info(f"[EMAIL] Enviando via Resend para {email}...")
+        client = Resend(api_key=RESEND_API_KEY)
+
+        response = client.emails.send({
+            "from": SENDER_EMAIL,
+            "to": email,
+            "subject": "Código de verificação - NearHand",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Código de Verificação</h2>
+                <p>Seu código de verificação é:</p>
+                <h1 style="color: #5A2A8C; letter-spacing: 4px;">{code}</h1>
+                <p>Este código expira em 15 minutos.</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                <p style="color: #666; font-size: 12px;">Se você não solicitou este código, ignore este email.</p>
+            </div>
+            """
+        })
+
         logger.info(f"[EMAIL OK] Email enviado com sucesso para {email}")
         return True
     except Exception as e:
