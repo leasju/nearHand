@@ -87,6 +87,7 @@ function openImageCropper(imageData, callback) {
   cropperImage.src = imageData;
   pendingPhotoCallback = callback;
   cropperBackdrop.hidden = false;
+  setTimeout(() => cropperBackdrop.classList.add("is-open"), 10);
 
   setTimeout(() => {
     if (cropperInstance) cropperInstance.destroy();
@@ -108,12 +109,15 @@ function openImageCropper(imageData, callback) {
 
 function closeCropper() {
   const cropperBackdrop = document.getElementById("cropperBackdrop");
-  if (cropperInstance) {
-    cropperInstance.destroy();
-    cropperInstance = null;
-  }
-  cropperBackdrop.hidden = true;
-  pendingPhotoCallback = null;
+  cropperBackdrop.classList.remove("is-open");
+  setTimeout(() => {
+    if (cropperInstance) {
+      cropperInstance.destroy();
+      cropperInstance = null;
+    }
+    cropperBackdrop.hidden = true;
+    pendingPhotoCallback = null;
+  }, 280);
 }
 
 document.getElementById("closeCropperBtn").addEventListener("click", closeCropper);
