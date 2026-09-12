@@ -54,25 +54,6 @@ function setButtonLoading(button, loading) {
   button.disabled = loading;
 }
 
-function setupThemeToggle() {
-  const button = document.getElementById("themeToggleBtn");
-  if (!button) return;
-  const applyTheme = (dark) => {
-    document.body.classList.toggle("dark", dark);
-    button.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
-    button.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
-    button.querySelector("img").src = `img/icons/icon-${dark ? "sun" : "moonlight"}.png?v=20260912`;
-  };
-  applyTheme(localStorage.getItem("nearhand_theme") === "dark");
-  button.addEventListener("click", () => {
-    const dark = !document.body.classList.contains("dark");
-    localStorage.setItem("nearhand_theme", dark ? "dark" : "light");
-    applyTheme(dark);
-  });
-}
-
-setupThemeToggle();
-
 const SERVICE_VISUALS = [
   ["cat-eletrica", "electric"],
   ["sparkles", "clean"],
@@ -1472,7 +1453,7 @@ function chatOtherParty(conversation) {
 function renderChatConversationList() {
   chatConversationList.replaceChildren();
   if (!CHAT_CONVERSATIONS.length) {
-    chatConversationList.innerHTML = '<p class="empty-state">Nenhuma conversa ainda. Solicite um serviço para começar a conversar.</p>';
+    chatConversationList.innerHTML = '<p class="chat-empty-state">Nenhuma conversa ainda. Solicite um serviço para começar a conversar.</p>';
     return;
   }
 
@@ -2687,14 +2668,20 @@ document.getElementById("settingsLogoutBtn").addEventListener("click", () => {
   if (confirm("Sair da sua conta?")) logout();
 });
 
-document.querySelectorAll(".settings-menu-item").forEach((item) => {
-  item.addEventListener("click", () => {
-    const target = document.getElementById(item.dataset.settingsAnchor);
-    if (!target) return;
-    document.querySelectorAll(".settings-menu-item").forEach((menuItem) => menuItem.classList.remove("active"));
-    item.classList.add("active");
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+const settingsPanels = [...document.querySelectorAll(".settings-content > *")];
+
+function setSettingsPanel(anchor) {
+  const target = document.getElementById(anchor);
+  if (!target) return;
+  settingsPanels.forEach((panel) => { panel.hidden = panel !== target; });
+  document.querySelectorAll(".settings-menu-item").forEach((menuItem) => {
+    menuItem.classList.toggle("active", menuItem.dataset.settingsAnchor === anchor);
+    menuItem.setAttribute("aria-selected", String(menuItem.dataset.settingsAnchor === anchor));
   });
+}
+
+document.querySelectorAll(".settings-menu-item").forEach((item) => {
+  item.addEventListener("click", () => setSettingsPanel(item.dataset.settingsAnchor));
 });
 
 function setSettingsRoleVisibility(role) {
@@ -2711,6 +2698,7 @@ function setSettingsRoleVisibility(role) {
     `Você está logado como ${isProvider ? "Prestador" : "Cliente"}.`;
   document.getElementById("switchAccountBtn").textContent =
     `Entrar como ${isProvider ? "Cliente" : "Prestador"}`;
+  setSettingsPanel("settingsPanelPerfil");
 }
 
 function fillAddressFields(prefix, address) {

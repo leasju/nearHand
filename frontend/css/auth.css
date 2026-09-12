@@ -76,8 +76,8 @@ a{color:inherit}
 button,input,select{font:inherit}
 button{cursor:pointer;border:none;background:none}
 .auth-shell{
-  position:relative;z-index:1;width:min(100% - 64px,1440px);min-height:calc(100dvh - 64px);
-  margin:32px auto;display:grid;grid-template-columns:minmax(360px,.92fr) minmax(520px,1.08fr);
+  position:relative;z-index:1;width:min(100% - 48px,1600px);min-height:calc(100dvh - 48px);
+  margin:24px auto;display:grid;grid-template-columns:minmax(420px,.94fr) minmax(600px,1.06fr);
   align-items:stretch;overflow:hidden;border:1px solid rgba(255,255,255,.82);border-radius:28px;
   background:transparent;box-shadow:0 30px 80px rgba(12,3,25,.35);
 }
@@ -127,7 +127,7 @@ button{cursor:pointer;border:none;background:none}
 .aside-stat b{display:block;color:#fff;font-size:18px;font-weight:800}
 .aside-stat span{color:var(--muted-on-dark);font-size:11px;font-weight:600}
 .auth-main{
-  display:grid;place-items:center;width:100%;max-width:none;padding:42px 64px;background:#fbfafc;
+  display:grid;place-items:center;width:100%;max-width:none;padding:56px clamp(64px,5vw,96px);background:#fbfafc;
 }
 .auth-card{
   width:min(100%,520px);background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;
@@ -136,6 +136,8 @@ button{cursor:pointer;border:none;background:none}
 .top-btn-row{display:flex;gap:10px}
 .auth-top h2{margin:6px 0 0;font-size:22px;font-weight:800;color:var(--text)}
 .auth-top h2{font-size:clamp(2rem,3vw,3rem);line-height:1.05;color:#140d1b}
+.auth-top .eyebrow{text-transform:none;color:var(--violet);background:rgba(90,42,140,.08);padding:5px 10px}
+.admin-link{color:#140d1b;padding:8px 14px;border-radius:10px}
 .ghost-btn{
   padding:7px 13px;border-radius:var(--radius-md);border:1px solid var(--border);color:var(--text);background:var(--tint);
   display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:600;font-size:12px;white-space:nowrap;
@@ -242,7 +244,7 @@ body.dark .field-input:focus{background:var(--glass-strong)}
 body.dark .icon-btn{background:var(--surface);color:var(--text)}
 
 @media (max-width: 1180px){
-  .auth-shell{grid-template-columns:minmax(0,1fr);padding:36px clamp(20px,6vw,48px) 64px}
+  .auth-shell{grid-template-columns:minmax(0,1fr);width:min(100% - 32px,900px);min-height:calc(100dvh - 32px);margin:16px auto;padding:36px clamp(20px,6vw,48px) 64px}
   .hero-copy h1{max-width:18ch}
 }
 @media (min-width: 1181px){

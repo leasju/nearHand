@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="css/styles.css?v=20260912" />
+  <link rel="stylesheet" href="css/styles.css?v=20260912-7" />
 </head>
 <body>
   <div class="app-frame">
@@ -323,9 +323,9 @@
           <div class="settings-content">
           <div class="panel-card" id="settingsPanelPerfil">
             <div class="panel-head"><div><span class="eyebrow">PERFIL</span><h2>Editar perfil</h2></div></div>
-            <form id="clientProfileForm" class="ad-form settings-form">
-              <label>Nome completo *<input id="cpName" required /></label>
-              <label>Foto de perfil *
+            <form id="clientProfileForm" class="ad-form settings-form profile-form-layout">
+              <label class="profile-name-field">Nome completo *<input id="cpName" required /></label>
+              <label class="profile-photo-field">Foto de perfil *
                 <div class="photo-dropzone" id="cpPhotoDropzone">
                   <img class="photo-thumb" id="cpPhotoPreview" alt="Pré-visualização da foto" hidden />
                   <div class="photo-dropzone-empty" id="cpPhotoEmpty">
@@ -335,7 +335,7 @@
                   <input id="cpPhotoFile" type="file" accept="image/*" hidden />
                 </div>
               </label>
-              <label>Endereço padrão *
+              <label class="profile-address-field">Endereço padrão *
                 <div class="address-grid">
                   <input id="cpRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
                   <input id="cpCep" placeholder="CEP" aria-label="CEP" />
@@ -346,15 +346,15 @@
                   <input id="cpEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
                 </div>
               </label>
-              <div class="form-row">
+              <div class="form-row profile-contact-field">
                 <label>Telefone<input id="cpPhone" /></label>
                 <label>Email *<input id="cpEmail" type="email" required /></label>
               </div>
-              <button class="primary-btn" type="submit">Salvar perfil</button>
+              <button class="primary-btn profile-submit" type="submit">Salvar perfil</button>
             </form>
-            <form id="providerProfileForm" class="ad-form settings-form" hidden>
-              <label>Nome da empresa/prestador *<input id="ppName" required /></label>
-              <label>Foto da empresa *
+            <form id="providerProfileForm" class="ad-form settings-form profile-form-layout" hidden>
+              <label class="profile-name-field">Nome da empresa/prestador *<input id="ppName" required /></label>
+              <label class="profile-photo-field">Foto da empresa *
                 <div class="photo-dropzone" id="ppPhotoDropzone">
                   <img class="photo-thumb" id="ppPhotoPreview" alt="Pré-visualização da foto" hidden />
                   <div class="photo-dropzone-empty" id="ppPhotoEmpty">
@@ -364,7 +364,7 @@
                   <input id="ppPhotoFile" type="file" accept="image/*" hidden />
                 </div>
               </label>
-              <label>Endereço padrão *
+              <label class="profile-address-field">Endereço padrão *
                 <div class="address-grid">
                   <input id="ppRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
                   <input id="ppCep" placeholder="CEP" aria-label="CEP" />
@@ -375,12 +375,12 @@
                   <input id="ppEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
                 </div>
               </label>
-              <div class="form-row">
+              <div class="form-row profile-contact-field">
                 <label>Telefone<input id="ppPhone" /></label>
                 <label>Email *<input id="ppEmail" type="email" required /></label>
               </div>
-              <label>CPF ou CNPJ *<input id="ppDocument" required /></label>
-              <button class="primary-btn" type="submit">Salvar perfil</button>
+              <label class="profile-document-field">CPF ou CNPJ *<input id="ppDocument" required /></label>
+              <button class="primary-btn profile-submit" type="submit">Salvar perfil</button>
             </form>
           </div>
 
@@ -546,6 +546,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/ripple.js"></script>
-  <script src="js/script.js"></script>
+  <script src="js/theme.js?v=20260912"></script>
+  <script src="js/script.js?v=20260912-3"></script>
 </body>
 </html>
