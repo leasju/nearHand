@@ -320,12 +320,16 @@ function showVerificationModal(email, tipo) {
   verificationEmail = email;
   verificationType = tipo;
   document.getElementById("verificationEmail").textContent = email;
-  document.getElementById("verificationBackdrop").hidden = false;
+  const backdrop = document.getElementById("verificationBackdrop");
+  backdrop.hidden = false;
+  setTimeout(() => backdrop.classList.add("is-open"), 10);
   document.querySelectorAll(".code-input")[0].focus();
 }
 
 function hideVerificationModal() {
-  document.getElementById("verificationBackdrop").hidden = true;
+  const backdrop = document.getElementById("verificationBackdrop");
+  backdrop.classList.remove("is-open");
+  setTimeout(() => (backdrop.hidden = true), 280);
   document.querySelectorAll(".code-input").forEach((input) => (input.value = ""));
 }
 
@@ -336,6 +340,11 @@ document.querySelectorAll(".code-input").forEach((input, idx, arr) => {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Backspace" && !e.target.value && idx > 0) arr[idx - 1].focus();
   });
+});
+
+document.getElementById("closeVerificationBtn").addEventListener("click", hideVerificationModal);
+document.getElementById("verificationBackdrop").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) hideVerificationModal();
 });
 
 document.getElementById("verificationForm").addEventListener("submit", async (e) => {

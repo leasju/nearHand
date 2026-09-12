@@ -245,6 +245,28 @@ body.dark .field-input::placeholder{color:rgba(255,255,255,.4)}
 body.dark .field-input:focus{background:var(--glass-strong)}
 body.dark .icon-btn{background:var(--surface);color:var(--text)}
 
+/* Verification modal */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);z-index:100;
+  display:grid;place-items:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .28s cubic-bezier(.25,.1,.25,1);
+}
+.modal-backdrop.is-open{opacity:1;pointer-events:auto}
+.modal{
+  background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow);
+  max-height:90vh;overflow-y:auto;position:relative;
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:8px;
+  background:var(--tint);border:none;cursor:pointer;color:var(--muted);font-size:22px;
+  display:flex;align-items:center;justify-content:center;z-index:10;
+  transition:background .18s ease,color .18s ease;
+}
+.modal-close:hover{background:var(--tint-strong);color:var(--text)}
+.modal-close:active{transform:scale(.94)}
+body.dark .modal-backdrop{background:rgba(0,0,0,.6)}
+body.dark .modal{background:var(--surface)}
+
 @media (max-width: 1180px){
   .auth-shell{grid-template-columns:minmax(0,1fr);width:min(100% - 32px,900px);min-height:calc(100dvh - 32px);margin:16px auto;padding:36px clamp(20px,6vw,48px) 64px}
   .hero-copy h1{max-width:18ch}

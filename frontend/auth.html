@@ -180,30 +180,55 @@
   </div>
 
   <div class="modal-backdrop" id="verificationBackdrop" hidden>
-    <div class="modal" style="max-width: 420px;">
-      <div style="text-align: center; padding: 32px;">
-        <h2 style="margin: 0 0 8px; font-size: 24px;">Verifique seu email</h2>
-        <p style="color: var(--muted); margin: 0 0 24px; font-size: 14px;">Enviamos um código de 6 dígitos para <strong id="verificationEmail"></strong></p>
+    <div class="modal" style="width: min(480px, 94vw); max-width: 100%;">
+      <button class="modal-close" type="button" id="closeVerificationBtn" aria-label="Fechar">×</button>
+      <div style="padding: 40px 32px; text-align: center;">
+        <h2 style="margin: 0 0 10px; font-size: 26px; font-weight: 800;">Verifique seu email</h2>
+        <p style="color: var(--muted); margin: 0 0 28px; font-size: 14px; line-height: 1.5;">Enviamos um código de 6 dígitos para <strong id="verificationEmail" style="color: var(--ink);"></strong>. Digite-o abaixo:</p>
 
-        <form id="verificationForm" style="display: grid; gap: 16px;">
-          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;" id="codeInputs">
-            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
-            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
-            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
-            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
-            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
-            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold;" />
+        <form id="verificationForm" style="display: grid; gap: 22px;">
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;" id="codeInputs">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required />
+            <input type="text" inputmode="numeric" maxlength="1" class="code-input" required />
           </div>
           <button type="submit" class="primary-btn full">Verificar</button>
-          <p id="verificationMessage" style="text-align: center; color: var(--muted); font-size: 12px; margin: 0;"></p>
+          <p id="verificationMessage" style="text-align: center; color: var(--muted); font-size: 12px; margin: 0; height: 16px;"></p>
         </form>
       </div>
     </div>
   </div>
 
+  <style>
+    .code-input {
+      width: 100%;
+      padding: 14px 8px;
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      outline: 0;
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: var(--shadow-xs);
+      transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+    }
+    .code-input:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(90,42,140,.14);
+    }
+    .code-input:hover {
+      border-color: var(--purple-dark);
+    }
+  </style>
+
   <div class="toast" id="toast"></div>
 
   <script src="js/ripple.js?v=20260912"></script>
-  <script src="js/auth.js?v=20260912"></script>
+  <script src="js/auth.js?v=20260912-2"></script>
 </body>
 </html>
