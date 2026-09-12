@@ -1138,9 +1138,9 @@ function showAppView(view) {
     if (key === view) { if (el.hidden) revealView(el); }
     else el.hidden = true;
   });
-  const role = view === "chat" ? currentSessionRole : view;
-  mainNav.hidden = role !== "cliente" || view === "settings";
-  providerNav.hidden = role !== "prestador" || view === "settings";
+  const role = (view === "chat" || view === "settings") ? currentSessionRole : view;
+  mainNav.hidden = role !== "cliente";
+  providerNav.hidden = role !== "prestador";
 }
 
 function setActiveRole(role) {

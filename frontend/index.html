@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="css/styles.css?v=20260912-7" />
+  <link rel="stylesheet" href="css/styles.css?v=20260912-9" />
 </head>
 <body>
   <div class="app-frame">
@@ -324,62 +324,70 @@
           <div class="panel-card" id="settingsPanelPerfil">
             <div class="panel-head"><div><span class="eyebrow">PERFIL</span><h2>Editar perfil</h2></div></div>
             <form id="clientProfileForm" class="ad-form settings-form profile-form-layout">
-              <label class="profile-name-field">Nome completo *<input id="cpName" required /></label>
-              <label class="profile-photo-field">Foto de perfil *
-                <div class="photo-dropzone" id="cpPhotoDropzone">
-                  <img class="photo-thumb" id="cpPhotoPreview" alt="Pré-visualização da foto" hidden />
-                  <div class="photo-dropzone-empty" id="cpPhotoEmpty">
-                    <span><img class="icon" src="img/icons/icon-camera.png" alt="" /></span>
-                    <small>Arraste uma foto ou clique para enviar</small>
+              <div class="profile-col-left">
+                <label class="profile-name-field">Nome completo *<input id="cpName" required /></label>
+                <label class="profile-photo-field">Foto de perfil *
+                  <div class="photo-dropzone" id="cpPhotoDropzone">
+                    <img class="photo-thumb" id="cpPhotoPreview" alt="Pré-visualização da foto" hidden />
+                    <div class="photo-dropzone-empty" id="cpPhotoEmpty">
+                      <span><img class="icon" src="img/icons/icon-camera.png" alt="" /></span>
+                      <small>Arraste uma foto ou clique para enviar</small>
+                    </div>
+                    <input id="cpPhotoFile" type="file" accept="image/*" hidden />
                   </div>
-                  <input id="cpPhotoFile" type="file" accept="image/*" hidden />
+                </label>
+              </div>
+              <div class="profile-col-right">
+                <label class="profile-address-field">Endereço padrão *
+                  <div class="address-grid">
+                    <input id="cpRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
+                    <input id="cpCep" placeholder="CEP" aria-label="CEP" />
+                    <input id="cpNumero" placeholder="Número" aria-label="Número" />
+                    <input id="cpComplemento" placeholder="Complemento" aria-label="Complemento" />
+                    <input id="cpBairro" placeholder="Bairro" aria-label="Bairro" />
+                    <input id="cpCidade" placeholder="Cidade" aria-label="Cidade" />
+                    <input id="cpEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
+                  </div>
+                </label>
+                <div class="form-row profile-contact-field">
+                  <label>Telefone<input id="cpPhone" /></label>
+                  <label>Email *<input id="cpEmail" type="email" required /></label>
                 </div>
-              </label>
-              <label class="profile-address-field">Endereço padrão *
-                <div class="address-grid">
-                  <input id="cpRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
-                  <input id="cpCep" placeholder="CEP" aria-label="CEP" />
-                  <input id="cpNumero" placeholder="Número" aria-label="Número" />
-                  <input id="cpComplemento" placeholder="Complemento" aria-label="Complemento" />
-                  <input id="cpBairro" placeholder="Bairro" aria-label="Bairro" />
-                  <input id="cpCidade" placeholder="Cidade" aria-label="Cidade" />
-                  <input id="cpEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
-                </div>
-              </label>
-              <div class="form-row profile-contact-field">
-                <label>Telefone<input id="cpPhone" /></label>
-                <label>Email *<input id="cpEmail" type="email" required /></label>
               </div>
               <button class="primary-btn profile-submit" type="submit">Salvar perfil</button>
             </form>
             <form id="providerProfileForm" class="ad-form settings-form profile-form-layout" hidden>
-              <label class="profile-name-field">Nome da empresa/prestador *<input id="ppName" required /></label>
-              <label class="profile-photo-field">Foto da empresa *
-                <div class="photo-dropzone" id="ppPhotoDropzone">
-                  <img class="photo-thumb" id="ppPhotoPreview" alt="Pré-visualização da foto" hidden />
-                  <div class="photo-dropzone-empty" id="ppPhotoEmpty">
-                    <span><img class="icon" src="img/icons/icon-camera.png" alt="" /></span>
-                    <small>Arraste uma foto ou clique para enviar</small>
+              <div class="profile-col-left">
+                <label class="profile-name-field">Nome da empresa/prestador *<input id="ppName" required /></label>
+                <label class="profile-photo-field">Foto da empresa *
+                  <div class="photo-dropzone" id="ppPhotoDropzone">
+                    <img class="photo-thumb" id="ppPhotoPreview" alt="Pré-visualização da foto" hidden />
+                    <div class="photo-dropzone-empty" id="ppPhotoEmpty">
+                      <span><img class="icon" src="img/icons/icon-camera.png" alt="" /></span>
+                      <small>Arraste uma foto ou clique para enviar</small>
+                    </div>
+                    <input id="ppPhotoFile" type="file" accept="image/*" hidden />
                   </div>
-                  <input id="ppPhotoFile" type="file" accept="image/*" hidden />
-                </div>
-              </label>
-              <label class="profile-address-field">Endereço padrão *
-                <div class="address-grid">
-                  <input id="ppRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
-                  <input id="ppCep" placeholder="CEP" aria-label="CEP" />
-                  <input id="ppNumero" placeholder="Número" aria-label="Número" />
-                  <input id="ppComplemento" placeholder="Complemento" aria-label="Complemento" />
-                  <input id="ppBairro" placeholder="Bairro" aria-label="Bairro" />
-                  <input id="ppCidade" placeholder="Cidade" aria-label="Cidade" />
-                  <input id="ppEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
-                </div>
-              </label>
-              <div class="form-row profile-contact-field">
-                <label>Telefone<input id="ppPhone" /></label>
-                <label>Email *<input id="ppEmail" type="email" required /></label>
+                </label>
               </div>
-              <label class="profile-document-field">CPF ou CNPJ *<input id="ppDocument" required /></label>
+              <div class="profile-col-right">
+                <label class="profile-address-field">Endereço padrão *
+                  <div class="address-grid">
+                    <input id="ppRua" class="address-full" placeholder="Rua / Avenida" aria-label="Rua" required />
+                    <input id="ppCep" placeholder="CEP" aria-label="CEP" />
+                    <input id="ppNumero" placeholder="Número" aria-label="Número" />
+                    <input id="ppComplemento" placeholder="Complemento" aria-label="Complemento" />
+                    <input id="ppBairro" placeholder="Bairro" aria-label="Bairro" />
+                    <input id="ppCidade" placeholder="Cidade" aria-label="Cidade" />
+                    <input id="ppEstado" placeholder="UF" aria-label="Estado" maxlength="2" />
+                  </div>
+                </label>
+                <div class="form-row profile-contact-field">
+                  <label>Telefone<input id="ppPhone" /></label>
+                  <label>Email *<input id="ppEmail" type="email" required /></label>
+                </div>
+                <label class="profile-document-field">CPF ou CNPJ *<input id="ppDocument" required /></label>
+              </div>
               <button class="primary-btn profile-submit" type="submit">Salvar perfil</button>
             </form>
           </div>
@@ -559,6 +567,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/ripple.js"></script>
   <script src="js/theme.js?v=20260912"></script>
-  <script src="js/script.js?v=20260912-4"></script>
+  <script src="js/script.js?v=20260912-5"></script>
 </body>
 </html>
