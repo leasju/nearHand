@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="css/styles.css?v=20260912-14" />
+  <link rel="stylesheet" href="css/styles.css?v=20260912-15" />
 </head>
 <body>
   <div class="app-frame">
@@ -203,31 +203,29 @@
         <div class="blob blob-4"></div>
       </div>
       <section class="provider-section" data-provider-view="painel">
-        <section class="provider-hero reveal">
-          <div><span class="eyebrow">PAINEL DO PRESTADOR</span><h1>Olá, <span id="providerHeroName">Prestador</span> <img class="icon" src="img/icons/icon-wave.png" alt="" /></h1><p>Acompanhe pedidos, agenda, anúncios e resultados em um só lugar.</p></div>
-        </section>
+        <div class="provider-page-header">
+          <div><span class="eyebrow">PAINEL</span><h1>Olá, <span id="providerHeroName">Prestador</span> <img class="icon" src="img/icons/icon-wave.png" alt="" /></h1></div>
+        </div>
 
-        <section class="metric-grid reveal">
-          <article class="metric-card"><span><img class="icon" src="img/icons/icon-inbox.png" alt="" /></span><div><small>Solicitações no mês</small><strong id="metricRequests">0</strong><em id="metricCompleted">0 realizados</em></div></article>
-          <article class="metric-card"><span><img class="icon" src="img/icons/icon-check.png" alt="" /></span><div><small>Taxa de aceitação</small><strong id="metricAcceptance">0%</strong><em>confirmados ou concluídos</em></div></article>
-          <article class="metric-card"><span><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></span><div><small>Nota média</small><strong id="metricRating">0,0</strong><em>avaliações publicadas</em></div></article>
-          <article class="metric-card"><span><img class="icon" src="img/icons/icon-card.png" alt="" /></span><div><small>Faturamento</small><strong id="metricRevenue">R$ 0</strong><em id="metricPeriod">Período atual</em></div></article>
-        </section>
+        <div class="dashboard-top-row">
+          <article class="metric-card large reveal"><div><small>Solicitações no mês</small><strong id="metricRequests">0</strong><em id="metricCompleted">0 realizados</em></div><img class="icon" src="img/icons/icon-inbox.png" alt="" /></article>
+          <article class="metric-card reveal"><span><img class="icon" src="img/icons/icon-check.png" alt="" /></span><div><small>Taxa de aceitação</small><strong id="metricAcceptance">0%</strong><em>confirmados</em></div></article>
+          <article class="metric-card reveal"><span><img class="icon" src="img/icons/icon-star-filled.png" alt="" /></span><div><small>Nota média</small><strong id="metricRating">0,0</strong><em>avaliações</em></div></article>
+          <article class="metric-card reveal"><span><img class="icon" src="img/icons/icon-card.png" alt="" /></span><div><small>Faturamento</small><strong id="metricRevenue">R$ 0</strong><em id="metricPeriod">este mês</em></div></article>
+        </div>
 
-        <section class="generic-view">
-          <div class="dashboard-charts">
-            <article class="panel-card"><div class="panel-head"><div><span class="eyebrow">VENDAS</span><h2>Serviços mais vendidos</h2></div></div><div class="bar-chart" id="topSellingServicesChart"></div></article>
-            <article class="panel-card"><div class="panel-head"><div><span class="eyebrow">QUALIDADE</span><h2>Melhor desempenho</h2></div></div><div class="bar-chart" id="bestPerformingServicesChart"></div></article>
-            <article class="panel-card"><div class="panel-head"><div><span class="eyebrow">STATUS</span><h2>Pedidos no mês</h2></div></div><div class="pie-chart-wrap" id="requestStatusChart"></div></article>
+        <div class="dashboard-grid">
+          <div class="dashboard-left">
+            <article class="panel-card reveal"><div class="panel-head"><div><span class="eyebrow">VENDAS</span><h2>Serviços mais vendidos</h2></div></div><div class="bar-chart" id="topSellingServicesChart"></div></article>
+            <article class="panel-card reveal"><div class="panel-head"><div><span class="eyebrow">CLIENTES</span><h2>Clientes atendidos</h2></div><button class="text-btn" id="viewAllClientsBtn">Ver todos</button></div><div class="clients-list" id="clientsList"></div></article>
           </div>
-          <div class="panel-card">
-            <div class="panel-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2>Pedidos recentes</h2></div><button class="text-btn" id="viewAllRequestsBtn">Ver todos</button></div>
-            <div class="request-list" id="requestList">
-              <article class="request-item"><div class="request-avatar">AC</div><div><strong>Ana Costa</strong><small>Troca de tomadas • 1,8 km • Hoje, 14:00</small></div><strong>R$ 140</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
-              <article class="request-item"><div class="request-avatar">RB</div><div><strong>Rafael Braga</strong><small>Instalação de luminária • 3,2 km • Amanhã, 09:00</small></div><strong>R$ 110</strong><div class="request-actions"><button class="small-btn accept">Aceitar</button><button class="small-btn">Propor</button><button class="small-btn reject">Recusar</button></div></article>
-            </div>
+
+          <div class="dashboard-right">
+            <article class="panel-card reveal"><div class="panel-head"><div><span class="eyebrow">PRÓXIMOS</span><h2>Próximos serviços</h2></div></div><div class="timeline" id="upcomingServices"></div></article>
+            <article class="panel-card reveal"><div class="panel-head"><div><span class="eyebrow">STATUS</span><h2>Pedidos este mês</h2></div></div><div class="pie-chart-wrap" id="requestStatusChart"></div></article>
+            <article class="timer-card reveal"><div><h3>Timer</h3><div class="timer-display" id="timerDisplay">00:00:00</div><div class="timer-controls"><button class="timer-btn play" id="timerPlayBtn">▶</button><button class="timer-btn stop" id="timerStopBtn">⏹</button></div></div></article>
           </div>
-        </section>
+        </div>
       </section>
 
       <section class="generic-view provider-section" data-provider-view="pedidos" hidden>

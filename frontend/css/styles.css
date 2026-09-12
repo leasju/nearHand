@@ -65,7 +65,42 @@ body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"SF Pro Displ
 #providerView .metric-card strong{color:#fff}
 #providerView .metric-card small{color:rgba(255,255,255,.7)}
 #providerView .metric-card span{background:rgba(255,255,255,.18)}
-@media(max-width:680px){.app-frame{margin:10px;height:calc(100dvh - 20px);border-radius:20px}}
+.provider-page-header{width:min(1600px,95vw);margin:26px auto 18px;display:flex;align-items:center;justify-content:space-between}
+.provider-page-header h1{margin:7px 0 0;font-size:32px;color:#fff}
+.provider-page-header .eyebrow{color:rgba(255,255,255,.8)}
+.dashboard-top-row{width:min(1600px,95vw);margin:0 auto 18px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:16px;align-items:stretch}
+.dashboard-top-row .metric-card.large{grid-row:1/3;flex-direction:column;justify-content:space-between}
+.dashboard-top-row .metric-card.large div{order:1}
+.dashboard-top-row .metric-card.large img{order:2;align-self:flex-end;width:64px;height:64px;opacity:.6}
+.dashboard-grid{width:min(1600px,95vw);margin:0 auto 70px;display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start}
+.dashboard-left{display:grid;gap:18px}
+.dashboard-right{display:grid;gap:18px}
+.dashboard-left .panel-card:first-child{min-height:280px}
+.dashboard-left .panel-card:last-child{display:grid}
+.clients-list{display:grid;gap:12px;margin-top:12px}
+.client-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:rgba(0,0,0,.04)}
+.client-item .avatar{width:40px;height:40px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+.client-item div{flex:1}
+.client-item strong{font-size:13px;color:var(--ink)}
+.client-item small{color:var(--muted);font-size:11px}
+.timer-card{background:linear-gradient(135deg, var(--wine-600) 0%, var(--imperial-400) 100%);border:none;color:#fff !important}
+.timer-card h3{margin:0 0 12px;font-size:14px;font-weight:700}
+.timer-display{font-size:48px;font-weight:800;font-family:monospace;letter-spacing:.08em;margin:12px 0}
+.timer-controls{display:flex;gap:8px}
+.timer-btn{width:44px;height:44px;border-radius:12px;border:none;background:rgba(255,255,255,.2);color:#fff;font-weight:700;font-size:16px;transition:background .2s ease;cursor:pointer}
+.timer-btn:hover{background:rgba(255,255,255,.3)}
+#upcomingServices{display:grid;gap:12px}
+.upcoming-item{display:grid;gap:8px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.upcoming-item strong{font-size:13px;color:var(--ink)}
+.upcoming-item small{color:var(--muted);font-size:11px}
+#providerView .panel-card{background:rgba(255,255,255,.95);border-color:rgba(0,0,0,.08)}
+#providerView .panel-head{color:var(--ink)}
+#providerView .panel-head h2{color:var(--ink)}
+#providerView .panel-head .eyebrow{color:var(--purple-dark)}
+@media(max-width:680px){.app-frame{margin:10px;height:calc(100dvh - 20px);border-radius:20px}
+.dashboard-top-row{grid-template-columns:1fr;gap:12px}
+.dashboard-top-row .metric-card.large{grid-row:auto}
+.dashboard-grid{grid-template-columns:1fr;gap:12px}}
 /* Fonte de destaque inspirada na Ogg (Sharp Type) — usada só em títulos grandes,
    já que é uma serifada de "display", não pensada para texto corrido/UI densa. */
 h1,h2{font-family:'Merriweather',Georgia,'Times New Roman',serif;font-optical-sizing:auto}

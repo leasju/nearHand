@@ -5,3 +5,4 @@ venv/
 .venv/
 node_modules/
 .idea/
+.claude/worktrees/agent-a2e71383b2c7d0ab3
