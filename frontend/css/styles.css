@@ -55,8 +55,16 @@ body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"SF Pro Displ
 .app-frame{margin:18px;height:calc(100dvh - 36px);border-radius:28px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
 .app-frame>header.topbar{flex-shrink:0}
 .app-frame>main{flex:1;min-height:0;overflow-y:auto}
-#providerView{background:var(--wine-900);min-height:100%;padding-top:1px}
+#providerView{background:linear-gradient(135deg, var(--wine-600) 0%, var(--imperial) 50%, var(--tangerine-700) 100%);min-height:100%;padding-top:1px;position:relative}
+#providerView .provider-section,#providerView .generic-view{position:relative;z-index:2}
 #providerView .page-title h1,#providerView .page-title .eyebrow{color:#fff}
+#providerView .provider-hero{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);backdrop-filter:blur(10px);color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+#providerView .provider-hero h1{color:#fff}
+#providerView .provider-hero p{color:rgba(255,255,255,.8)}
+#providerView .metric-card{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);backdrop-filter:blur(10px);color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+#providerView .metric-card strong{color:#fff}
+#providerView .metric-card small{color:rgba(255,255,255,.7)}
+#providerView .metric-card span{background:rgba(255,255,255,.18)}
 @media(max-width:680px){.app-frame{margin:10px;height:calc(100dvh - 20px);border-radius:20px}}
 /* Fonte de destaque inspirada na Ogg (Sharp Type) — usada só em títulos grandes,
    já que é uma serifada de "display", não pensada para texto corrido/UI densa. */
