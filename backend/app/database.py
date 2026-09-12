@@ -27,7 +27,7 @@ def ensure_optional_schema():
     """Add columns introduced after the initial database script."""
     with engine.begin() as connection:
         optional_columns = {
-            "prestador": {"foto": "TEXT NULL"},
+            "prestador": {"foto": "TEXT NULL", "metodos_pagamento": "VARCHAR(60) NULL"},
             "cliente": {"preferencias": "VARCHAR(255) NULL"},
             "servico": {"negociavel": "BOOLEAN NOT NULL DEFAULT FALSE"},
             "avaliacao": {"resposta_prestador": "TEXT NULL"},

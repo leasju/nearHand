@@ -551,6 +551,13 @@ function showServiceDetails(service) {
   document.getElementById("modalDistance").innerHTML = `${iconImage("location", "")} ${service.distance.toFixed(1).replace(".", ",")} km`;
   document.getElementById("modalPrice").innerHTML = `${iconImage("tag", "")} R$ ${formatPrice(service.price)}${service.unit}${service.negociavel ? " (negociável)" : ""}`;
   document.getElementById("modalDescription").textContent = service.description || "Sem descrição.";
+  const paymentLabels = { cartao: "Cartão", pix: "Pix", boleto: "Boleto" };
+  const modalPaymentMethods = document.getElementById("modalPaymentMethods");
+  const paymentMethods = service.payment_methods || [];
+  modalPaymentMethods.hidden = !paymentMethods.length;
+  modalPaymentMethods.innerHTML = paymentMethods
+    .map((method) => `<span>${iconImage("card", "")} ${paymentLabels[method] || method}</span>`)
+    .join("");
   const photos = (service.photos || []).map((photo) => photo.url).filter(Boolean);
   const galleryMain = document.getElementById("galleryMain");
   function setMainPhoto(url) {
@@ -1444,8 +1451,8 @@ document.getElementById("sendPhoneBtn").addEventListener("click", async () => {
 
 function chatOtherParty(conversation) {
   return currentSessionRole === "prestador"
-    ? { name: conversation.cliente_nome, meta: conversation.servico_titulo }
-    : { name: conversation.prestador_nome, meta: conversation.servico_titulo };
+    ? { name: conversation.cliente_nome, meta: conversation.servico_titulo, foto: conversation.cliente_foto }
+    : { name: conversation.prestador_nome, meta: conversation.servico_titulo, foto: conversation.prestador_foto };
 }
 
 function renderChatConversationList() {
@@ -1491,7 +1498,7 @@ function renderChatConversationList() {
 
     const header = document.createElement("div");
     header.className = "chat-group-header";
-    header.innerHTML = `<span class="avatar">${requestInitials(other.name)}</span><strong>${other.name}</strong><span class="chat-preview-time">${formatChatTime(conversations[0].criado_em)}</span>`;
+    header.innerHTML = `<span class="avatar">${avatarHtml(other.name, other.foto)}</span><strong>${other.name}</strong><span class="chat-preview-time">${formatChatTime(conversations[0].criado_em)}</span>`;
     if (canCollapse) {
       const toggle = document.createElement("button");
       toggle.type = "button";
@@ -1567,7 +1574,7 @@ async function openChatConversation(requestId) {
   const chatHeaderFavBtn = document.getElementById("chatHeaderFavoriteBtn");
   if (conversation) {
     const other = chatOtherParty(conversation);
-    document.getElementById("chatHeaderAvatar").textContent = requestInitials(other.name);
+    document.getElementById("chatHeaderAvatar").innerHTML = avatarHtml(other.name, other.foto);
     document.getElementById("chatHeaderName").textContent = other.name;
     document.getElementById("chatHeaderMeta").textContent = other.meta;
     if (chatHeaderFavBtn) {
@@ -1681,6 +1688,14 @@ function requestInitials(name) {
     .join("");
 }
 
+// Mostra a foto de perfil quando existe; cai pras iniciais quando não tem —
+// mesmo padrão já usado no avatar do topo (profileAvatar/profileInitials).
+function avatarHtml(name, fotoUrl) {
+  return fotoUrl
+    ? `<img src="${fotoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" />`
+    : requestInitials(name);
+}
+
 function historyTabMatches(status, filter) {
   if (filter === "todos") return true;
   if (filter === "andamento") return ["solicitado", "confirmado", "em_andamento"].includes(status);
@@ -1721,7 +1736,7 @@ function renderHistoryList() {
       actionBtn = "";
     }
     item.innerHTML = `
-      <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
+      <div class="history-thumb">${avatarHtml(request.prestador_nome, request.prestador_foto)}</div>
       <div class="history-content">
         <div class="history-title">${request.servico_titulo}</div>
         <div class="history-provider">${request.prestador_nome} • ${formatRequestDate(request.data_hora_agendada)}</div>
@@ -1894,7 +1909,7 @@ function renderClientReviews() {
       actionBtn = '<span class="field-help">Disponível após a conclusão</span>';
     }
     item.innerHTML = `
-      <div class="history-thumb">${requestInitials(request.prestador_nome)}</div>
+      <div class="history-thumb">${avatarHtml(request.prestador_nome, request.prestador_foto)}</div>
       <div class="history-content">
         <div class="history-title">${request.servico_titulo}</div>
         <div class="history-provider">${request.prestador_nome} • ${formatRequestDate(request.data_hora_agendada)}</div>
@@ -1978,7 +1993,7 @@ function renderProviderClients() {
       `
       : `<div class="history-provider">${first.servico_titulo} • ${formatRequestDate(first.data_hora_agendada)}</div>`;
     item.innerHTML = `
-      <div class="history-thumb">${requestInitials(first.cliente_nome)}</div>
+      <div class="history-thumb">${avatarHtml(first.cliente_nome, first.cliente_foto)}</div>
       <div class="history-content">
         <div class="history-title">${first.cliente_nome}</div>
         <div class="history-meta"><span class="history-price">${contact || "Sem contato cadastrado"}</span></div>
@@ -2669,6 +2684,7 @@ document.querySelector('[data-provider-view="avaliacoes"] .panel-card').addEvent
 const clientProfileForm = document.getElementById("clientProfileForm");
 const providerProfileForm = document.getElementById("providerProfileForm");
 const settingsPreferences = document.getElementById("settingsPreferences");
+const settingsAcceptedPayments = document.getElementById("settingsAcceptedPayments");
 let settingsProfile = null;
 
 document.getElementById("settingsBackBtn").addEventListener("click", () => {
@@ -2701,6 +2717,7 @@ function setSettingsRoleVisibility(role) {
   document.getElementById("clientPreferencesCard").hidden = isProvider;
   document.getElementById("clientPaymentCard").hidden = isProvider;
   document.getElementById("providerPaymentCard").hidden = !isProvider;
+  document.getElementById("providerAcceptedPaymentsCard").hidden = !isProvider;
   const settingsMenuPreferencias = document.getElementById("settingsMenuPreferencias");
   if (settingsMenuPreferencias) settingsMenuPreferencias.hidden = isProvider;
 
@@ -2851,6 +2868,9 @@ async function loadSettingsProfile() {
       document.getElementById("ppPhone").value = settingsProfile.telefone || "";
       document.getElementById("ppEmail").value = settingsProfile.email || "";
       document.getElementById("ppDocument").value = settingsProfile.cpf_cnpj || "";
+      settingsAcceptedPayments.querySelectorAll(".preference-chip").forEach((chip) => {
+        chip.classList.toggle("active", (settingsProfile.metodos_pagamento || []).includes(chip.dataset.paymentMethod));
+      });
     } else {
       document.getElementById("cpName").value = settingsProfile.nome || "";
       cpPhotoPicker.setValue(settingsProfile.foto || "");
@@ -2868,6 +2888,15 @@ async function loadSettingsProfile() {
 settingsPreferences.addEventListener("click", (event) => {
   const chip = event.target.closest(".preference-chip");
   if (chip) chip.classList.toggle("active");
+});
+
+settingsAcceptedPayments.addEventListener("click", (event) => {
+  const chip = event.target.closest(".preference-chip");
+  if (chip) chip.classList.toggle("active");
+});
+
+document.getElementById("saveAcceptedPaymentsBtn").addEventListener("click", () => {
+  providerProfileForm.requestSubmit();
 });
 
 clientProfileForm.addEventListener("submit", async (event) => {
@@ -2914,6 +2943,8 @@ providerProfileForm.addEventListener("submit", async (event) => {
   }
   const submitButton = providerProfileForm.querySelector("button[type=submit]");
   setButtonLoading(submitButton, true);
+  const metodosPagamento = Array.from(settingsAcceptedPayments.querySelectorAll(".preference-chip.active"))
+    .map((chip) => chip.dataset.paymentMethod);
   const payload = {
     nome: document.getElementById("ppName").value,
     email: document.getElementById("ppEmail").value,
@@ -2921,6 +2952,7 @@ providerProfileForm.addEventListener("submit", async (event) => {
     cpf_cnpj: document.getElementById("ppDocument").value,
     foto: ppPhotoPicker.getValue(),
     ...readAddressFields("pp"),
+    metodos_pagamento: metodosPagamento,
   };
   try {
     const response = await authFetch("/prestadores/me", { method: "PUT", body: JSON.stringify(payload) });

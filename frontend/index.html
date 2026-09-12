@@ -408,6 +408,17 @@
             </form>
           </div>
 
+          <div class="panel-card" id="providerAcceptedPaymentsCard" hidden>
+            <div class="panel-head"><div><span class="eyebrow">PAGAMENTO</span><h2>Métodos aceitos</h2></div></div>
+            <p class="field-help">Escolha quais formas de pagamento você aceita. Isso aparece no seu anúncio pros clientes — sem precisar cadastrar dados bancários aqui.</p>
+            <div class="preference-chips" id="settingsAcceptedPayments">
+              <button type="button" class="preference-chip" data-payment-method="cartao">Cartão</button>
+              <button type="button" class="preference-chip" data-payment-method="pix">Pix</button>
+              <button type="button" class="preference-chip" data-payment-method="boleto">Boleto</button>
+            </div>
+            <button class="secondary-btn settings-standalone-btn" id="saveAcceptedPaymentsBtn">Salvar métodos aceitos</button>
+          </div>
+
           <div class="panel-card" id="providerPaymentCard" hidden>
             <div class="panel-head"><div><span class="eyebrow">RECEBIMENTO</span><h2>Método de recebimento</h2></div></div>
             <form id="receivingForm" class="ad-form settings-form">
@@ -491,6 +502,7 @@
         <div class="detail-head"><div><span class="service-pill" id="modalCategory"></span><h2 id="serviceTitle">Serviço</h2><p id="modalProvider"></p></div><button class="favorite-btn large" id="modalFavorite"><img class="icon" src="img/icons/icon-heart-outline.png" alt="Favoritar" /></button></div>
         <div class="detail-metrics"><span id="modalRating"><img class="icon" src="img/icons/icon-star-filled.png" alt="" /> 4,9</span><span id="modalDistance"><img class="icon" src="img/icons/icon-location.png" alt="" /> 2,3 km</span><span id="modalPrice"><img class="icon" src="img/icons/icon-tag.png" alt="" /> R$ 120/h</span></div>
         <p class="detail-description" id="modalDescription"></p>
+        <div class="detail-metrics" id="modalPaymentMethods" hidden></div>
 
         <div class="provider-block" id="modalProviderBlock">
           <span class="provider-avatar-lg" id="modalProviderAvatar">P</span>

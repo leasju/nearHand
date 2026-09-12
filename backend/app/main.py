@@ -975,7 +975,7 @@ def list_my_favorites(
                          AND fav.cliente_id = :cliente_id
         WHERE s.status = 'ativo'
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
-                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+                 c.id, c.nome, p.id, p.nome_empresa, p.metodos_pagamento, e.latitude, e.longitude, r.rating, r.reviews
         ORDER BY p.nome_empresa, s.titulo
     """)
     rows = db.execute(query, {"cliente_id": client_id, "lat": 0, "lng": 0}).mappings().all()
@@ -1090,9 +1090,11 @@ REQUEST_SELECT = """
         s.descricao AS servico_descricao,
         p.id AS prestador_id,
         p.nome_empresa AS prestador_nome,
+        p.foto AS prestador_foto,
         c.nome_completo AS cliente_nome,
         c.email AS cliente_email,
         c.telefone AS cliente_telefone,
+        c.foto AS cliente_foto,
         a.id AS avaliacao_id,
         a.nota AS avaliacao_nota,
         a.comentario AS avaliacao_comentario
@@ -1579,6 +1581,7 @@ SERVICE_SELECT = """
         c.nome AS category,
         p.id AS prestador_id,
         p.nome_empresa AS provider,
+        p.metodos_pagamento AS payment_methods,
         e.latitude AS lat,
         e.longitude AS lng,
         COALESCE(r.rating, 0) AS rating,
@@ -1633,6 +1636,7 @@ def _decode_service_row(row) -> dict:
     service["reviews"] = int(service["reviews"])
     service["distance"] = float(service["distance"]) if service["distance"] is not None else None
     service["unit"] = "/h" if service["price_type"] == "por_hora" else ""
+    service["payment_methods"] = service["payment_methods"].split(",") if service.get("payment_methods") else []
     return service
 
 
@@ -1734,7 +1738,7 @@ def list_services(
           AND (:busca IS NULL OR s.titulo LIKE :busca OR s.descricao LIKE :busca OR p.nome_empresa LIKE :busca)
                     AND (:prestador_id IS NULL OR s.prestador_id = :prestador_id)
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
-                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+                 c.id, c.nome, p.id, p.nome_empresa, p.metodos_pagamento, e.latitude, e.longitude, r.rating, r.reviews
         HAVING (:raio_km IS NULL OR {distance} <= :raio_km)
         ORDER BY {order_by}
     """.format(
@@ -1756,7 +1760,7 @@ def list_my_services(
     query = text(SERVICE_SELECT.format(distance_expression="0") + """
         WHERE s.prestador_id = :provider_id
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
-                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+                 c.id, c.nome, p.id, p.nome_empresa, p.metodos_pagamento, e.latitude, e.longitude, r.rating, r.reviews
         ORDER BY s.criado_em DESC
     """)
     return [
@@ -1770,7 +1774,7 @@ def get_service(service_id: int, db: Session = Depends(get_db)):
     query = text(SERVICE_SELECT.format(distance_expression="0") + """
         WHERE s.id = :service_id
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
-                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+                 c.id, c.nome, p.id, p.nome_empresa, p.metodos_pagamento, e.latitude, e.longitude, r.rating, r.reviews
     """)
     row = db.execute(query, {"service_id": service_id, "lat": 0, "lng": 0}).mappings().first()
     if row is None:
@@ -2080,13 +2084,14 @@ class ProviderProfileUpdate(AddressFields):
     telefone: str = ""
     cpf_cnpj: str
     foto: str = ""
+    metodos_pagamento: list[str] = []
 
 
 @app.get("/prestadores/me")
 def get_provider_profile(db: Session = Depends(get_db), provider_id: int = Depends(get_current_provider_id)):
     row = db.execute(
         text(f"""
-            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj, p.foto,
+            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj, p.foto, p.metodos_pagamento,
                    {ADDRESS_COLUMNS_SQL}
             FROM prestador p
             JOIN endereco e ON e.id = p.endereco_id
@@ -2094,7 +2099,9 @@ def get_provider_profile(db: Session = Depends(get_db), provider_id: int = Depen
         """),
         {"id": provider_id},
     ).mappings().first()
-    return row
+    profile = dict(row)
+    profile["metodos_pagamento"] = profile["metodos_pagamento"].split(",") if profile["metodos_pagamento"] else []
+    return profile
 
 
 @app.put("/prestadores/me")
@@ -2112,13 +2119,14 @@ def update_provider_profile(
         raise HTTPException(status_code=400, detail="Name, email, address, and CPF/CNPJ are required")
 
     latitude, longitude = _geocode_address(payload)
+    metodos_pagamento = ",".join(m.strip() for m in payload.metodos_pagamento if m.strip()) or None
 
     try:
         db.execute(
             text("""
                 UPDATE prestador
                 SET nome_empresa = :nome, email = :email, telefone = :telefone,
-                    cpf_cnpj = :cpf_cnpj, foto = :foto
+                    cpf_cnpj = :cpf_cnpj, foto = :foto, metodos_pagamento = :metodos_pagamento
                 WHERE id = :id
             """),
             {
@@ -2127,6 +2135,7 @@ def update_provider_profile(
                 "telefone": _digits_only(payload.telefone) or None,
                 "cpf_cnpj": cpf_cnpj,
                 "foto": payload.foto.strip() or None,
+                "metodos_pagamento": metodos_pagamento,
                 "id": provider_id,
             },
         )
@@ -2226,7 +2235,7 @@ def moderate_evaluation(
 def admin_list_services(db: Session = Depends(get_db), admin=Depends(get_current_admin)):
     query = text(SERVICE_SELECT.format(distance_expression="0") + """
         GROUP BY s.id, s.titulo, s.descricao, s.valor, s.tipo_valor, s.negociavel, s.status, s.raio_atendimento_km,
-                 c.id, c.nome, p.id, p.nome_empresa, e.latitude, e.longitude, r.rating, r.reviews
+                 c.id, c.nome, p.id, p.nome_empresa, p.metodos_pagamento, e.latitude, e.longitude, r.rating, r.reviews
         ORDER BY s.criado_em DESC
     """)
     rows = db.execute(query, {"lat": 0, "lng": 0}).mappings().all()
