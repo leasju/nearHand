@@ -47,6 +47,11 @@ function renderAccountList() {
     row.className = "admin-account-row";
     row.dataset.id = account.id;
     row.dataset.tipo = account.tipo;
+    const isVerified = account.email_verificado;
+    const statusBadge = isVerified
+      ? '<span class="verification-badge verified">✓ Verificado</span>'
+      : '<span class="verification-badge pending">⏳ Pendente</span>';
+
     row.innerHTML = `
       <input type="checkbox" class="admin-select" data-select title="Selecionar" />
       <span class="account-type-badge ${account.tipo}">${account.tipo === "cliente" ? "Cliente" : "Prestador"}</span>
@@ -55,6 +60,10 @@ function renderAccountList() {
         <div class="field-help">${account.email}${account.telefone ? " • " + account.telefone : ""}${account.cpf_cnpj ? " • " + account.cpf_cnpj : ""}</div>
       </div>
       <span class="field-help">${account.cidade || ""}${account.estado ? "/" + account.estado : ""}</span>
+      ${statusBadge}
+      <button class="small-btn" data-action="toggle-verify" title="${isVerified ? 'Marcar como não verificado' : 'Marcar como verificado'}">
+        ${isVerified ? '✓ Verificar' : 'Verificar'}
+      </button>
       <button class="small-btn" data-action="edit">Editar</button>
       <button class="small-btn reject" data-action="delete">Apagar</button>
     `;
@@ -180,6 +189,21 @@ list.addEventListener("click", async (event) => {
 
   if (button.dataset.action === "edit") {
     openEditModal(account);
+  } else if (button.dataset.action === "toggle-verify") {
+    const newStatus = !account.email_verificado;
+    const response = await fetch(`/admin/accounts/${account.tipo}/${account.id}/verify`, {
+      method: "PATCH",
+      headers: headers(),
+      body: JSON.stringify({ email_verificado: newStatus })
+    });
+    if (handleUnauthorized(response)) return;
+    if (!response.ok) {
+      const result = await response.json();
+      showToast(result.detail || "Erro ao atualizar status.");
+      return;
+    }
+    showToast(newStatus ? "Conta marcada como verificada." : "Conta marcada como não verificada.");
+    await loadAccounts();
   } else if (button.dataset.action === "delete") {
     if (!confirm(`Apagar a conta de "${account.nome}"?`)) return;
     const response = await fetch(`/admin/accounts/${account.tipo}/${account.id}`, { method: "DELETE", headers: headers() });

@@ -2579,7 +2579,7 @@ def _account_row_to_dict(row: dict, tipo: str) -> dict:
 def admin_list_accounts(db: Session = Depends(get_db), admin=Depends(get_current_admin)):
     clientes = db.execute(
         text("""
-            SELECT c.id, c.nome_completo AS nome, c.email, c.telefone, c.criado_em,
+            SELECT c.id, c.nome_completo AS nome, c.email, c.telefone, c.criado_em, c.email_verificado,
                    {address}
             FROM cliente c
             JOIN endereco e ON e.id = c.endereco_id
@@ -2587,7 +2587,7 @@ def admin_list_accounts(db: Session = Depends(get_db), admin=Depends(get_current
     ).mappings().all()
     prestadores = db.execute(
         text("""
-            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj, p.criado_em,
+            SELECT p.id, p.nome_empresa AS nome, p.email, p.telefone, p.cpf_cnpj, p.criado_em, p.email_verificado,
                    {address}
             FROM prestador p
             JOIN endereco e ON e.id = p.endereco_id
@@ -2674,6 +2674,35 @@ def admin_update_account(
         raise HTTPException(status_code=400, detail="One of the provided fields is too long or invalid")
 
     return {"status": "updated"}
+
+
+class VerificationStatusUpdate(BaseModel):
+    email_verificado: bool
+
+
+@app.patch("/admin/accounts/{tipo}/{account_id}/verify")
+def admin_toggle_verification(
+    tipo: str,
+    account_id: int,
+    payload: VerificationStatusUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    """Toggle email verification status for an account."""
+    if tipo not in {"cliente", "prestador"}:
+        raise HTTPException(status_code=400, detail="Invalid account type")
+
+    table = "cliente" if tipo == "cliente" else "prestador"
+    result = db.execute(
+        text(f"UPDATE {table} SET email_verificado = :status WHERE id = :id"),
+        {"status": payload.email_verificado, "id": account_id},
+    )
+
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    db.commit()
+    return {"status": "updated", "email_verificado": payload.email_verificado}
 
 
 @app.delete("/admin/accounts/{tipo}/{account_id}")
