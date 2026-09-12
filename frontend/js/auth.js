@@ -9,6 +9,25 @@ const registerNameLabel = document.querySelector('label[for="registerName"]');
 const registerNameInput = document.getElementById("registerName");
 const toast = document.getElementById("toast");
 
+function setupThemeToggle() {
+  const button = document.getElementById("themeToggleBtn");
+  if (!button) return;
+  const applyTheme = (dark) => {
+    document.body.classList.toggle("dark", dark);
+    button.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
+    button.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
+    button.querySelector("img").src = `img/icons/icon-${dark ? "sun" : "moonlight"}.png?v=20260912`;
+  };
+  applyTheme(localStorage.getItem("nearhand_theme") === "dark");
+  button.addEventListener("click", () => {
+    const dark = !document.body.classList.contains("dark");
+    localStorage.setItem("nearhand_theme", dark ? "dark" : "light");
+    applyTheme(dark);
+  });
+}
+
+setupThemeToggle();
+
 let currentRole = "cliente";
 let currentMode = "login";
 
@@ -130,16 +149,16 @@ const roleCopy = {
     description: "Entre para buscar serviços próximos, favoritar prestadores e acompanhar seus agendamentos.",
     name: "Nome completo",
     placeholder: "Seu nome completo",
-    loginLabel: "Email ou telefone",
-    loginPlaceholder: "Digite seu email ou telefone",
+    loginLabel: "Email",
+    loginPlaceholder: "Digite seu email",
   },
   prestador: {
     title: "Conta de prestador",
     description: "Entre para publicar seus serviços, organizar a agenda e receber solicitações.",
     name: "Nome da empresa ou do prestador",
     placeholder: "Nome que seus clientes verão",
-    loginLabel: "Email, CPF ou CNPJ",
-    loginPlaceholder: "Digite seu email, CPF ou CNPJ",
+    loginLabel: "Email",
+    loginPlaceholder: "Digite seu email",
   },
 };
 
@@ -202,10 +221,12 @@ document.querySelector(".text-link").addEventListener("click", (event) => {
 loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!loginForm.checkValidity()) {
+    loginForm.classList.add("show-validation");
     loginForm.reportValidity();
     return;
   }
   const submitButton = loginForm.querySelector("button[type=submit]");
+  submitButton.dataset.loadingLabel = "Entrando...";
   submitButton.disabled = true;
   submitButton.classList.add("is-loading");
   fetch("/auth/login", {
@@ -244,6 +265,7 @@ registerForm.addEventListener("submit", (event) => {
   const password = document.getElementById("registerPassword").value;
   const confirmation = document.getElementById("registerPasswordConfirm").value;
   if (!registerForm.checkValidity()) {
+    registerForm.classList.add("show-validation");
     registerForm.reportValidity();
     return;
   }
@@ -273,6 +295,7 @@ registerForm.addEventListener("submit", (event) => {
   };
 
   const submitButton = registerForm.querySelector("button[type=submit]");
+  submitButton.dataset.loadingLabel = "Criando conta...";
   submitButton.disabled = true;
   submitButton.classList.add("is-loading");
   fetch("/auth/register", {
@@ -289,6 +312,10 @@ registerForm.addEventListener("submit", (event) => {
     })
     .catch((error) => showToast(error.message))
     .finally(() => { submitButton.disabled = false; submitButton.classList.remove("is-loading"); });
+});
+
+document.querySelectorAll(".auth-form input").forEach((input) => {
+  input.addEventListener("input", () => input.closest(".auth-form")?.classList.remove("show-validation"));
 });
 
 const urlParams = new URLSearchParams(window.location.search);

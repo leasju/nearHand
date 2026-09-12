@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Mockup de uma plataforma de contratação de prestadores por proximidade." />
   <title>NearHand - Home</title>
-  <link rel="icon" type="image/png" href="img/icon_nearhand.png" />
+  <link rel="icon" type="image/png" href="img/icon_nearhand.png?v=20260912" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=20260912" />
 </head>
 <body>
   <div class="app-frame">
   <header class="topbar">
     <a class="brand" href="#" id="homeLogo" aria-label="NearHand - início">
 
-      <img src="img/logotype_nearhand.png" alt="NearHand" class="brand-logo" />
+      <img src="img/logotype_nearhand.png?v=20260912" alt="NearHand" class="brand-logo" />
     </a>
 
     <nav class="main-nav" aria-label="Navegação principal">
@@ -40,6 +40,9 @@
     </nav>
 
     <div class="top-actions">
+      <button class="icon-btn" id="themeToggleBtn" type="button" aria-label="Ativar modo escuro" title="Ativar modo escuro">
+        <img class="icon" src="img/icons/icon-moonlight.png?v=20260912" alt="" />
+      </button>
       <button class="icon-btn" id="notificationBtn" aria-label="Notificações">
         <img class="icon" src="img/icons/icon-bell.png" alt="" /><span class="badge">3</span>
       </button>
@@ -76,7 +79,7 @@
             <p>Compare prestadores, veja disponibilidade, converse pelo chat e solicite o serviço em poucos passos.</p>
           </div>
           <div class="hero-visual" aria-hidden="true">
-            <div class="hero-visual-icon"><img src="img/icon_nearhand.png" alt="" /></div>
+            <div class="hero-visual-icon"><img src="img/icon_nearhand.png?v=20260912" alt="" /></div>
             <h4 id="heroVisualHeading">Raio de 10 km ativo</h4>
             <p id="heroVisualSub">6 serviços encontrados perto de você.</p>
             <div class="hero-stat-row">
@@ -108,7 +111,7 @@
             <option value="rating">Melhor avaliado</option>
             <option value="price">Menor preço</option>
           </select>
-          <div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div>
+          <fieldset class="radius-fieldset" id="radiusFieldset"><div class="radius-control"><span>Raio: <strong id="radiusLabel">10 km</strong></span><input id="radiusFilter" type="range" min="1" max="30" value="10" /></div></fieldset>
           <button type="button" class="chip" id="showAllRadiusBtn" title="Mostrar anúncios de qualquer distância, além do raio máximo de 30 km">Ver todos os anúncios</button>
           <div class="view-toggle" id="exploreViewToggle" role="group" aria-label="Modo de visualização">
             <button class="toggle-btn active" data-mode="cards">▦ Cards</button>

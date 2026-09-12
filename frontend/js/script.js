@@ -49,9 +49,29 @@ function closeModal(modal) {
 // clique e dá feedback visual real enquanto a requisição está em andamento).
 function setButtonLoading(button, loading) {
   if (!button) return;
+  if (loading && !button.dataset.loadingLabel) button.dataset.loadingLabel = "Processando...";
   button.classList.toggle("is-loading", loading);
   button.disabled = loading;
 }
+
+function setupThemeToggle() {
+  const button = document.getElementById("themeToggleBtn");
+  if (!button) return;
+  const applyTheme = (dark) => {
+    document.body.classList.toggle("dark", dark);
+    button.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
+    button.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
+    button.querySelector("img").src = `img/icons/icon-${dark ? "sun" : "moonlight"}.png?v=20260912`;
+  };
+  applyTheme(localStorage.getItem("nearhand_theme") === "dark");
+  button.addEventListener("click", () => {
+    const dark = !document.body.classList.contains("dark");
+    localStorage.setItem("nearhand_theme", dark ? "dark" : "light");
+    applyTheme(dark);
+  });
+}
+
+setupThemeToggle();
 
 const SERVICE_VISUALS = [
   ["cat-eletrica", "electric"],
@@ -457,6 +477,7 @@ function renderFavoriteProviders() {
         <div class="history-provider">${iconImage("star-filled", "Avaliação")} ${provider.rating.toFixed(1).replace(".", ",")} (${provider.reviews}) • ${provider.anuncios_ativos} anúncio${provider.anuncios_ativos === 1 ? "" : "s"} ativo${provider.anuncios_ativos === 1 ? "" : "s"}</div>
       </div>
       <div class="history-item-actions">
+        <button type="button" class="icon-btn" data-chat-provider="${provider.id}" aria-label="Abrir chat com ${provider.nome}" title="Abrir chat"><img class="icon" src="img/icons/icon-chat.png" alt="" /></button>
         <button type="button" class="chat-group-toggle" data-toggle-provider-ads="${provider.id}" aria-expanded="false" title="Ver anúncios">
           <span>Ver anúncios</span><span class="chat-group-chevron"><svg viewBox="0 0 12 8" width="10" height="7" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
@@ -507,6 +528,14 @@ favoritesTabs?.addEventListener("click", (event) => {
 });
 
 favoriteProvidersList?.addEventListener("click", async (event) => {
+  const chatButton = event.target.closest("[data-chat-provider]");
+  if (chatButton) {
+    const providerId = Number(chatButton.dataset.chatProvider);
+    const conversation = CHAT_CONVERSATIONS.find((item) => item.prestador_id === providerId);
+    if (conversation) openChatConversation(conversation.id);
+    else { openChatView(); showToast("Ainda não há uma conversa com este prestador."); }
+    return;
+  }
   const toggleBtn = event.target.closest("[data-toggle-provider-ads]");
   if (toggleBtn) {
     const providerId = toggleBtn.dataset.toggleProviderAds;
@@ -761,11 +790,13 @@ radiusFilter.addEventListener("input", () => {
 });
 
 showAllRadiusBtn.addEventListener("click", () => {
-  ignoreRadius = true;
+  ignoreRadius = !ignoreRadius;
   selectedProviderId = null;
-  showAllRadiusBtn.classList.add("active");
+  const radiusFieldset = document.getElementById("radiusFieldset");
+  radiusFieldset.toggleAttribute("inert", ignoreRadius);
+  showAllRadiusBtn.classList.toggle("active", ignoreRadius);
   loadServices();
-  showToast("Mostrando anúncios de qualquer distância.");
+  showToast(ignoreRadius ? "Mostrando anúncios de qualquer distância." : "Filtro por raio reativado.");
 });
 
 const searchBtn = document.getElementById("searchBtn");
@@ -793,6 +824,7 @@ document.getElementById("clearFilters").addEventListener("click", () => {
   radiusFilter.value = "10";
   selectedProviderId = null;
   ignoreRadius = false;
+  document.getElementById("radiusFieldset").removeAttribute("inert");
   showAllRadiusBtn.classList.remove("active");
   radiusLabel.textContent = "10 km";
   loadServices();
@@ -1961,6 +1993,9 @@ function renderProviderClients() {
         <div class="history-meta"><span class="history-price">${contact || "Sem contato cadastrado"}</span></div>
         ${body}
       </div>
+      <div class="history-item-actions">
+        <button type="button" class="icon-btn" data-chat-client="${first.cliente_id}" aria-label="Abrir chat com ${first.cliente_nome}" title="Abrir chat"><img class="icon" src="img/icons/icon-chat.png" alt="" /></button>
+      </div>
     `;
     providerClientsList.appendChild(item);
   });
@@ -1969,6 +2004,15 @@ function renderProviderClients() {
 providerClientsSearchInput?.addEventListener("input", () => {
   providerClientsSearchTerm = providerClientsSearchInput.value;
   renderProviderClients();
+});
+
+providerClientsList?.addEventListener("click", (event) => {
+  const chatButton = event.target.closest("[data-chat-client]");
+  if (!chatButton) return;
+  const clientId = Number(chatButton.dataset.chatClient);
+  const conversation = CHAT_CONVERSATIONS.find((item) => item.cliente_id === clientId);
+  if (conversation) openChatConversation(conversation.id);
+  else { openChatView(); showToast("Ainda não há uma conversa com este cliente."); }
 });
 
 function buildRequestItem(request) {
@@ -2830,6 +2874,12 @@ settingsPreferences.addEventListener("click", (event) => {
 
 clientProfileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!clientProfileForm.checkValidity()) {
+    clientProfileForm.reportValidity();
+    return;
+  }
+  const submitButton = clientProfileForm.querySelector("button[type=submit]");
+  setButtonLoading(submitButton, true);
   const preferencias = Array.from(settingsPreferences.querySelectorAll(".preference-chip.active"))
     .map((chip) => chip.dataset.value);
   const payload = {
@@ -2849,6 +2899,8 @@ clientProfileForm.addEventListener("submit", async (event) => {
     showToast("Perfil atualizado.");
   } catch (error) {
     showToast(error.message);
+  } finally {
+    setButtonLoading(submitButton, false);
   }
 });
 
@@ -2858,6 +2910,12 @@ document.getElementById("savePreferencesBtn").addEventListener("click", () => {
 
 providerProfileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!providerProfileForm.checkValidity()) {
+    providerProfileForm.reportValidity();
+    return;
+  }
+  const submitButton = providerProfileForm.querySelector("button[type=submit]");
+  setButtonLoading(submitButton, true);
   const payload = {
     nome: document.getElementById("ppName").value,
     email: document.getElementById("ppEmail").value,
@@ -2875,6 +2933,8 @@ providerProfileForm.addEventListener("submit", async (event) => {
     showToast("Perfil atualizado.");
   } catch (error) {
     showToast(error.message);
+  } finally {
+    setButtonLoading(submitButton, false);
   }
 });
 
@@ -2924,6 +2984,8 @@ document.getElementById("receivingType").addEventListener("change", () => {
 
 document.getElementById("paymentForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const submitButton = event.target.querySelector("button[type=submit]");
+  setButtonLoading(submitButton, true);
   const tipo = document.getElementById("paymentType").value;
   try {
     const response = await authFetch("/clientes/me/metodos-pagamento", { method: "POST", body: JSON.stringify({ tipo, chave_pix: document.getElementById("paymentPixKey").value, ultimos_4_digitos: document.getElementById("paymentLast4").value }) });
@@ -2931,6 +2993,7 @@ document.getElementById("paymentForm").addEventListener("submit", async (event) 
     if (!response.ok) throw new Error(data.detail || "Não foi possível salvar o pagamento.");
     event.target.reset(); await loadPaymentMethods(); showToast("Método de pagamento salvo.");
   } catch (error) { showToast(error.message); }
+  finally { setButtonLoading(submitButton, false); }
 });
 
 document.getElementById("receivingForm").addEventListener("submit", async (event) => {
