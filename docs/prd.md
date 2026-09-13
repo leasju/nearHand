@@ -25,7 +25,7 @@ Usuários
     - Nome completo*
     - Foto* (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
     - Endereço* (CEP, rua, número, complemento, bairro, cidade, estado)
-    - Telefone
+    - Telefone* — **validação em tempo real**: conforme digita, valida se o número é um celular brasileiro válido (11 dígitos, começando com 9, com código de área brasileira válido), exibindo feedback imediato (checkmark verde, erro em vermelho ou carregando)
     - Email*
   - Login
     - Email ou Telefone
@@ -114,7 +114,7 @@ Usuários
     - Nome completo da empresa/do prestador*
     - Foto* (upload por arrastar/soltar ou selecionar arquivo — sem opção de colar link)
     - Endereço* (CEP, rua, número, complemento, bairro, cidade, estado)
-    - Telefone
+    - Telefone* — **validação em tempo real**: conforme digita, valida se o número é um celular brasileiro válido (11 dígitos, começando com 9, com código de área brasileira válido), exibindo feedback imediato (checkmark verde, erro em vermelho ou carregando)
     - Email*
     - CPF ou CNPJ*
   - Login
