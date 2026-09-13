@@ -442,33 +442,76 @@
 
     <section id="chatView" class="app-view" hidden>
       <div class="chat-page">
-        <aside class="chat-sidebar">
-          <div class="chat-sidebar-header"><h2>Mensagens</h2></div>
-          <div class="chat-search"><img class="icon" src="img/icons/icon-search.png" alt="" /><input id="chatSearchInput" type="search" placeholder="Buscar por nome ou anúncio..." aria-label="Buscar conversa" /></div>
-          <div class="chat-status-legend" id="chatStatusLegend" title="Clique para filtrar por status">
-            <button type="button" class="active" data-status-group="pending"><i class="chat-status-dot pending"></i>Pendente</button>
-            <button type="button" class="active" data-status-group="confirmed"><i class="chat-status-dot confirmed"></i>Em andamento</button>
-            <button type="button" class="active" data-status-group="done"><i class="chat-status-dot done"></i>Concluído</button>
-            <button type="button" class="active" data-status-group="cancelled"><i class="chat-status-dot cancelled"></i>Cancelado</button>
+        <div class="chat-header-bar">
+          <div class="chat-header-left">
+            <span class="greeting">Good Morning</span>
+            <h1 id="chatUserGreeting">Nur Alam</h1>
           </div>
-          <div class="chat-list" id="chatConversationList"></div>
-        </aside>
-        <div class="chat-main">
-          <div class="chat-conversation-header" id="chatConversationHeader" hidden>
-            <span class="avatar" id="chatHeaderAvatar"></span>
-            <div class="chat-header-info"><strong id="chatHeaderName"></strong><small id="chatHeaderMeta"></small></div>
-            <button type="button" class="favorite-btn large" id="chatHeaderFavoriteBtn" aria-label="Favoritar prestador" hidden><img class="icon" src="img/icons/icon-heart-outline.png" alt="Favoritar" /></button>
+          <div class="chat-header-meta">
+            <div class="meta-item"><span class="meta-label">Account Type</span><span class="meta-value">Trial</span></div>
+            <div class="meta-item"><span class="meta-label">Next Payment</span><span class="meta-value">01 Oct 2022</span></div>
           </div>
-          <p class="empty-state chat-empty-state" id="chatEmptyState">Selecione uma conversa para começar.</p>
-          <div class="chat-messages" id="chatMessages" hidden></div>
-          <div class="chat-quick-actions" id="chatQuickActions" hidden>
-            <button type="button" class="chip" id="sendAddressBtn"><img class="icon" src="img/icons/icon-location.png" alt="" /> Enviar endereço</button>
-            <button type="button" class="chip" id="sendPhoneBtn"><img class="icon" src="img/icons/icon-phone.png" alt="" /> Enviar telefone</button>
+          <div class="chat-header-actions">
+            <button class="icon-btn" id="chatThemeToggle" title="Alternar tema"><img class="icon" src="img/icons/icon-moonlight.png" alt="Tema" /></button>
+            <button class="icon-btn" id="chatMoreBtn" title="Mais opções"><img class="icon" src="img/icons/icon-more.png" alt="Mais" /></button>
+            <span class="avatar avatar-sm" id="chatHeaderUserAvatar">U</span>
           </div>
-          <form class="chat-input-area" id="chatForm" hidden>
-            <input id="chatInput" class="chat-input-field" placeholder="Escreva uma mensagem..." autocomplete="off" />
-            <button class="chat-send" type="submit" aria-label="Enviar"><img class="icon icon-on-dark" src="img/icons/icon-send.png" alt="" /></button>
-          </form>
+        </div>
+
+        <div class="chat-container">
+          <aside class="chat-sidebar">
+            <div class="chat-sidebar-top">
+              <button class="primary-btn full chat-new-btn" id="chatNewBtn"><span>+</span> Add New Chat</button>
+              <div class="chat-search">
+                <img class="icon" src="img/icons/icon-search.png" alt="" />
+                <input id="chatSearchInput" type="search" placeholder="Messages or users" aria-label="Buscar conversa" />
+              </div>
+            </div>
+            <div class="chat-filters">
+              <button class="chat-filter-btn active" id="chatAllBtn">
+                <span class="chat-filter-count">All Conversation <small>(26)</small></span>
+                <img class="icon" src="img/icons/icon-chevron.png" alt="" />
+              </button>
+            </div>
+            <div class="chat-status-legend" id="chatStatusLegend" title="Clique para filtrar por status" hidden>
+              <button type="button" class="active" data-status-group="pending"><i class="chat-status-dot pending"></i>Pendente</button>
+              <button type="button" class="active" data-status-group="confirmed"><i class="chat-status-dot confirmed"></i>Em andamento</button>
+              <button type="button" class="active" data-status-group="done"><i class="chat-status-dot done"></i>Concluído</button>
+              <button type="button" class="active" data-status-group="cancelled"><i class="chat-status-dot cancelled"></i>Cancelado</button>
+            </div>
+            <div class="chat-list" id="chatConversationList"></div>
+          </aside>
+
+          <div class="chat-main">
+            <div class="chat-conversation-header" id="chatConversationHeader" hidden>
+              <div class="chat-header-user-info">
+                <span class="avatar" id="chatHeaderAvatar"></span>
+                <div class="chat-header-info">
+                  <strong id="chatHeaderName"></strong>
+                  <small id="chatHeaderMeta"></small>
+                </div>
+              </div>
+              <div class="chat-header-actions-main">
+                <button type="button" class="favorite-btn" id="chatHeaderFavoriteBtn" aria-label="Favoritar prestador" hidden><img class="icon" src="img/icons/icon-heart-outline.png" alt="Favoritar" /></button>
+                <button type="button" class="icon-btn" id="chatHeaderMoreBtn" title="Mais opções"><img class="icon" src="img/icons/icon-more.png" alt="Mais" /></button>
+              </div>
+            </div>
+
+            <p class="empty-state chat-empty-state" id="chatEmptyState">Selecione uma conversa para começar.</p>
+            <div class="chat-messages" id="chatMessages" hidden></div>
+
+            <form class="chat-input-area" id="chatForm" hidden>
+              <div class="chat-input-wrapper">
+                <input id="chatInput" class="chat-input-field" placeholder="Write your message!" autocomplete="off" />
+                <div class="chat-input-actions">
+                  <button type="button" class="chat-action-btn" id="sendLinkBtn" title="Enviar endereço"><img class="icon" src="img/icons/icon-location.png" alt="" /></button>
+                  <button type="button" class="chat-action-btn" id="sendPhotoBtn" title="Enviar foto"><img class="icon" src="img/icons/icon-camera.png" alt="" /></button>
+                  <button type="button" class="chat-action-btn" id="sendEmojiBtn" title="Emoji"><img class="icon" src="img/icons/icon-emoji.png" alt="" /></button>
+                  <button class="chat-send" type="submit" aria-label="Enviar"><img class="icon" src="img/icons/icon-send.png" alt="" /></button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </section>
