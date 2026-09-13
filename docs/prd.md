@@ -1,9 +1,88 @@
-Plataforma de indicação de prestadores de serviço por proximidade.
+# NearHand — Product Requirements Document
 
-Usuários
-- Cliente/Contratante
-- Prestador/Contratado
-- Admin
+**Version**: 1.0  
+**Last Updated**: September 13, 2026  
+**Status**: Production (Beta)  
+**Language**: Portuguese (Brazil)
+
+---
+
+## Executive Summary
+
+NearHand is a **proximity-based service discovery platform** connecting clients with local service providers. It solves two critical problems:
+
+1. **For Clients**: Finding reliable service providers nearby with verified skills, pricing, availability, and authentic reviews
+2. **For Providers**: Reaching customers in their service area without expensive marketing
+
+The platform enables complete transactions from discovery through payment, with integrated real-time chat, scheduling, and reputation management.
+
+---
+
+## Core User Roles
+
+Three distinct user types with specific permissions and access levels:
+
+### 1. Cliente (Customer)
+- Search nearby services by proximity, category, price, rating
+- View provider profiles and past reviews
+- Chat with providers before committing to a booking
+- Request and track services
+- Make payments via Pix or card
+- Leave ratings and reviews
+- Favorite services and providers
+
+### 2. Prestador (Service Provider)
+- Publish services with photos, pricing, and availability
+- Receive service requests from clients
+- Set weekly schedule and block vacation dates
+- Track revenue and performance metrics
+- Chat with clients to negotiate and coordinate
+- Build reputation through client reviews
+
+### 3. Admin
+- Manage service categories (create, edit, delete)
+- Moderate all services on the platform
+- Manage user accounts
+- Review and moderate flagged evaluations
+- Monitor email verification status
+
+---
+
+## Technical Architecture
+
+### Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **Frontend** | HTML5, CSS3, Vanilla JavaScript (no framework) |
+| **Backend** | FastAPI (Python 3.10+) |
+| **Database** | MySQL 8.0+ with InnoDB |
+| **Real-time Maps** | Leaflet.js |
+| **Email Service** | Resend API |
+| **Authentication** | JWT (HS256) + Argon2 password hashing |
+| **Hosting** | Heroku / AWS / Docker |
+
+### Database Schema Overview
+
+**13 core tables** supporting all features:
+
+```
+cliente, prestador, admin (user tables)
+categoria, servico, foto_servico (service listings)
+endereco (address & geolocation)
+horario_semanal, disponibilidade (scheduling)
+solicitacao, mensagem, avaliacao (request lifecycle)
+favorito, favorito_prestador (bookmarks)
+metodo_pagamento, metodo_recebimento (payment methods)
+notificacao (notifications)
+```
+
+**Key architectural patterns**:
+- CASCADE DELETE on services (deletes requests, messages, reviews)
+- Geocoded addresses (lat/lng stored, proximity search via distance formula)
+- Status enums for requests (solicitado → confirmado → em_andamento → concluído / cancelado)
+
+---
 
 ## Identidade visual
 
