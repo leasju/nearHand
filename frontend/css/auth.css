@@ -300,3 +300,22 @@ body.dark .modal{background:var(--surface)}
   .field-between{align-items:flex-start;flex-direction:column}
   .role-switch,.mode-switch{gap:8px}
 }
+
+/* Phone validation indicator */
+.phone-validation-wrap{position:relative}
+.phone-validation-icon{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .2s ease
+}
+.phone-validation-wrap.validating .phone-validation-icon{opacity:1;color:var(--muted)}
+.phone-validation-wrap.valid .phone-validation-icon{opacity:1;color:#16a34a}
+.phone-validation-wrap.invalid .phone-validation-icon{opacity:1;color:#dc2626}
+.phone-validation-wrap .field-input{padding-right:44px}
+.phone-validation-message{
+  font-size:11px;line-height:1.4;height:14px;margin-top:3px;min-height:14px;
+  color:transparent;transition:color .2s ease;display:block
+}
+.phone-validation-wrap.validating .phone-validation-message{color:var(--muted)}
+.phone-validation-wrap.valid .phone-validation-message{color:#16a34a}
+.phone-validation-wrap.invalid .phone-validation-message{color:#dc2626}

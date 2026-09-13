@@ -122,7 +122,11 @@
           <div class="grid two" id="registerIdentityGrid">
             <div class="field-group">
               <label class="field-label" for="registerPhone">Telefone</label>
-              <input id="registerPhone" class="field-input" type="tel" placeholder="(00) 00000-0000" />
+              <div class="phone-validation-wrap">
+                <input id="registerPhone" class="field-input" type="tel" placeholder="(00) 00000-0000" />
+                <span class="phone-validation-icon">✓</span>
+              </div>
+              <span class="phone-validation-message"></span>
             </div>
             <div class="field-group" id="documentGroup" hidden>
               <label class="field-label" for="registerDocument">CPF ou CNPJ</label>

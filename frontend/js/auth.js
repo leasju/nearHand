@@ -75,6 +75,64 @@ setupCepLookup("registerCep", {
 });
 
 // ============================================
+// Validação de telefone em tempo real
+// ============================================
+let phoneValidationTimeout;
+
+function setupPhoneValidation() {
+  const phoneInput = document.getElementById("registerPhone");
+  const phoneWrap = phoneInput.closest(".phone-validation-wrap");
+  const phoneMessage = phoneWrap.nextElementSibling;
+
+  if (!phoneInput) return;
+
+  async function validatePhone() {
+    const phone = phoneInput.value.trim();
+
+    if (!phone) {
+      phoneWrap.classList.remove("validating", "valid", "invalid");
+      phoneMessage.textContent = "";
+      return;
+    }
+
+    phoneWrap.classList.add("validating");
+    phoneWrap.classList.remove("valid", "invalid");
+    phoneMessage.textContent = "Validando...";
+
+    try {
+      const response = await fetch("/auth/validate-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefone: phone }),
+      });
+      const data = await response.json();
+
+      phoneWrap.classList.remove("validating");
+      phoneMessage.textContent = data.message;
+
+      if (data.valid) {
+        phoneWrap.classList.add("valid");
+        phoneWrap.classList.remove("invalid");
+      } else {
+        phoneWrap.classList.add("invalid");
+        phoneWrap.classList.remove("valid");
+      }
+    } catch (error) {
+      phoneWrap.classList.remove("validating");
+      phoneWrap.classList.add("invalid");
+      phoneMessage.textContent = "Erro ao validar telefone";
+    }
+  }
+
+  phoneInput.addEventListener("input", () => {
+    clearTimeout(phoneValidationTimeout);
+    phoneValidationTimeout = setTimeout(validatePhone, 600);
+  });
+}
+
+setupPhoneValidation();
+
+// ============================================
 // Cropper.js - Edição de imagem
 // ============================================
 let cropperInstance = null;
